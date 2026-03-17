@@ -24,3 +24,13 @@ enum Role {
   USER
   ADMIN
 }
+
+model CompanyProfile {
+  id        Int      @id @default(autoincrement())
+  name      String   @default("SIAGMS")
+  address   String?
+  phone     String?
+  email     String?
+  logoUrl   String?
+  updatedAt DateTime @updatedAt
+}
