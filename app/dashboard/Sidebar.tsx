@@ -212,7 +212,7 @@ export default function Sidebar() {
                             height={20}
                             className={`w-5 h-5 dark:invert ${isActive ? "" : "opacity-60"}`}
                             style={
-                              isActive && resolvedTheme !== "dark"
+                              mounted && isActive && resolvedTheme !== "dark"
                                 ? {
                                     filter:
                                       "invert(18%) sepia(88%) saturate(2759%) hue-rotate(346deg) brightness(96%) contrast(92%)",

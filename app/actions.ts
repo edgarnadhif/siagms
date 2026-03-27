@@ -110,3 +110,45 @@ export async function login(prevState: any, formData: FormData) {
 
   redirect('/dashboard')
 }
+
+export async function createProject(prevState: any, formData: FormData) {
+  const code = formData.get('code') as string
+  const name = formData.get('name') as string
+  const description = formData.get('description') as string
+  const status = formData.get('status') as any
+  const startDateStr = formData.get('startDate') as string
+  const endDateStr = formData.get('endDate') as string
+  const budgetStr = formData.get('budget') as string
+
+  if (!code || !name) {
+    return { error: 'Kode Proyek dan Nama Proyek wajib diisi' }
+  }
+
+  const startDate = startDateStr ? new Date(startDateStr) : null
+  const endDate = endDateStr ? new Date(endDateStr) : null
+  const budget = budgetStr ? parseFloat(budgetStr.replace(/\D/g, '')) : 0
+
+  try {
+    const existing = await prisma.project.findUnique({ where: { code } })
+    if (existing) {
+       return { error: 'Kode Proyek sudah digunakan' }
+    }
+    
+    await prisma.project.create({
+      data: {
+        code,
+        name,
+        description,
+        status: status || 'AKTIF',
+        startDate,
+        endDate,
+        budget
+      }
+    })
+
+    revalidatePath('/dashboard/projek')
+    return { success: true }
+  } catch (err: any) {
+    return { error: 'Terjadi kesalahan sistem: ' + err?.message }
+  }
+}

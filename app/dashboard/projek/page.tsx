@@ -1,0 +1,119 @@
+import { prisma } from "@/lib/db";
+import ProjectCard from "./ProjectCard";
+import Link from "next/link";
+import { ProjectStatus } from "@prisma/client";
+import AddProjectModal from "./AddProjectModal";
+
+export default async function ProjectPage(props: {
+  searchParams?: Promise<{ search?: string; status?: string; add?: string }>;
+}) {
+  const searchParams = await props.searchParams;
+  const search = searchParams?.search || "";
+  const status = searchParams?.status || "";
+  const showAddModal = searchParams?.add === "true";
+
+  const projects = await prisma.project.findMany({
+    where: {
+      ...(search ? { name: { contains: search, mode: "insensitive" } } : {}),
+      ...(status ? { status: status as ProjectStatus } : {}),
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return (
+    <div className="p-6 md:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      {/* Header Container */}
+      <div className="mb-8">
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              Daftar Proyek
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Kelola daftar proyek dan tracking keuangan per proyek
+            </p>
+          </div>
+          <Link
+            href="?add=true"
+            className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-xl transition-colors shadow-sm shadow-red-500/20"
+          >
+            Tambah
+            <span className="text-lg leading-none">+</span>
+          </Link>
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="relative flex-1">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400 dark:text-gray-500">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+                className="w-5 h-5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                />
+              </svg>
+            </span>
+            <input
+              type="text"
+              placeholder="Cari nama atau kode proyek"
+              className="w-full pl-11 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all text-gray-900 dark:text-gray-100"
+            />
+          </div>
+          <div className="w-full md:w-48 relative">
+            <select className="w-full pl-4 pr-10 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-gray-900 dark:text-gray-100">
+              <option value="">Status</option>
+              <option value="AKTIF">Aktif</option>
+              <option value="SELESAI">Selesai</option>
+              <option value="BATAL">Batal</option>
+            </select>
+            <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Grid Projects */}
+      {projects.length === 0 ? (
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-12 text-center border border-gray-200 dark:border-slate-700">
+          <p className="text-gray-500 dark:text-gray-400">Belum ada proyek ditambahkan.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {projects.map((project) => (
+            <ProjectCard
+              key={project.id}
+              project={project}
+              transactionCount={0}
+              totalIncome={0}
+              totalExpense={0}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Modal Tambah Proyek */}
+      {showAddModal && <AddProjectModal />}
+    </div>
+  );
+}
