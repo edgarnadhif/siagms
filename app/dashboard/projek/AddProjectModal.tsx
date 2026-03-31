@@ -54,14 +54,10 @@ export default function AddProjectModal() {
               <textarea name="description" placeholder="Optional" rows={3} className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-red-500 outline-none transition-shadow resize-none"></textarea>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-[10px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Tanggal Mulai</label>
                 <input type="date" name="startDate" className="w-full px-2 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-xs bg-transparent text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-red-500 outline-none transition-shadow" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Tanggal selesai</label>
-                <input type="date" name="endDate" className="w-full px-2 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-xs bg-transparent text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-red-500 outline-none transition-shadow" />
               </div>
               <div>
                 <label className="block text-[10px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Budget (Rp)</label>

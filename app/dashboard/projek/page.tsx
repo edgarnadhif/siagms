@@ -14,8 +14,20 @@ export default async function ProjectPage(props: {
 
   const projects = await prisma.project.findMany({
     where: {
-      ...(search ? { name: { contains: search, mode: "insensitive" } } : {}),
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: "insensitive" } },
+              { code: { contains: search, mode: "insensitive" } },
+            ],
+          }
+        : {}),
       ...(status ? { status: status as ProjectStatus } : {}),
+    },
+    include: {
+      _count: {
+        select: { transactions: true },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -43,7 +55,7 @@ export default async function ProjectPage(props: {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-4">
+        <form className="flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
             <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400 dark:text-gray-500">
               <svg
@@ -63,13 +75,19 @@ export default async function ProjectPage(props: {
             </span>
             <input
               type="text"
+              name="search"
+              defaultValue={search}
               placeholder="Cari nama atau kode proyek"
               className="w-full pl-11 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all text-gray-900 dark:text-gray-100"
             />
           </div>
           <div className="w-full md:w-48 relative">
-            <select className="w-full pl-4 pr-10 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-gray-900 dark:text-gray-100">
-              <option value="">Status</option>
+            <select
+              name="status"
+              defaultValue={status}
+              className="w-full pl-4 pr-10 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-gray-900 dark:text-gray-100"
+            >
+              <option value="">Semua Status</option>
               <option value="AKTIF">Aktif</option>
               <option value="SELESAI">Selesai</option>
               <option value="BATAL">Batal</option>
@@ -90,13 +108,76 @@ export default async function ProjectPage(props: {
               </svg>
             </span>
           </div>
-        </div>
+          <button
+            type="submit"
+            className="px-4 py-2.5 bg-gray-900 dark:bg-slate-700 hover:bg-gray-800 dark:hover:bg-slate-600 text-white text-sm font-medium rounded-xl transition-colors"
+          >
+            Cari
+          </button>
+        </form>
+      </div>
+
+      {/* Stats */}
+      <div className="flex items-center gap-4 mb-6">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          <span className="font-bold text-gray-800 dark:text-gray-200">
+            {projects.length}
+          </span>{" "}
+          proyek ditemukan
+          {search && (
+            <span>
+              {" "}
+              untuk &quot;<span className="font-medium">{search}</span>&quot;
+            </span>
+          )}
+          {status && (
+            <span>
+              {" "}
+              · Status:{" "}
+              <span className="font-medium">
+                {status === "AKTIF"
+                  ? "Aktif"
+                  : status === "SELESAI"
+                    ? "Selesai"
+                    : "Batal"}
+              </span>
+            </span>
+          )}
+        </p>
+        {(search || status) && (
+          <Link
+            href="/dashboard/projek"
+            className="text-xs text-red-500 hover:text-red-600 font-medium transition-colors"
+          >
+            Reset filter
+          </Link>
+        )}
       </div>
 
       {/* Grid Projects */}
       {projects.length === 0 ? (
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-12 text-center border border-gray-200 dark:border-slate-700">
-          <p className="text-gray-500 dark:text-gray-400">Belum ada proyek ditambahkan.</p>
+          <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center mx-auto mb-4">
+            <svg
+              className="w-8 h-8 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+              />
+            </svg>
+          </div>
+          <p className="text-gray-500 dark:text-gray-400 font-medium">
+            Belum ada proyek ditambahkan.
+          </p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+            Klik tombol &quot;Tambah&quot; untuk menambahkan proyek baru.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -104,7 +185,7 @@ export default async function ProjectPage(props: {
             <ProjectCard
               key={project.id}
               project={project}
-              transactionCount={0}
+              transactionCount={project._count.transactions}
               totalIncome={0}
               totalExpense={0}
             />

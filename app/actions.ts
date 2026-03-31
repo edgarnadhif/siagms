@@ -106,7 +106,7 @@ export async function login(prevState: any, formData: FormData) {
     return { error: 'Invalid credentials' }
   }
 
-  await createSession(user.id, remember)
+  await createSession(String(user.id), remember)
 
   redirect('/dashboard')
 }
@@ -117,7 +117,6 @@ export async function createProject(prevState: any, formData: FormData) {
   const description = formData.get('description') as string
   const status = formData.get('status') as any
   const startDateStr = formData.get('startDate') as string
-  const endDateStr = formData.get('endDate') as string
   const budgetStr = formData.get('budget') as string
 
   if (!code || !name) {
@@ -125,15 +124,9 @@ export async function createProject(prevState: any, formData: FormData) {
   }
 
   const startDate = startDateStr ? new Date(startDateStr) : null
-  const endDate = endDateStr ? new Date(endDateStr) : null
   const budget = budgetStr ? parseFloat(budgetStr.replace(/\D/g, '')) : 0
 
   try {
-    const existing = await prisma.project.findUnique({ where: { code } })
-    if (existing) {
-       return { error: 'Kode Proyek sudah digunakan' }
-    }
-    
     await prisma.project.create({
       data: {
         code,
@@ -141,12 +134,316 @@ export async function createProject(prevState: any, formData: FormData) {
         description,
         status: status || 'AKTIF',
         startDate,
-        endDate,
         budget
       }
     })
 
     revalidatePath('/dashboard/projek')
+    return { success: true }
+  } catch (err: any) {
+    // Handle unique constraint violation (P2002)
+    if (err?.code === 'P2002') {
+      return { error: 'Kode Proyek sudah digunakan' }
+    }
+    return { error: 'Terjadi kesalahan sistem: ' + err?.message }
+  }
+}
+
+export async function updateProject(prevState: any, formData: FormData) {
+  const id = formData.get('id') as string
+  const code = formData.get('code') as string
+  const name = formData.get('name') as string
+  const description = formData.get('description') as string
+  const status = formData.get('status') as any
+  const location = formData.get('location') as string
+  const startDateStr = formData.get('startDate') as string
+  const budgetStr = formData.get('budget') as string
+
+  if (!id || !code || !name) {
+    return { error: 'ID, Kode Proyek, dan Nama Proyek wajib diisi' }
+  }
+
+  const startDate = startDateStr ? new Date(startDateStr) : null
+  const budget = budgetStr ? parseFloat(budgetStr.replace(/\D/g, '')) : 0
+
+  try {
+    await prisma.project.update({
+      where: { id },
+      data: {
+        code,
+        name,
+        description,
+        location,
+        status: status || 'AKTIF',
+        startDate,
+        budget,
+      },
+    })
+
+    revalidatePath('/dashboard/projek')
+    return { success: true }
+  } catch (err: any) {
+    if (err?.code === 'P2002') {
+      return { error: 'Kode Proyek sudah digunakan oleh proyek lain' }
+    }
+    return { error: 'Terjadi kesalahan sistem: ' + err?.message }
+  }
+}
+
+export async function deleteProject(projectId: string) {
+  if (!projectId) {
+    return { error: 'ID proyek tidak valid' }
+  }
+
+  try {
+    // TODO: Check linked transactions once Transaction model is migrated
+    // const transactionCount = await prisma.transaction.count({ where: { projectId } })
+    // if (transactionCount > 0) return { error: '...' }
+
+    await prisma.project.delete({
+      where: { id: projectId },
+    })
+
+    revalidatePath('/dashboard/projek')
+    return { success: true }
+  } catch (err: any) {
+    // Handle foreign key constraint (if transactions exist)
+    if (err?.code === 'P2003') {
+      return { error: 'Tidak dapat menghapus proyek. Masih ada data terkait.' }
+    }
+    return { error: 'Terjadi kesalahan sistem: ' + err?.message }
+  }
+}
+
+// ─── ACCOUNT (Daftar Akun / Chart of Accounts) ──────────────
+
+export async function createAccount(prevState: any, formData: FormData) {
+  const code = formData.get('code') as string
+  const name = formData.get('name') as string
+  const type = formData.get('type') as string
+  const normalBalance = formData.get('normalBalance') as string
+  const description = formData.get('description') as string
+  const isActive = formData.get('isActive') === 'on' || formData.get('isActive') === 'true'
+
+  if (!code || !name || !type || !normalBalance) {
+    return { error: 'Kode, Nama, Tipe, dan Saldo Normal wajib diisi' }
+  }
+
+  try {
+    await prisma.account.create({
+      data: {
+        code,
+        name,
+        type: type as any,
+        normalBalance: normalBalance as any,
+        description: description || null,
+        isActive,
+      }
+    })
+
+    revalidatePath('/dashboard/daftar-akun')
+    return { success: true }
+  } catch (err: any) {
+    if (err?.code === 'P2002') {
+      return { error: 'Kode akun sudah digunakan' }
+    }
+    return { error: 'Terjadi kesalahan sistem: ' + err?.message }
+  }
+}
+
+export async function updateAccount(prevState: any, formData: FormData) {
+  const id = formData.get('id') as string
+  const code = formData.get('code') as string
+  const name = formData.get('name') as string
+  const type = formData.get('type') as string
+  const normalBalance = formData.get('normalBalance') as string
+  const description = formData.get('description') as string
+  const isActive = formData.get('isActive') === 'on' || formData.get('isActive') === 'true'
+
+  if (!id || !code || !name || !type || !normalBalance) {
+    return { error: 'Data tidak lengkap' }
+  }
+
+  try {
+    await prisma.account.update({
+      where: { id },
+      data: {
+        code,
+        name,
+        type: type as any,
+        normalBalance: normalBalance as any,
+        description: description || null,
+        isActive,
+      }
+    })
+
+    revalidatePath('/dashboard/daftar-akun')
+    return { success: true }
+  } catch (err: any) {
+    if (err?.code === 'P2002') {
+      return { error: 'Kode akun sudah digunakan oleh akun lain' }
+    }
+    return { error: 'Terjadi kesalahan sistem: ' + err?.message }
+  }
+}
+
+export async function deleteAccount(accountId: string) {
+  if (!accountId) {
+    return { error: 'ID akun tidak valid' }
+  }
+
+  try {
+    await prisma.account.delete({
+      where: { id: accountId },
+    })
+
+    revalidatePath('/dashboard/daftar-akun')
+    return { success: true }
+  } catch (err: any) {
+    if (err?.code === 'P2003') {
+      return { error: 'Tidak dapat menghapus akun. Masih ada jurnal terkait.' }
+    }
+    return { error: 'Terjadi kesalahan sistem: ' + err?.message }
+  }
+}
+
+// ─── TRANSACTION (Transaksi) ────────────────────────────────
+
+export async function createTransaction(prevState: any, formData: FormData) {
+  const reference = formData.get('reference') as string
+  const dateStr = formData.get('date') as string
+  const description = formData.get('description') as string
+  const note = formData.get('note') as string
+  const category = formData.get('category') as string
+  const amountStr = formData.get('amount') as string
+  const projectId = formData.get('projectId') as string
+
+  if (!reference || !dateStr || !description || !category || !amountStr) {
+    return { error: 'Referensi, Tanggal, Keterangan, Kategori, dan Jumlah wajib diisi' }
+  }
+
+  const date = new Date(dateStr)
+  const amount = parseFloat(amountStr.replace(/[^\d.-]/g, ''))
+
+  if (isNaN(amount) || amount <= 0) {
+    return { error: 'Jumlah harus berupa angka positif' }
+  }
+
+  try {
+    await prisma.transaction.create({
+      data: {
+        reference,
+        date,
+        description,
+        note: note || null,
+        category: category as any,
+        amount,
+        projectId: projectId || null,
+      }
+    })
+
+    revalidatePath('/dashboard/transaksi')
+    revalidatePath('/dashboard')
+    return { success: true }
+  } catch (err: any) {
+    if (err?.code === 'P2002') {
+      return { error: 'Nomor referensi sudah digunakan' }
+    }
+    return { error: 'Terjadi kesalahan sistem: ' + err?.message }
+  }
+}
+
+export async function deleteTransaction(transactionId: string) {
+  if (!transactionId) {
+    return { error: 'ID transaksi tidak valid' }
+  }
+
+  try {
+    // Delete related journal entries first
+    await prisma.journalEntry.deleteMany({
+      where: { transactionId },
+    })
+
+    await prisma.transaction.delete({
+      where: { id: transactionId },
+    })
+
+    revalidatePath('/dashboard/transaksi')
+    revalidatePath('/dashboard')
+    return { success: true }
+  } catch (err: any) {
+    return { error: 'Terjadi kesalahan sistem: ' + err?.message }
+  }
+}
+
+// ─── JOURNAL ENTRY (Jurnal Umum) ────────────────────────────
+
+export async function createJournalEntries(prevState: any, formData: FormData) {
+  const reference = formData.get('reference') as string
+  const dateStr = formData.get('date') as string
+  const description = formData.get('description') as string
+  const transactionId = formData.get('transactionId') as string
+  const entriesJson = formData.get('entries') as string
+
+  if (!reference || !dateStr || !description || !entriesJson) {
+    return { error: 'Referensi, Tanggal, Keterangan, dan Baris Jurnal wajib diisi' }
+  }
+
+  let entries: { accountId: string; debit: number; credit: number }[]
+  try {
+    entries = JSON.parse(entriesJson)
+  } catch {
+    return { error: 'Format baris jurnal tidak valid' }
+  }
+
+  if (entries.length < 2) {
+    return { error: 'Minimal 2 baris jurnal diperlukan' }
+  }
+
+  const totalDebit = entries.reduce((s, e) => s + Number(e.debit || 0), 0)
+  const totalCredit = entries.reduce((s, e) => s + Number(e.credit || 0), 0)
+
+  if (totalDebit !== totalCredit || totalDebit === 0) {
+    return { error: 'Total debit dan kredit harus seimbang dan lebih dari 0' }
+  }
+
+  const date = new Date(dateStr)
+
+  try {
+    await prisma.journalEntry.createMany({
+      data: entries.map(entry => ({
+        reference,
+        date,
+        description,
+        transactionId: transactionId || null,
+        accountId: entry.accountId,
+        debit: entry.debit || 0,
+        credit: entry.credit || 0,
+      }))
+    })
+
+    revalidatePath('/dashboard/jurnal-umum')
+    revalidatePath('/dashboard/buku-besar')
+    revalidatePath('/dashboard')
+    return { success: true }
+  } catch (err: any) {
+    return { error: 'Terjadi kesalahan sistem: ' + err?.message }
+  }
+}
+
+export async function deleteJournalEntriesByReference(reference: string) {
+  if (!reference) {
+    return { error: 'Referensi tidak valid' }
+  }
+
+  try {
+    await prisma.journalEntry.deleteMany({
+      where: { reference },
+    })
+
+    revalidatePath('/dashboard/jurnal-umum')
+    revalidatePath('/dashboard/buku-besar')
+    revalidatePath('/dashboard')
     return { success: true }
   } catch (err: any) {
     return { error: 'Terjadi kesalahan sistem: ' + err?.message }
