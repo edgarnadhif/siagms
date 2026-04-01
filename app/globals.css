@@ -46,3 +46,106 @@ body {
 .dark .custom-scrollbar:hover::-webkit-scrollbar-thumb {
   background-color: rgba(75, 85, 99, 0.5); /* Dark mode hover */
 }
+
+/* ─── Mini Calendar Widget (react-big-calendar overrides) ─── */
+.mini-calendar-widget .rbc-month-view {
+  border: none !important;
+  background: transparent !important;
+}
+
+.mini-calendar-widget .rbc-month-row {
+  border: none !important;
+  min-height: 32px !important;
+  overflow: visible !important;
+}
+
+.mini-calendar-widget .rbc-header {
+  border: none !important;
+  padding: 4px 0 !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  color: #9ca3af !important;
+  text-align: center !important;
+}
+
+.mini-calendar-widget .rbc-day-bg {
+  border: none !important;
+  transition: background-color 0.15s ease;
+}
+
+.mini-calendar-widget .rbc-day-bg + .rbc-day-bg {
+  border-left: none !important;
+}
+
+.mini-calendar-widget .rbc-off-range-bg {
+  background: transparent !important;
+}
+
+.mini-calendar-widget .rbc-today {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+.mini-calendar-widget .rbc-date-cell {
+  text-align: center !important;
+  padding: 2px 0 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+.mini-calendar-widget .rbc-date-cell > a,
+.mini-calendar-widget .rbc-date-cell > button {
+  color: #374151 !important;
+  font-weight: 500 !important;
+  pointer-events: none !important;
+}
+
+.mini-calendar-widget .rbc-off-range .rbc-date-cell > a,
+.mini-calendar-widget .rbc-off-range .rbc-date-cell > button,
+.mini-calendar-widget .rbc-off-range a {
+  color: #d1d5db !important;
+}
+
+.mini-calendar-widget .rbc-now .rbc-date-cell > a,
+.mini-calendar-widget .rbc-now .rbc-date-cell > button,
+.mini-calendar-widget .rbc-now a {
+  font-weight: 800 !important;
+  color: #2563eb !important;
+}
+
+.mini-calendar-widget .rbc-event,
+.mini-calendar-widget .rbc-event-content {
+  display: none !important;
+}
+
+.mini-calendar-widget .rbc-row-segment {
+  display: none !important;
+}
+
+.mini-calendar-widget .rbc-show-more {
+  display: none !important;
+}
+
+.mini-calendar-widget .rbc-month-row + .rbc-month-row {
+  border-top: none !important;
+}
+
+/* Dark mode overrides */
+.dark .mini-calendar-widget .rbc-date-cell > a,
+.dark .mini-calendar-widget .rbc-date-cell > button {
+  color: #e5e7eb !important;
+}
+
+.dark .mini-calendar-widget .rbc-off-range .rbc-date-cell > a,
+.dark .mini-calendar-widget .rbc-off-range .rbc-date-cell > button,
+.dark .mini-calendar-widget .rbc-off-range a {
+  color: #4b5563 !important;
+}
+
+.dark .mini-calendar-widget .rbc-header {
+  color: #6b7280 !important;
+}
+
+.dark .mini-calendar-widget .rbc-today {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+}

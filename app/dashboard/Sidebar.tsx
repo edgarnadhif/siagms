@@ -54,6 +54,11 @@ export default function Sidebar() {
           icon: "/credit_card.svg",
         },
         {
+          title: "Kalender",
+          href: "/dashboard/calendar",
+          icon: "/calendar_month.svg",
+        },
+        {
           title: "Jurnal Umum",
           href: "/dashboard/jurnal-umum",
           icon: "/book_5.svg",

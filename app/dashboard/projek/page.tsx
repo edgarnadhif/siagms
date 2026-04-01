@@ -12,7 +12,7 @@ export default async function ProjectPage(props: {
   const status = searchParams?.status || "";
   const showAddModal = searchParams?.add === "true";
 
-  const projects = await prisma.project.findMany({
+  const rawProjects = await prisma.project.findMany({
     where: {
       ...(search
         ? {
@@ -31,6 +31,16 @@ export default async function ProjectPage(props: {
     },
     orderBy: { createdAt: "desc" },
   });
+
+  // Serialize Decimal and Date for Client Component
+  const projects = rawProjects.map((p) => ({
+    ...p,
+    budget: Number(p.budget),
+    createdAt: p.createdAt.toISOString(),
+    updatedAt: p.updatedAt.toISOString(),
+    startDate: p.startDate?.toISOString() || null,
+    endDate: p.endDate?.toISOString() || null,
+  }));
 
   return (
     <div className="border-2 shadow-xl border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-100 dark:bg-[#0f172a] text-gray-600 dark:text-gray-300 p-6 md:p-8 min-h-screen">
@@ -184,7 +194,7 @@ export default async function ProjectPage(props: {
           {projects.map((project) => (
             <ProjectCard
               key={project.id}
-              project={project}
+              project={project as any}
               transactionCount={project._count.transactions}
               totalIncome={0}
               totalExpense={0}

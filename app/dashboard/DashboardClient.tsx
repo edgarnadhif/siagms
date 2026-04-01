@@ -1,9 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+import { ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from "recharts";
+import { Calendar as BigCalendar, dateFnsLocalizer, ToolbarProps, Views } from "react-big-calendar";
+import { format, parse, startOfWeek, getDay } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
+import "react-big-calendar/lib/css/react-big-calendar.css";
+
+const rbcLocalizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 0 }),
+  getDay,
+  locales: { id: idLocale },
+});
 
 // ─── Helpers ────────────────────────────────────────────────────
 function formatRupiah(num: number) {
@@ -51,32 +63,35 @@ function DonutChart({
   size?: number;
 }) {
   const total = data.reduce((s, d) => s + d.value, 0);
-  const radius = (size - 20) / 2;
-  const cx = size / 2;
-  const cy = size / 2;
-  const strokeWidth = 28;
-  const circumference = 2 * Math.PI * radius;
-
-  let accumulatedOffset = 0;
+  const chartData = total > 0 ? data : [{ label: 'Belum Ada', value: 1, color: '#e5e7eb' }];
 
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <circle cx={cx} cy={cy} r={radius} fill="none" stroke="#e5e7eb" strokeWidth={strokeWidth} className="dark:stroke-slate-700" />
-      {total > 0 && data.map((d, i) => {
-        const pct = d.value / total;
-        const dashArray = pct * circumference;
-        const dashOffset = -accumulatedOffset;
-        accumulatedOffset += dashArray;
-        return (
-          <circle key={i} cx={cx} cy={cy} r={radius} fill="none"
-            stroke={d.color} strokeWidth={strokeWidth}
-            strokeDasharray={`${dashArray} ${circumference - dashArray}`}
-            strokeDashoffset={dashOffset}
-            transform={`rotate(-90 ${cx} ${cy})`} className="transition-all duration-500"
-          />
-        );
-      })}
-    </svg>
+    <div style={{ width: size, height: size }} className="relative drop-shadow-sm">
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={chartData}
+            cx="50%"
+            cy="50%"
+            innerRadius="70%"
+            outerRadius="100%"
+            paddingAngle={2}
+            dataKey="value"
+            stroke="none"
+          >
+            {chartData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.color} />
+            ))}
+          </Pie>
+          {total > 0 && (
+            <Tooltip 
+              formatter={(value: number) => formatRupiah(value)}
+              contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
+            />
+          )}
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 
@@ -121,6 +136,94 @@ function Card({ children, className = "", title, action }: { children: React.Rea
   );
 }
 
+// ─── Mini Calendar Toolbar ────────────────────────────────────────
+function MiniToolbar({ label, onNavigate }: ToolbarProps) {
+  const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+  return (
+    <div className="flex items-center justify-between mb-2">
+      <button onClick={() => onNavigate('PREV')} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors text-gray-500">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+      </button>
+      <span className="text-sm font-bold text-gray-800 dark:text-gray-100">{label}</span>
+      <button onClick={() => onNavigate('NEXT')} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors text-gray-500">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+      </button>
+    </div>
+  );
+}
+
+// ─── Mini Calendar (react-big-calendar) ───────────────────────────
+function MiniCalendar({ events, selectedDate, onSelectDate, onNavigate }: {
+  events: any[];
+  selectedDate: Date;
+  onSelectDate: (date: Date) => void;
+  onNavigate: (date: Date) => void;
+}) {
+  // Build a map of dates that have events for dayPropGetter
+  const eventDateMap = React.useMemo(() => {
+    const map = new Map<string, string>(); // dateKey -> priority color
+    for (const evt of events) {
+      const d = new Date(evt.date);
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      const existing = map.get(key);
+      // Priority: AUTO > MANUAL > DONE
+      if (evt.status === 'DONE' && !existing) {
+        map.set(key, '#EAF3DE');
+      } else if (evt.type === 'MANUAL' && existing !== '#FCEBEB') {
+        map.set(key, '#E6F1FB');
+      } else if (evt.type === 'AUTO' || evt.isLocked) {
+        map.set(key, '#FCEBEB');
+      }
+    }
+    return map;
+  }, [events]);
+
+  const dayPropGetter = useCallback((date: Date) => {
+    const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+    const selKey = `${selectedDate.getFullYear()}-${selectedDate.getMonth()}-${selectedDate.getDate()}`;
+    const bg = eventDateMap.get(key);
+    const isSelected = key === selKey;
+    return {
+      style: {
+        ...(bg ? { backgroundColor: bg } : {}),
+        ...(isSelected ? { outline: '2px solid #3b82f6', outlineOffset: '-2px', borderRadius: '6px' } : {}),
+      },
+    };
+  }, [eventDateMap, selectedDate]);
+
+  // Hide event chips on the grid
+  const eventPropGetter = useCallback(() => ({
+    style: { display: 'none' as const },
+  }), []);
+
+  const calEvents = events.map(e => ({
+    ...e,
+    start: new Date(e.date),
+    end: e.endDate ? new Date(e.endDate) : new Date(new Date(e.date).getTime() + 3600000),
+  }));
+
+  return (
+    <div className="mini-calendar-widget">
+      <BigCalendar
+        localizer={rbcLocalizer}
+        culture="id"
+        events={calEvents}
+        view={Views.MONTH}
+        views={[Views.MONTH]}
+        date={selectedDate}
+        onNavigate={(date) => onNavigate(date)}
+        selectable
+        onSelectSlot={({ start }) => onSelectDate(start)}
+        dayPropGetter={dayPropGetter}
+        eventPropGetter={eventPropGetter}
+        components={{ toolbar: MiniToolbar }}
+        popup={false}
+        style={{ height: 280 }}
+      />
+    </div>
+  );
+}
+
 // ─── Main Client Page ─────────────────────────────────────────────
 export default function DashboardClient({
   totalRevenue,
@@ -153,6 +256,34 @@ export default function DashboardClient({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+
+  const fetchCalendarEvents = useCallback((date: Date) => {
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+    fetch(`/api/calendar?month=${month}&year=${year}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setCalendarEvents(data.data);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    fetchCalendarEvents(selectedDate);
+  }, [fetchCalendarEvents, selectedDate]);
+
+  // Filter events for the selected date
+  const selectedDateEvents = calendarEvents.filter(evt => {
+    const evtDate = new Date(evt.date);
+    return evtDate.getFullYear() === selectedDate.getFullYear()
+      && evtDate.getMonth() === selectedDate.getMonth()
+      && evtDate.getDate() === selectedDate.getDate();
+  });
+
   // Switch project filter
   const handleProjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -170,8 +301,8 @@ export default function DashboardClient({
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 border-b border-gray-200 dark:border-slate-700 pb-5">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Ringkasan kinerja keuangan dan monitoring proyek</p>
+          <h1 className="text-4xl font-medium text-gray-900 dark:text-gray-100">Dashboard</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">Ringkasan kinerja keuangan dan monitoring proyek</p>
         </div>
         <div className="relative w-full md:w-64">
           <select
@@ -194,7 +325,7 @@ export default function DashboardClient({
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-3 mb-4 lg:mb-3">
         <SummaryCard title="Total Pendapatan" value={formatRupiah(totalRevenue)} subtitle="Saldo normal Kredit" accent
           icon={<svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" /></svg>}
         />
@@ -208,43 +339,7 @@ export default function DashboardClient({
           icon={<svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
         />
       </div>
-
-      {/* Arus Kas Chart */}
-      <div className="mb-6">
-        <Card title="Arus Kas (6 Bulan Terakhir)">
-          <div className="h-[320px] w-full mt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={cashFlowData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={true} stroke="#e2e8f0" className="dark:stroke-slate-700/50" />
-                <XAxis dataKey="month" tick={{fontSize: 11, fill: '#64748b'}} tickMargin={10} axisLine={{stroke: '#cbd5e1'}} tickLine={false} />
-                <YAxis tickFormatter={(val) => formatCompact(val)} tick={{fontSize: 11, fill: '#64748b'}} axisLine={false} tickLine={false} />
-                <Tooltip 
-                   formatter={(value: number) => formatRupiah(value)}
-                   contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
-                   labelStyle={{ fontWeight: 'bold', color: '#1e293b', marginBottom: '8px' }}
-                />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                <Area type="monotone" dataKey="masuk" name="Kas Masuk" fill="url(#colorMasuk)" stroke="#22c55e" strokeWidth={2} fillOpacity={0.2} />
-                <Area type="monotone" dataKey="keluar" name="Kas Keluar" fill="url(#colorKeluar)" stroke="#ef4444" strokeWidth={2} fillOpacity={0.2} />
-                <Line type="monotone" dataKey="bersih" name="Arus Bersih (Kumulatif)" stroke="#1e293b" strokeWidth={2.5} strokeDasharray="5 5" className="dark:stroke-slate-300" dot={false} activeDot={{ r: 6 }} />
-                
-                <defs>
-                  <linearGradient id="colorMasuk" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorKeluar" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-3 mb-4 lg:mb-3">
         {/* Breakdown Biaya */}
         <Card title="Breakdown Biaya">
           <div className="flex flex-col md:flex-row items-center gap-6 mt-2">
@@ -265,6 +360,76 @@ export default function DashboardClient({
           </div>
         </Card>
 
+        {/* Kalender Widget */}
+        <div className="lg:col-span-1">
+          <Card title="Kalender" action={
+            <Link href="/dashboard/calendar" className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
+              Lihat semua &rarr;
+            </Link>
+          }>
+            <MiniCalendar
+              events={calendarEvents}
+              selectedDate={selectedDate}
+              onSelectDate={(date) => setSelectedDate(date)}
+              onNavigate={(date) => {
+                setSelectedDate(date);
+                fetchCalendarEvents(date);
+              }}
+            />
+            {/* Agenda for selected date */}
+            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700">
+              <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Agenda Hari Ini</h4>
+              <div className="flex flex-col gap-2">
+                {selectedDateEvents.length === 0 ? (
+                  <div className="text-center text-sm text-gray-400 py-4 italic">Tidak ada agenda untuk tanggal ini.</div>
+                ) : selectedDateEvents.map((evt, i) => (
+                  <div key={i} className="flex gap-3 items-center p-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${evt.type === 'AUTO' || evt.isLocked ? 'bg-[#E24B4A]' : evt.status === 'DONE' ? 'bg-[#639922]' : 'bg-[#378ADD]'}`}></div>
+                    <div className="flex flex-col flex-1 min-w-0">
+                      <span className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{evt.title}</span>
+                      <span className="text-[11px] text-gray-400 dark:text-gray-500">{formatDate(evt.date)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Project List */}
+        <Card title="Status Proyek Aktif" action={
+          <Link href="/dashboard/projek" className="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-md">
+            Kelola Proyek
+          </Link>
+        }>
+          <div className="flex flex-col gap-2 h-52 overflow-y-auto custom-scrollbar pr-2 mt-2">
+            {projects.length === 0 ? (
+              <div className="text-center text-sm text-gray-500 py-10 italic">Belum ada proyek.</div>
+            ) : projects.map((p, i) => (
+              <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 hover:border-blue-200 dark:hover:border-slate-500 transition-all shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-slate-700 flex items-center justify-center font-bold text-blue-600 dark:text-blue-400 text-xs border border-blue-100 dark:border-slate-600">
+                    {p.code.substring(0,2)}
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-800 dark:text-gray-100 leading-tight">{p.name}</p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Mulai: {formatDate(p.startDate)}</p>
+                  </div>
+                </div>
+                <div className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                  p.status === 'AKTIF' ? 'bg-green-50 text-green-600 border-green-200 dark:bg-green-900/20 dark:border-green-800' :
+                  p.status === 'SELESAI' ? 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800' :
+                  'bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:border-red-800'
+                }`}>
+                  {p.status}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-3 mb-4 lg:mb-3">
         {/* Budget vs Realisasi */}
         <Card title="Budget vs Realisasi">
           <div className="flex flex-col mt-4">
@@ -347,81 +512,90 @@ export default function DashboardClient({
             </div>
           </div>
         </Card>
+      </div>
 
-        {/* Project List */}
-        <Card title="Status Proyek Aktif" action={
-          <Link href="/dashboard/projek" className="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-md">
-            Kelola Proyek
-          </Link>
-        }>
-          <div className="flex flex-col gap-2 h-52 overflow-y-auto custom-scrollbar pr-2 mt-2">
-            {projects.length === 0 ? (
-              <div className="text-center text-sm text-gray-500 py-10 italic">Belum ada proyek.</div>
-            ) : projects.map((p, i) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 hover:border-blue-200 dark:hover:border-slate-500 transition-all shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-slate-700 flex items-center justify-center font-bold text-blue-600 dark:text-blue-400 text-xs border border-blue-100 dark:border-slate-600">
-                    {p.code.substring(0,2)}
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-gray-800 dark:text-gray-100 leading-tight">{p.name}</p>
-                    <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Mulai: {formatDate(p.startDate)}</p>
-                  </div>
-                </div>
-                <div className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                  p.status === 'AKTIF' ? 'bg-green-50 text-green-600 border-green-200 dark:bg-green-900/20 dark:border-green-800' :
-                  p.status === 'SELESAI' ? 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800' :
-                  'bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:border-red-800'
-                }`}>
-                  {p.status}
-                </div>
-              </div>
-            ))}
+      {/* Arus Kas Chart */}
+      <div className="mb-4 lg:mb-3">
+        <Card title="Arus Kas (6 Bulan Terakhir)">
+          <div className="h-[320px] w-full mt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={cashFlowData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={true} stroke="#e2e8f0" className="dark:stroke-slate-700/50" />
+                <XAxis dataKey="month" tick={{fontSize: 11, fill: '#64748b'}} tickMargin={10} axisLine={{stroke: '#cbd5e1'}} tickLine={false} />
+                <YAxis tickFormatter={(val) => formatCompact(val)} tick={{fontSize: 11, fill: '#64748b'}} axisLine={false} tickLine={false} />
+                <Tooltip 
+                   formatter={(value: number) => formatRupiah(value)}
+                   contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
+                   labelStyle={{ fontWeight: 'bold', color: '#1e293b', marginBottom: '8px' }}
+                />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                <Area type="monotone" dataKey="masuk" name="Kas Masuk" fill="url(#colorMasuk)" stroke="#22c55e" strokeWidth={2} fillOpacity={0.2} />
+                <Area type="monotone" dataKey="keluar" name="Kas Keluar" fill="url(#colorKeluar)" stroke="#ef4444" strokeWidth={2} fillOpacity={0.2} />
+                <Line type="monotone" dataKey="bersih" name="Arus Bersih (Kumulatif)" stroke="#1e293b" strokeWidth={2.5} strokeDasharray="5 5" className="dark:stroke-slate-300" dot={false} activeDot={{ r: 6 }} />
+                
+                <defs>
+                  <linearGradient id="colorMasuk" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorKeluar" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+              </ComposedChart>
+            </ResponsiveContainer>
           </div>
         </Card>
       </div>
 
-      {/* Transaksi Terbaru */}
-      <Card title="Transaksi Terbaru" action={
-        <Link href="/dashboard/transaksi" className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
-          Lihat Semua Transaksi &rarr;
-        </Link>
-      }>
-        {recentTransactions.length === 0 ? (
-          <div className="text-center text-sm text-gray-500 py-10 italic">Belum ada transaksi dicatat.</div>
-        ) : (
-          <div className="overflow-x-auto -mx-5 px-5 mt-2">
-            <table className="w-full min-w-[700px]">
-              <thead className="bg-[#f8fafc] dark:bg-slate-800/60 border-y border-gray-200 dark:border-slate-700">
-                <tr>
-                  <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Tanggal</th>
-                  <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Referensi</th>
-                  <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Keterangan</th>
-                  <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Kategori</th>
-                  <th className="px-5 py-3 text-right text-[11px] font-bold text-slate-500 uppercase tracking-wider">Jumlah</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-slate-700/50">
-                {recentTransactions.map((trx) => (
-                  <tr key={trx.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td className="px-5 py-4 whitespace-nowrap text-xs font-medium text-slate-600 dark:text-slate-400">{formatDate(trx.date)}</td>
-                    <td className="px-5 py-4 whitespace-nowrap text-sm font-bold text-slate-800 dark:text-slate-200">{trx.reference}</td>
-                    <td className="px-5 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{trx.description}</td>
-                    <td className="px-5 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${CATEGORY_COLORS[trx.category] || "bg-gray-100 text-gray-700"}`}>
-                        {CATEGORY_LABELS[trx.category] || trx.category}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 whitespace-nowrap text-sm font-bold text-slate-900 dark:text-slate-100 text-right">
-                      {formatRupiah(trx.amount)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
+      {/* Transaksi List Grid */}
+      <div className="grid grid-cols-1 gap-4 lg:gap-3">
+        <div>
+          <Card title="Transaksi Terbaru" action={
+            <Link href="/dashboard/transaksi" className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
+              Lihat Semua Transaksi &rarr;
+            </Link>
+          }>
+            {recentTransactions.length === 0 ? (
+              <div className="text-center text-sm text-gray-500 py-10 italic">Belum ada transaksi dicatat.</div>
+            ) : (
+              <div className="overflow-x-auto -mx-5 px-5 mt-2">
+                <table className="w-full min-w-[700px]">
+                  <thead className="bg-[#f8fafc] dark:bg-slate-800/60 border-y border-gray-200 dark:border-slate-700">
+                    <tr>
+                      <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Tanggal</th>
+                      <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Referensi</th>
+                      <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Keterangan</th>
+                      <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Kategori</th>
+                      <th className="px-5 py-3 text-right text-[11px] font-bold text-slate-500 uppercase tracking-wider">Jumlah</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-slate-700/50">
+                    {recentTransactions.map((trx) => (
+                      <tr key={trx.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td className="px-5 py-4 whitespace-nowrap text-xs font-medium text-slate-600 dark:text-slate-400">{formatDate(trx.date)}</td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm font-bold text-slate-800 dark:text-slate-200">{trx.reference}</td>
+                        <td className="px-5 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{trx.description}</td>
+                        <td className="px-5 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${CATEGORY_COLORS[trx.category] || "bg-gray-100 text-gray-700"}`}>
+                            {CATEGORY_LABELS[trx.category] || trx.category}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm font-bold text-slate-900 dark:text-slate-100 text-right">
+                          {formatRupiah(trx.amount)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+        </div>
+
+
+      </div>
     </div>
   );
 }
