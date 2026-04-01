@@ -3,10 +3,18 @@
 import React, { useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 
 // ─── Helpers ────────────────────────────────────────────────────
 function formatRupiah(num: number) {
   return "Rp " + num.toLocaleString("id-ID");
+}
+
+function formatCompact(num: number) {
+  if (num >= 1000000000) return (num / 1000000000).toFixed(0) + ' M';
+  if (num >= 1000000) return (num / 1000000).toFixed(0) + ' jt';
+  if (num >= 1000) return (num / 1000).toFixed(0) + ' rb';
+  return num.toString();
 }
 
 function formatDate(dateStr: string | null) {
@@ -117,8 +125,10 @@ function Card({ children, className = "", title, action }: { children: React.Rea
 export default function DashboardClient({
   totalRevenue,
   totalExpenses,
+  totalBudget,
   labaBersih,
   totalTransaksi,
+  cashFlowData,
   breakdownData,
   projects,
   recentTransactions,
@@ -128,8 +138,10 @@ export default function DashboardClient({
 }: {
   totalRevenue: number;
   totalExpenses: number;
+  totalBudget: number;
   labaBersih: number;
   totalTransaksi: number;
+  cashFlowData: { month: string; masuk: number; keluar: number; bersih: number }[];
   breakdownData: { label: string; value: number; color: string }[];
   projects: any[];
   recentTransactions: any[];
@@ -197,7 +209,42 @@ export default function DashboardClient({
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      {/* Arus Kas Chart */}
+      <div className="mb-6">
+        <Card title="Arus Kas (6 Bulan Terakhir)">
+          <div className="h-[320px] w-full mt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={cashFlowData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={true} stroke="#e2e8f0" className="dark:stroke-slate-700/50" />
+                <XAxis dataKey="month" tick={{fontSize: 11, fill: '#64748b'}} tickMargin={10} axisLine={{stroke: '#cbd5e1'}} tickLine={false} />
+                <YAxis tickFormatter={(val) => formatCompact(val)} tick={{fontSize: 11, fill: '#64748b'}} axisLine={false} tickLine={false} />
+                <Tooltip 
+                   formatter={(value: number) => formatRupiah(value)}
+                   contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
+                   labelStyle={{ fontWeight: 'bold', color: '#1e293b', marginBottom: '8px' }}
+                />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                <Area type="monotone" dataKey="masuk" name="Kas Masuk" fill="url(#colorMasuk)" stroke="#22c55e" strokeWidth={2} fillOpacity={0.2} />
+                <Area type="monotone" dataKey="keluar" name="Kas Keluar" fill="url(#colorKeluar)" stroke="#ef4444" strokeWidth={2} fillOpacity={0.2} />
+                <Line type="monotone" dataKey="bersih" name="Arus Bersih (Kumulatif)" stroke="#1e293b" strokeWidth={2.5} strokeDasharray="5 5" className="dark:stroke-slate-300" dot={false} activeDot={{ r: 6 }} />
+                
+                <defs>
+                  <linearGradient id="colorMasuk" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorKeluar" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Breakdown Biaya */}
         <Card title="Breakdown Biaya">
           <div className="flex flex-col md:flex-row items-center gap-6 mt-2">
@@ -214,6 +261,60 @@ export default function DashboardClient({
                   <p className="text-xs font-bold text-gray-900 dark:text-gray-100">{formatRupiah(d.value)}</p>
                 </div>
               ))}
+            </div>
+          </div>
+        </Card>
+
+        {/* Budget vs Realisasi */}
+        <Card title="Budget vs Realisasi">
+          <div className="flex flex-col mt-4">
+            <div className="relative pt-2 pb-2 border-b border-gray-300 dark:border-slate-600">
+              {/* Grid lines */}
+              <div className="absolute inset-0 top-2 bottom-0 w-full flex justify-between z-0">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-full border-l border-dashed border-gray-300 dark:border-slate-700 w-0"></div>
+                ))}
+              </div>
+              
+              {/* Bars */}
+              <div className="relative z-10 flex flex-col gap-5 pt-2">
+                <div className="group relative">
+                  <div 
+                    className="h-14 bg-[#e74c3c] transition-all duration-1000 shadow-sm" 
+                    style={{ width: `${Math.max(totalBudget, totalExpenses) > 0 ? (totalBudget / Math.max(totalBudget, totalExpenses)) * 100 : 0}%` }}
+                  ></div>
+                </div>
+                <div className="group relative mb-2">
+                  <div 
+                    className="h-14 bg-[#f1948a] transition-all duration-1000 shadow-sm" 
+                    style={{ width: `${Math.max(totalBudget, totalExpenses) > 0 ? (totalExpenses / Math.max(totalBudget, totalExpenses)) * 100 : 0}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+            
+            {/* X-Axis Labels */}
+            <div className="flex justify-between text-xs text-gray-500 font-medium mt-2 relative">
+              {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
+                const val = Math.max(totalBudget, totalExpenses) * pct;
+                return (
+                  <span key={i} className="w-12 text-center inline-block -translate-x-1/2 first:translate-x-0 first:text-left last:translate-x-0 last:text-right absolute" style={{ left: i === 0 ? '0' : i === 4 ? 'auto' : `${pct * 100}%`, right: i === 4 ? '0' : 'auto' }}>
+                    {formatCompact(val)}
+                  </span>
+                );
+              })}
+            </div>
+
+            {/* Legend */}
+            <div className="flex items-center justify-center gap-8 mt-10">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 bg-[#e74c3c] shadow-sm"></span>
+                <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">Budget</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 bg-[#f1948a] shadow-sm"></span>
+                <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">Realisasi</span>
+              </div>
             </div>
           </div>
         </Card>

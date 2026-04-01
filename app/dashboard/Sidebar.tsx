@@ -12,6 +12,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
   const [companyProfile, setCompanyProfile] = useState<{
     name: string;
     logoUrl: string | null;
@@ -105,7 +106,7 @@ export default function Sidebar() {
 
   return (
     <div
-      className={` bg-gray-100 dark:bg-[#0f172a] text-gray-600 dark:text-gray-300 h-screen transition-all duration-300 flex flex-col shadow-xl border-r border-gray-200 dark:border-gray-800 p-3 pt-5 border-2 m-3 rounded-2xl  ${
+      className={`relative z-50 bg-gray-100 dark:bg-[#0f172a] text-gray-600 dark:text-gray-300 h-screen transition-all duration-300 flex flex-col shadow-xl border-r border-gray-200 dark:border-gray-800 p-3 pt-5 border-2 m-3 rounded-2xl ${
         isExpanded ? "w-64" : "w-20"
       }`}
     >
@@ -236,39 +237,56 @@ export default function Sidebar() {
             </ul>
           </div>
         ))}
+      </nav>
 
-        <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-800">
+      <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-800 shrink-0">
           <ul className="space-y-1">
             {mounted && (
-              <li>
+              <li className="relative">
                 <button
-                  onClick={() =>
-                    setTheme(resolvedTheme === "dark" ? "light" : "dark")
-                  }
-                  className={`flex items-center w-full px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-600 dark:text-gray-400 hover:text-yellow-500 dark:hover:text-yellow-400 transition-colors group mb-1 ${
+                  onClick={() => setThemeDropdownOpen(!themeDropdownOpen)}
+                  className={`flex items-center w-full px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-600 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors group mb-1 ${
                     !isExpanded ? "justify-center" : ""
                   }`}
-                  title={!isExpanded ? "Toggle Theme" : ""}
+                  title={!isExpanded ? "Tema Aplikasi" : ""}
                 >
-                  <span className="text-lg transition-colors group-hover:text-yellow-500 dark:group-hover:text-yellow-400 text-gray-500 dark:text-gray-400">
-                    <Image
-                      src={
-                        resolvedTheme === "dark"
-                          ? "/light_mode.svg"
-                          : "/dark_mode.svg"
-                      }
-                      alt="Toggle Theme"
-                      width={20}
-                      height={20}
-                      className="w-5 h-5 dark:invert"
-                    />
+                  <span className="text-lg transition-colors group-hover:text-blue-500 dark:group-hover:text-blue-400 text-gray-500 dark:text-gray-400 flex shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.813-3.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
+                    </svg>
                   </span>
                   {isExpanded && (
                     <span className="ml-3 truncate text-sm">
-                      {resolvedTheme === "dark" ? "Light Mode" : "Dark Mode"}
+                      Tema Aplikasi
                     </span>
                   )}
                 </button>
+                
+                {themeDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setThemeDropdownOpen(false)}></div>
+                    <div className={`absolute bottom-0 bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 shadow-xl rounded-xl p-1.5 w-40 z-50 ${isExpanded ? "left-full ml-3" : "left-14"}`}>
+                      <button onClick={() => { setTheme('light'); setThemeDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${theme === 'light' ? 'bg-blue-50 dark:bg-slate-700/80 text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                        </svg>
+                        Light Mode
+                      </button>
+                      <button onClick={() => { setTheme('dark'); setThemeDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${theme === 'dark' ? 'bg-blue-50 dark:bg-slate-700/80 text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                        </svg>
+                        Dark Mode
+                      </button>
+                      <button onClick={() => { setTheme('system'); setThemeDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${theme === 'system' ? 'bg-blue-50 dark:bg-slate-700/80 text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" />
+                        </svg>
+                        System
+                      </button>
+                    </div>
+                  </>
+                )}
               </li>
             )}
             <li>
@@ -294,7 +312,6 @@ export default function Sidebar() {
             </li>
           </ul>
         </div>
-      </nav>
     </div>
   );
 }
