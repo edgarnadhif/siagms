@@ -304,7 +304,7 @@ export default function CalendarView() {
                   </button>
                 )}
                 {modalMode !== "VIEW" && (
-                  <button type="submit" disabled={isLoading} className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg font-bold shadow-sm transition-colors text-sm disabled:opacity-70 flex items-center gap-2">
+                  <button type="submit" disabled={isLoading} className="px-4 py-2 bg-[#EA6C00] text-white hover:bg-[#C25500] rounded-lg font-bold shadow-sm transition-colors text-sm disabled:opacity-70 flex items-center gap-2">
                     {isLoading && <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></span>}
                     Simpan
                   </button>

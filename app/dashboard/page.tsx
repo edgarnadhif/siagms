@@ -125,13 +125,13 @@ export default async function DashboardPage(props: {
   }
 
   const breakdownData = [
-    { label: "Biaya Proyek", value: breakdownMap.get("BIAYA_PROYEK") || 0, color: "#f97316" },
+    { label: "Biaya Proyek", value: breakdownMap.get("BIAYA_PROYEK") || 0, color: "#EA6C00" },
     { label: "Biaya Operasional", value: breakdownMap.get("BIAYA_OPERASIONAL") || 0, color: "#ef4444" },
   ].filter(d => d.value > 0);
 
   // If no expense breakdown found, provide an empty base for the UI so it doesn't break
   if (breakdownData.length === 0) {
-    breakdownData.push({ label: "Belum Ada Pengeluaran", value: 1, color: "#e5e7eb" });
+    breakdownData.push({ label: "Belum Ada Pengeluaran", value: 1, color: "#FFF0E6" });
   }
 
   // 4. Projects List

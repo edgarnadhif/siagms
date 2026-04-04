@@ -1,6 +1,5 @@
 import React from "react";
 import CalendarView from "@/components/calendar/CalendarView";
-import Link from "next/link";
 
 export const metadata = {
   title: "Kalender Aktivitas - SIAGMS",
@@ -8,7 +7,7 @@ export const metadata = {
 
 export default function CalendarPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -17,7 +16,7 @@ export default function CalendarPage() {
             Kalender
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Jadwal kegiatan operasional & pengingat sistem
+            Jadwal kegiatan operasional &amp; pengingat sistem
           </p>
         </div>
       </div>

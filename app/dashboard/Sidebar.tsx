@@ -197,18 +197,18 @@ export default function Sidebar() {
                   <li key={item.title}>
                     <Link
                       href={item.href}
-                      className={`flex  items-center  px-2 py-2 rounded-lg transition-all duration-200 group relative ${
+                        className={`flex  items-center  px-2 py-2 rounded-lg transition-all duration-200 group relative ${
                         isActive
-                          ? "bg-red-100 dark:bg-blue-600/20 text-red-600 dark:text-white font-medium"
+                          ? "bg-[#FFF0E6] dark:bg-[#431407] text-[#EA6C00] dark:text-white font-medium"
                           : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
                       } ${!isExpanded ? "justify-center" : ""}`}
                       title={!isExpanded ? item.title : ""}
                     >
                       {isActive && isExpanded && (
-                        <div className="absolute left-0 w-1 h-8 bg-blue-600 dark:bg-blue-500 rounded-r-full -ml-3 opacity-0"></div>
+                        <div className="absolute left-0 w-1 h-8 bg-[#EA6C00] dark:bg-[#F97316] rounded-r-full -ml-3 opacity-0"></div>
                       )}
                       <span
-                        className={`text-lg transition-colors ${isActive ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-100"}`}
+                        className={`text-lg transition-colors ${isActive ? "text-[#EA6C00] dark:text-[#F97316]" : "text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-100"}`}
                       >
                         {isStringIcon ? (
                           <Image
