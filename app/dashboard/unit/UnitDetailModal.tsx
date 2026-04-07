@@ -239,17 +239,17 @@ export default function UnitDetailModal({ unitId, onClose }: UnitDetailModalProp
                       PROSES SERAH TERIMA
                    </button>
                 ) : (
-                   <form action={stAction} className="bg-white dark:bg-slate-800 border-2 border-orange-500/30 p-6 rounded-3xl space-y-4 shadow-xl">
+                   <form action={stAction} className="bg-white dark:bg-slate-800 border-2 border-orange-500/20 p-6 rounded-[24px] space-y-4 shadow-xl">
                       <input type="hidden" name="unitId" value={unitId} />
                       <input type="hidden" name="customerId" value={unit.customerId} />
                       
                       <div>
-                         <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">No. Berita Acara <span className="text-orange-500">*</span></label>
-                         <input type="text" name="handoverNo" required placeholder="Contoh: BA-ST/2026/001" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-sm focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all dark:text-white" />
+                         <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5 ml-1">No. Berita Acara <span className="text-[#EA6C00]">*</span></label>
+                         <input type="text" name="handoverNo" required placeholder="Contoh: BA-ST/2026/001" className="w-full h-11 px-4 bg-slate-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-[10px] text-sm text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all placeholder-gray-400" />
                       </div>
                       <div>
-                         <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Tanggal ST <span className="text-orange-500">*</span></label>
-                         <input type="date" name="date" required defaultValue={new Date().toISOString().split('T')[0]} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-sm focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all dark:text-white" />
+                         <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5 ml-1">Tanggal ST <span className="text-[#EA6C00]">*</span></label>
+                         <input type="date" name="date" required defaultValue={new Date().toISOString().split('T')[0]} className="w-full h-11 px-4 bg-slate-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-[10px] text-sm text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all" />
                       </div>
 
                       {stState?.error && (
@@ -257,12 +257,12 @@ export default function UnitDetailModal({ unitId, onClose }: UnitDetailModalProp
                       )}
 
                       <div className="flex gap-2 pt-2">
-                         <button type="button" onClick={() => setShowSTForm(false)} className="flex-1 py-3 text-sm font-bold text-slate-500 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-2xl transition-all">Batal</button>
-                         <button type="submit" disabled={isStPending} className="flex-[2] py-3 text-sm font-black text-white bg-orange-600 hover:bg-orange-700 rounded-2xl shadow-lg shadow-orange-500/20 transition-all active:scale-95 disabled:opacity-50">
+                         <button type="button" onClick={() => setShowSTForm(false)} className="flex-1 h-11 text-sm font-bold text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-[10px] transition-all">Batal</button>
+                         <button type="submit" disabled={isStPending} className="flex-[2] h-11 text-sm font-black text-white bg-[#EA6C00] hover:bg-[#C25500] rounded-[10px] shadow-lg shadow-orange-500/20 transition-all active:scale-95 disabled:opacity-50">
                             {isStPending ? "Memproses..." : "Konfirmasi ST"}
                          </button>
                       </div>
-                   </form>
+                    </form>
                 )}
 
                 <div className="p-5 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 rounded-3xl">

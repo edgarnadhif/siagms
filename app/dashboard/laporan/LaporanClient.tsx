@@ -113,55 +113,60 @@ export default function LaporanClient({
   const isNeracaBalanced = neracaData.totalAset === (neracaData.totalKewajiban + neracaData.totalEkuitas);
 
   return (
-    <div className="border-2 shadow-xl border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-100 dark:bg-[#0f172a] text-gray-600 dark:text-gray-300 p-6 md:p-8 min-h-screen printable-area">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+    <div className="border-2 shadow-xl border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-100 dark:bg-[#0f172a] text-gray-600 dark:text-gray-300 pt-4 md:p-5 md:pt-5 min-h-screen printable-area">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 px-4 md:px-0">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100">Laporan Keuangan</h1>
-          <p className="text-sm text-slate-500 dark:text-gray-400 mt-1">Laporan Laba Rugi, Neraca & Arus Kas</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Laporan Keuangan</h1>
+          <p className="text-sm text-gray-400 mt-3">Laporan Laba Rugi, Neraca & Arus Kas</p>
         </div>
-        <div className="flex items-center gap-2 no-print">
-          <button onClick={handleExportExcel} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-2">
-            Export Excel
+        <div className="flex flex-wrap items-center gap-2 no-print w-full md:w-auto">
+          <button onClick={handleExportExcel} className="flex-1 md:flex-none px-4 h-11 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[10px] text-sm font-bold shadow-lg shadow-emerald-500/10 transition-all active:scale-95 flex items-center justify-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125h18.75c.621 0 1.125.504 1.125 1.125v1.5m-19.875 0a1.125 1.125 0 001.125 1.125m17.25 0a1.125 1.125 0 001.125-1.125m0 0V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125h-7.5c-.621 0-1.125-.504-1.125-1.125m-8.625-1.125h18.75M12 15.75h.008v.008H12v-.008z" /></svg>
+            Excel
           </button>
-          <button onClick={handleExportPDF} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-2">
-            Export PDF
+          <button onClick={handleExportPDF} className="flex-1 md:flex-none px-4 h-11 bg-red-600 hover:bg-red-700 text-white rounded-[10px] text-sm font-bold shadow-lg shadow-red-500/10 transition-all active:scale-95 flex items-center justify-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+            PDF
           </button>
-          <button onClick={() => window.print()} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-2">
-            Cetak
+          <button onClick={() => window.print()} className="flex-1 md:flex-none px-4 h-11 bg-slate-800 hover:bg-slate-700 text-white rounded-[10px] text-sm font-bold shadow-lg shadow-black/10 transition-all active:scale-95 flex items-center justify-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.844l-.452 2.258A1.745 1.745 0 007.973 18.12h8.054a1.745 1.745 0 001.705-2.018l-.452-2.258m-10.287 0a2.392 2.392 0 010-3.142l.333-.333a2.391 2.391 0 013.141 0l.334.333a2.391 2.391 0 003.142 0l.333-.333a2.391 2.391 0 013.142 0l.333.333a2.391 2.391 0 010 3.142m-10.287 0l8.054-.001" /></svg>
+            Print
           </button>
         </div>
       </div>
 
-      <form onSubmit={handleFilterChange} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 mb-6 shadow-sm no-print">
-        <div className="flex flex-col md:flex-row gap-5">
-          <div className="w-full md:w-56">
-            <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Dari Tanggal</label>
-            <input type="date" name="from" defaultValue={fromDate} className="w-full px-4 py-2 border rounded-lg text-sm dark:bg-slate-900 border-gray-200 dark:border-slate-700" />
+      <form onSubmit={handleFilterChange} className="bg-white dark:bg-slate-800 rounded-[12px] border border-[#E5E7EB] dark:border-slate-700 p-5 mb-6 shadow-sm no-print px-4">
+        <div className="flex flex-col md:flex-row gap-5 items-end">
+          <div className="w-full md:w-48">
+            <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 mb-2 uppercase tracking-wider">Dari Tanggal</label>
+            <input type="date" name="from" defaultValue={fromDate} className="w-full h-11 px-4 rounded-[10px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all" />
           </div>
-          <div className="w-full md:w-56">
-            <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Sampai Tanggal</label>
-            <input type="date" name="to" defaultValue={toDate} className="w-full px-4 py-2 border rounded-lg text-sm dark:bg-slate-900 border-gray-200 dark:border-slate-700" />
+          <div className="w-full md:w-48">
+            <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 mb-2 uppercase tracking-wider">Sampai Tanggal</label>
+            <input type="date" name="to" defaultValue={toDate} className="w-full h-11 px-4 rounded-[10px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all" />
           </div>
-          <div className="flex-1 md:max-w-xs">
-            <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Proyek</label>
-            <select name="project" defaultValue={projectFilter} className="w-full px-4 py-2 border rounded-lg text-sm dark:bg-slate-900 border-gray-200 dark:border-slate-700">
+          <div className="flex-1">
+            <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 mb-2 uppercase tracking-wider">Pilih Proyek</label>
+            <select name="project" defaultValue={projectFilter} className="w-full h-11 px-4 rounded-[10px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all cursor-pointer">
               <option value="">Semua Proyek</option>
               {projects.map((p: any) => (<option key={p.id} value={p.id}>{p.code} — {p.name}</option>))}
             </select>
           </div>
-          <div className="flex items-end">
-            <button type="submit" className="px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg">Filter</button>
-          </div>
+          <button type="submit" className="h-11 px-8 bg-gray-900 hover:bg-black text-white text-sm font-bold rounded-[10px] transition-all active:scale-95 whitespace-nowrap shadow-lg shadow-black/10">
+            Terapkan Filter
+          </button>
         </div>
       </form>
 
-      <div className="flex items-center gap-2 mb-6 no-print">
+      <div className="flex flex-wrap items-center gap-1.5 mb-8 no-print px-4 md:px-0">
         {['laba_rugi', 'neraca', 'arus_kas'].map((tab) => (
           <Link key={tab} href={`?tab=${tab}${fromDate ? `&from=${fromDate}` : ""}${toDate ? `&to=${toDate}` : ""}${projectFilter ? `&project=${projectFilter}` : ""}`}
-            className={`px-5 py-2.5 font-semibold text-sm rounded-lg border flex items-center gap-2 ${
-              activeTab === tab ? "bg-white text-slate-800 border-gray-200 shadow-sm dark:bg-slate-800 dark:text-white" : "border-transparent text-slate-500 hover:bg-gray-100 dark:hover:bg-slate-800"
+            className={`px-6 h-11 flex items-center justify-center text-xs font-black uppercase tracking-widest rounded-full transition-all ${
+              activeTab === tab 
+                ? "bg-[#EA6C00] text-white shadow-lg shadow-orange-500/20" 
+                : "bg-white dark:bg-slate-800 text-gray-400 hover:text-gray-900 dark:hover:text-white border border-transparent hover:border-gray-200 dark:hover:border-slate-700"
             }`}>
-            {tab.replace('_', ' ').toUpperCase()}
+            {tab.replace('_', ' ')}
           </Link>
         ))}
       </div>
