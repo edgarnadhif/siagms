@@ -10,93 +10,193 @@ export default async function LaporanKeuanganPage(props: {
   const projectFilter = searchParams?.project || "";
   const activeTab = searchParams?.tab || "laba_rugi";
 
-  // Build date filter for journal entries
   const dateFilter: any = {};
   if (fromDate) dateFilter.gte = new Date(fromDate);
   if (toDate) dateFilter.lte = new Date(toDate + "T23:59:59");
+  const dateWhereStr = (fromDate || toDate) ? { date: dateFilter } : {};
+  const projectWhereStr = projectFilter ? { transaction: { projectId: projectFilter } } : {};
 
-  // Get all journal entries with account info
+  // 1. Get all journals for the period
   const entries = await prisma.journalEntry.findMany({
-    where: {
-      ...(fromDate || toDate ? { date: dateFilter } : {}),
-      ...(projectFilter
-        ? { transaction: { projectId: projectFilter } }
-        : {}),
-    },
+    where: { ...dateWhereStr, ...projectWhereStr },
     include: {
-      account: {
-        select: { code: true, name: true, type: true, normalBalance: true },
-      },
+      account: { select: { code: true, name: true, type: true, normalBalance: true } },
     },
   });
 
-  // Aggregate by account for Laba Rugi (PENDAPATAN vs BEBAN)
-  const accountBalances = new Map<string, {
-    code: string;
-    name: string;
-    type: string;
-    normalBalance: string;
-    balance: number;
-  }>();
-
+  const balances = new Map<string, number>(); // code -> balance
+  // Helper to calculate exact balances
   for (const entry of entries) {
     const acc = entry.account;
-    const key = acc.code;
-    if (!accountBalances.has(key)) {
-      accountBalances.set(key, {
-        code: acc.code,
-        name: acc.name,
-        type: acc.type,
-        normalBalance: acc.normalBalance,
-        balance: 0,
-      });
-    }
-    const item = accountBalances.get(key)!;
+    const kode = acc.code;
     const debit = Number(entry.debit);
     const credit = Number(entry.credit);
-    // Compute balance based on normal balance
-    if (acc.normalBalance === "DEBIT") {
-      item.balance += debit - credit;
+    let net = 0;
+    if (acc.normalBalance === "DEBIT") net = debit - credit;
+    else net = credit - debit;
+
+    balances.set(kode, (balances.get(kode) || 0) + net);
+  }
+
+  // --- TAHAP 2: LABA RUGI ---
+  // Pendapatan Diakui
+  const stUnits = await prisma.unit.findMany({
+    where: {
+      status: "SERAH_TERIMA",
+      ...(projectFilter ? { projectId: projectFilter } : {})
+    },
+    include: {
+      transactions: {
+        where: {
+          category: { in: ["PENCAIRAN_KPR", "PELUNASAN_CASH"] }
+        }
+      }
+    }
+  });
+
+  let pendapatanPenjualan = 0;
+  for (const unit of stUnits) {
+    const totalTx = unit.transactions.reduce((sum, tx) => sum + Number(tx.amount), 0);
+    if (totalTx > 0) {
+      pendapatanPenjualan += totalTx;
     } else {
-      item.balance += credit - debit;
+      // fallback to 4100 if no transactions are found but it's ST
+      pendapatanPenjualan += Number(unit.price); // Simple fallback, or could get from 4100.
     }
   }
 
-  const allBalances = Array.from(accountBalances.values()).sort((a, b) => a.code.localeCompare(b.code));
+  // Override pendapatanPenjualan if we don't have unit tx, use 4100 directly. 
+  // Let's use 4100 from journals if the unit calculation yields 0, just to be safe.
+  if (pendapatanPenjualan === 0) {
+    pendapatanPenjualan = balances.get("4100") || 0;
+  }
+  
+  const hpp = balances.get("5100") || 0;
+  const labaKotor = pendapatanPenjualan - hpp;
+  
+  const bebanKonstruksi = balances.get("5200") || 0;
+  const bebanMarketing = balances.get("5300") || 0;
+  const bebanGaji = balances.get("5400") || 0;
+  const bebanOperasional = balances.get("5500") || 0;
+  const bebanLainLain = balances.get("5600") || 0;
+  const pendapatanLainLain = balances.get("4200") || 0; // For completion
 
-  // Laba Rugi
-  const pendapatan = allBalances.filter((a) => a.type === "PENDAPATAN");
-  const beban = allBalances.filter((a) => a.type === "BEBAN");
-  const totalPendapatan = pendapatan.reduce((s, a) => s + a.balance, 0);
-  const totalBeban = beban.reduce((s, a) => s + a.balance, 0);
-  const labaBersih = totalPendapatan - totalBeban;
+  const totalPendapatanLR = pendapatanPenjualan + pendapatanLainLain;
+  const totalBebanOperasional = bebanKonstruksi + bebanMarketing + bebanGaji + bebanOperasional + bebanLainLain;
+  const labaBersih = labaKotor - totalBebanOperasional + pendapatanLainLain;
+  
+  const labaRugiData = {
+    pendapatanPenjualan,
+    pendapatanLainLain,
+    totalPendapatanLR,
+    hpp,
+    labaKotor,
+    bebanKonstruksi,
+    bebanMarketing,
+    bebanGaji,
+    bebanOperasional,
+    bebanLainLain,
+    totalBebanOperasional,
+    labaBersih
+  };
 
-  // Hitung Pendapatan Belum Diakui (status diterima)
-  const txDiKredit = await prisma.transaction.aggregate({
+
+  // --- TAHAP 3: NERACA ---
+  const kas = balances.get("1100") || 0;
+  const bank = balances.get("1200") || 0;
+  const piutangPembeli = balances.get("1300") || 0;
+  
+  const akadUnits = await prisma.unit.findMany({
     where: {
-      status_pengakuan: 'diterima',
-      category: { in: ['BOOKING_FEE', 'DOWN_PAYMENT', 'PELUNASAN'] },
+      status: "AKAD",
+      customer: { paymentMethod: "KPR" },
       ...(projectFilter ? { projectId: projectFilter } : {})
     },
+    include: { transactions: true }
+  });
+  
+  let piutangKPR = 0;
+  for (const u of akadUnits) {
+    const paid = u.transactions.reduce((acc, t) => acc + Number(t.amount), 0);
+    piutangKPR += (Number(u.price) - paid);
+  }
+  // Fallback to journal if zero
+  if (piutangKPR === 0) piutangKPR = balances.get("1400") || 0;
+
+  const tersediaUnits = await prisma.unit.aggregate({
+    where: {
+      status: "TERSEDIA",
+      ...(projectFilter ? { projectId: projectFilter } : {})
+    },
+    _sum: { price: true }
+  });
+  const persediaanUnit = Number(tersediaUnits._sum.price || 0);
+
+  const bdk = balances.get("1600") || 0;
+  const tanah = balances.get("1700") || 0;
+  const totalAset = kas + bank + piutangPembeli + piutangKPR + persediaanUnit + bdk + tanah;
+
+  const pendDiterimaDiMuka = balances.get("2100") || 0;
+  const hutangKontraktor = balances.get("2200") || 0;
+  const hutangUsaha = balances.get("2300") || 0;
+  const hutangBank = balances.get("2400") || 0;
+  const totalKewajiban = pendDiterimaDiMuka + hutangKontraktor + hutangUsaha + hutangBank;
+
+  const modalDisetor = balances.get("3100") || 0;
+  const labaDitahan = balances.get("3200") || 0;
+  const totalEkuitas = modalDisetor + labaDitahan + labaBersih;
+
+  const neracaData = {
+    kas, bank, piutangPembeli, piutangKPR, persediaanUnit, bdk, tanah, totalAset,
+    pendDiterimaDiMuka, hutangKontraktor, hutangUsaha, hutangBank, totalKewajiban,
+    modalDisetor, labaDitahan, labaBersih, totalEkuitas
+  };
+
+
+  // --- TAHAP 4: ARUS KAS ---
+  // Aggregate transactions mapping logic
+  const txFilter = {
+    ...(fromDate || toDate ? { date: dateFilter } : {}),
+    ...(projectFilter ? { projectId: projectFilter } : {})
+  };
+
+  const sums = await prisma.transaction.groupBy({
+    by: ['category'],
+    where: txFilter,
     _sum: { amount: true }
   });
-  const pendapatanBelumDiakui = Number(txDiKredit._sum?.amount || 0);
 
-  // Neraca
-  const aset = allBalances.filter((a) => a.type === "ASET");
-  const kewajiban = allBalances.filter((a) => a.type === "KEWAJIBAN");
-  const ekuitas = allBalances.filter((a) => a.type === "EKUITAS");
-  const totalAset = aset.reduce((s, a) => s + a.balance, 0);
-  const totalKewajiban = kewajiban.reduce((s, a) => s + a.balance, 0);
-  const totalEkuitas = ekuitas.reduce((s, a) => s + a.balance, 0);
+  const getSum = (cat: string) => Number(sums.find(s => s.category === cat)?._sum.amount || 0);
 
-  // Get projects for filter
+  const cfOperasiMasuk = getSum('BOOKING_FEE') + getSum('DOWN_PAYMENT') + getSum('PENCAIRAN_KPR') + getSum('PELUNASAN_CASH');
+  const cfOperasiKeluar = getSum('BIAYA_KONSTRUKSI') + getSum('BIAYA_MARKETING') + getSum('BIAYA_GAJI') + getSum('BIAYA_OPERASIONAL') + getSum('LAIN_LAIN');
+  
+  const arusKasData = {
+    operasiMasuk: {
+      bookingFee: getSum('BOOKING_FEE'),
+      downPayment: getSum('DOWN_PAYMENT'),
+      pencairanKPR: getSum('PENCAIRAN_KPR'),
+      pelunasanCash: getSum('PELUNASAN_CASH')
+    },
+    operasiKeluar: {
+      konstruksi: getSum('BIAYA_KONSTRUKSI'),
+      marketing: getSum('BIAYA_MARKETING'),
+      gaji: getSum('BIAYA_GAJI'),
+      operasional: getSum('BIAYA_OPERASIONAL'),
+      lain: getSum('LAIN_LAIN')
+    },
+    kasBersihOperasi: cfOperasiMasuk - cfOperasiKeluar,
+    kasBersihInvestasi: 0,
+    kasBersihPendanaan: 0,
+    saldoAwal: 0, // Simplified, idealnya dihitung semua trx sblm fromDate 
+    saldoAkhir: kas + bank
+  };
+
+
   const projects = await prisma.project.findMany({
     select: { id: true, code: true, name: true },
     orderBy: { name: "asc" },
   });
-
-  // Get company profile
   const company = await prisma.companyProfile.findFirst();
 
   return (
@@ -107,18 +207,9 @@ export default async function LaporanKeuanganPage(props: {
       projectFilter={projectFilter}
       projects={projects}
       companyName={company?.name || "SIAGMS"}
-      pendapatan={pendapatan}
-      beban={beban}
-      totalPendapatan={totalPendapatan}
-      totalBeban={totalBeban}
-      labaBersih={labaBersih}
-      aset={aset}
-      kewajiban={kewajiban}
-      ekuitas={ekuitas}
-      totalAset={totalAset}
-      totalKewajiban={totalKewajiban}
-      totalEkuitas={totalEkuitas}
-      pendapatanBelumDiakui={pendapatanBelumDiakui}
+      labaRugiData={labaRugiData}
+      neracaData={neracaData}
+      arusKasData={arusKasData}
     />
   );
 }

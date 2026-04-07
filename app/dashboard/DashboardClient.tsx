@@ -85,7 +85,7 @@ function DonutChart({
           </Pie>
           {total > 0 && (
             <Tooltip 
-              formatter={(value: number) => formatRupiah(value)}
+              formatter={(value: any) => formatRupiah(Number(value))}
               contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
             />
           )}
@@ -325,7 +325,7 @@ function MiniCalendar({ events, selectedDate, onSelectDate, onNavigate }: {
         view={Views.MONTH}
         views={[Views.MONTH]}
         date={selectedDate}
-        onNavigate={(date) => onNavigate(date)}
+        onNavigate={(date: any) => onNavigate(date)}
         selectable
         dayPropGetter={dayPropGetter}
         eventPropGetter={() => ({ style: { display: 'none' } })}
@@ -358,6 +358,9 @@ export default function DashboardClient({
   pendapatanDiakui,
   unitStats,
   piutangKPR,
+  totalAset,
+  totalKewajiban,
+  totalEkuitas,
 }: {
   totalRevenue: number;
   totalExpenses: number;
@@ -383,6 +386,9 @@ export default function DashboardClient({
     SERAH_TERIMA: number;
   };
   piutangKPR: number;
+  totalAset?: number;
+  totalKewajiban?: number;
+  totalEkuitas?: number;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -483,6 +489,47 @@ export default function DashboardClient({
         />
       </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-3 mb-4 lg:mb-3">
+        <Card title="Ringkasan Laba Rugi" action={<Link href="/dashboard/laporan" className="text-xs text-[#EA6C00] font-bold hover:underline">Lihat Lengkap</Link>}>
+          <div className="flex flex-col gap-3 py-2">
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-slate-500 font-medium">Pendapatan Diakui</span>
+              <span className="font-bold text-slate-800 dark:text-slate-200">{formatRupiah(pendapatanDiakui)}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-slate-500 font-medium">Total Beban</span>
+              <span className="font-bold text-slate-800 dark:text-slate-200">({formatRupiah(totalExpenses)})</span>
+            </div>
+            <div className="flex justify-between items-center text-base pt-3 border-t border-slate-100 dark:border-slate-700">
+              <span className="font-bold text-slate-800 dark:text-white uppercase tracking-wider text-xs">Laba Bersih</span>
+              <span className={`font-black ${labaBersih >= 0 ? "text-emerald-600" : "text-red-500"}`}>{formatRupiah(labaBersih)}</span>
+            </div>
+          </div>
+        </Card>
+
+        <Card title="Neraca Singkat" action={<Link href="/dashboard/laporan?tab=neraca" className="text-xs text-[#EA6C00] font-bold hover:underline">Lihat Detail</Link>}>
+          <div className="flex flex-col gap-3 py-2">
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-slate-500 font-medium">Total Aset</span>
+              <span className="font-bold text-blue-600 dark:text-blue-500">{formatRupiah(totalAset || 0)}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-slate-500 font-medium">Total Kewajiban</span>
+              <span className="font-bold text-orange-600 dark:text-orange-500">{formatRupiah(totalKewajiban || 0)}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-slate-500 font-medium">Total Ekuitas</span>
+              <span className="font-bold text-purple-600 dark:text-purple-500">{formatRupiah(totalEkuitas || 0)}</span>
+            </div>
+            {((totalAset || 0) === ((totalKewajiban || 0) + (totalEkuitas || 0))) ? (
+              <div className="mt-2 text-[11px] font-bold bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded uppercase tracking-wider inline-flex w-fit">Balanced</div>
+            ) : (
+              <div className="mt-2 text-[11px] font-bold bg-red-50 text-red-600 px-3 py-1.5 rounded uppercase tracking-wider inline-flex w-fit">Tidak Balanced</div>
+            )}
+          </div>
+        </Card>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-3 mb-4 lg:mb-3">
         <Card title="Proporsi Pengeluaran" action={<button className="text-xs text-[#EA6C00] font-bold hover:underline">Detail Biaya</button>}>
           <div className="flex flex-col md:flex-row items-center gap-6 py-2">
@@ -576,7 +623,7 @@ export default function DashboardClient({
                 <XAxis dataKey="month" tick={{fontSize: 11, fill: '#64748b'}} tickMargin={10} axisLine={{stroke: '#cbd5e1'}} tickLine={false} />
                 <YAxis tickFormatter={(val) => formatCompact(val)} tick={{fontSize: 11, fill: '#64748b'}} axisLine={false} tickLine={false} />
                 <Tooltip 
-                   formatter={(value: number) => formatRupiah(value)}
+                   formatter={(value: any) => formatRupiah(Number(value))}
                    contentStyle={{ borderRadius: '12px', border: '1px solid #EA6C00', background: '#1a2332', boxShadow: '0 4px 16px rgba(0,0,0,0.3)', fontSize: '12px', color: '#fff' }}
                    labelStyle={{ fontWeight: 'bold', color: '#EA6C00', marginBottom: '8px' }}
                 />

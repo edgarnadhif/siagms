@@ -15,29 +15,47 @@ export default async function DashboardPage(props: {
   const entries = await prisma.journalEntry.findMany({
     where: journalWhere,
     include: {
-      account: { select: { type: true, normalBalance: true } },
+      account: { select: { code: true, type: true, normalBalance: true } },
     },
   });
 
   let totalRevenue = 0;
   let totalExpenses = 0;
+  // Variables for Neraca Singkat
+  let kas = 0, bank = 0, piutangPembeli = 0, bdk = 0, tanah = 0;
+  let pendDiterimaDiMuka = 0, hutangKontraktor = 0, hutangUsaha = 0, hutangBank = 0;
+  let modalDisetor = 0, labaDitahan = 0;
+  let fallbackPendapatan4100 = 0;
 
   for (const entry of entries) {
     const type = entry.account.type;
+    const code = entry.account.code;
     const debit = Number(entry.debit);
     const credit = Number(entry.credit);
-    
-    // Revenue is CREDIT normal
-    if (type === "PENDAPATAN") {
-      totalRevenue += (credit - debit);
-    }
-    // Expense is DEBIT normal
-    if (type === "BEBAN") {
-      totalExpenses += (debit - credit);
-    }
-  }
+    const netDebit = debit - credit;
+    const netCredit = credit - debit;
 
-  const labaBersih = totalRevenue - totalExpenses;
+    if (code === "4100") fallbackPendapatan4100 += netCredit;
+
+    // Expense is DEBIT normal
+    if (code >= "5100" && code <= "5600") {
+      totalExpenses += netDebit;
+    }
+
+    if (code === "1100") kas += netDebit;
+    if (code === "1200") bank += netDebit;
+    if (code === "1300") piutangPembeli += netDebit;
+    if (code === "1600") bdk += netDebit;
+    if (code === "1700") tanah += netDebit;
+
+    if (code === "2100") pendDiterimaDiMuka += netCredit;
+    if (code === "2200") hutangKontraktor += netCredit;
+    if (code === "2300") hutangUsaha += netCredit;
+    if (code === "2400") hutangBank += netCredit;
+
+    if (code === "3100") modalDisetor += netCredit;
+    if (code === "3200") labaDitahan += netCredit;
+  }
 
   // 1.5 Calculate Total Budget
   let totalBudget = 0;
@@ -71,10 +89,35 @@ export default async function DashboardPage(props: {
     if (group.status in unitStats) {
       (unitStats as any)[group.status] = group._count.id;
     }
-    if (group.status === 'SERAH_TERIMA') {
-      pendapatanDiakui = Number(group._sum.price || 0);
+  });
+
+  // Calculate Pendapatan Diakui based on Serah Terima Units
+  const stUnits = await prisma.unit.findMany({
+    where: {
+      status: "SERAH_TERIMA",
+      ...(projectFilter ? { projectId: projectFilter } : {})
+    },
+    include: {
+      transactions: {
+        where: {
+          category: { in: ["PENCAIRAN_KPR", "PELUNASAN_CASH"] }
+        }
+      }
     }
   });
+
+  for (const unit of stUnits) {
+    const totalTx = unit.transactions.reduce((sum, tx) => sum + Number(tx.amount), 0);
+    if (totalTx > 0) {
+      pendapatanDiakui += totalTx;
+    } else {
+      // fallback to 4100 if no transactions are found but it's ST
+      pendapatanDiakui += Number(unit.price); 
+    }
+  }
+  if (pendapatanDiakui === 0) pendapatanDiakui = fallbackPendapatan4100;
+  
+  const labaBersih = pendapatanDiakui - totalExpenses;
 
   // Calculate Piutang KPR (Units with status AKAD where method is KPR)
   const akadUnits = await prisma.unit.findMany({
@@ -90,6 +133,19 @@ export default async function DashboardPage(props: {
     const paid = u.transactions.reduce((acc, t) => acc + Number(t.amount), 0);
     return sum + (Number(u.price) - paid);
   }, 0);
+
+  const tersediaUnits = await prisma.unit.aggregate({
+    where: {
+      status: "TERSEDIA",
+      ...(projectFilter ? { projectId: projectFilter } : {})
+    },
+    _sum: { price: true }
+  });
+  const persediaanUnit = Number(tersediaUnits._sum.price || 0);
+
+  const totalAset = kas + bank + piutangPembeli + piutangKPR + persediaanUnit + bdk + tanah;
+  const totalKewajiban = pendDiterimaDiMuka + hutangKontraktor + hutangUsaha + hutangBank;
+  const totalEkuitas = modalDisetor + labaDitahan + labaBersih;
 
   // 2. Transaksi Terbaru (Limit to 50 for breakdown table processing)
   const transactions = await prisma.transaction.findMany({
@@ -241,6 +297,9 @@ export default async function DashboardPage(props: {
       projectFilter={projectFilter || "all"}
       unitStats={unitStats}
       piutangKPR={piutangKPR}
+      totalAset={totalAset}
+      totalKewajiban={totalKewajiban}
+      totalEkuitas={totalEkuitas}
     />
   );
 }
