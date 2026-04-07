@@ -13,6 +13,7 @@ interface JournalGroup {
   entries: { id: string; accountCode: string; accountName: string; debit: number; credit: number }[];
   totalDebit: number;
   totalCredit: number;
+  isAuto: boolean;
 }
 
 interface Account {
@@ -54,22 +55,22 @@ export default function JurnalUmumClient({
   };
 
   return (
-    <div className="border-2 shadow-xl border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-100 dark:bg-[#0f172a] text-gray-600 dark:text-gray-300 p-6 md:p-8 min-h-screen">
+    <div className="border-2 shadow-xl border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-100 dark:bg-[#0f172a] text-gray-600 dark:text-gray-300 pt-4 md:p-5 md:pt-5 min-h-screen">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 lg:mb-3 px-4 md:px-0">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
             Jurnal Umum
           </h1>
-          <p className="text-sm text-slate-500 dark:text-gray-400 mt-1">
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
             Pencatatan debit dan kredit
           </p>
         </div>
         <Link
           href="?add=true"
-          className="flex items-center gap-2 px-4 py-2 bg-[#0f172a] hover:bg-slate-800 text-white text-sm font-medium rounded-lg transition-colors"
+          className="flex items-center gap-2 px-5 h-10 bg-[#EA6C00] hover:bg-[#C25500] text-white text-sm font-bold rounded-[10px] shadow-lg shadow-orange-500/20 transition-all active:scale-95 ml-auto w-full md:w-auto justify-center md:justify-start"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
           Tambah Jurnal
@@ -77,33 +78,73 @@ export default function JurnalUmumClient({
       </div>
 
       {/* Search */}
-      <form className="relative w-full md:w-[400px] mb-6">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-          </svg>
-        </div>
-        <input
-          type="text"
-          name="search"
-          defaultValue={search}
-          placeholder="Cari jurnal..."
-          className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-slate-800 dark:text-white placeholder-slate-400 transition-colors bg-white"
-        />
-      </form>
+      <div className="sticky top-0 z-30 pt-2 pb-4 bg-gray-100 dark:bg-[#0f172a] -mx-4 md:-mx-0 px-4 md:px-0">
+        <form className="relative w-full">
+          <div className="flex flex-col md:flex-row items-center bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-[12px] shadow-sm focus-within:ring-2 focus-within:ring-[#EA6C00]/10 focus-within:border-[#EA6C00] transition-all p-1.5 min-h-[56px] md:h-14 w-full">
+            {/* Search Input Section */}
+            <div className="flex flex-1 items-center px-3 gap-3 w-full h-full min-h-[44px]">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2.5}
+                stroke="currentColor"
+                className="w-4 h-4 text-gray-400"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              </svg>
+              <input
+                type="text"
+                name="search"
+                defaultValue={search}
+                placeholder="Cari jurnal..."
+                className="w-full bg-transparent border-none focus:ring-0 outline-none text-sm py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 font-medium pr-12"
+              />
+            </div>
 
-      {/* List */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden mb-6">
+            {/* Circular Search Button - Now Absolute inside the right of the bar */}
+            <button
+              type="submit"
+              className="absolute right-3 w-11 h-11 bg-[#EA6C00] hover:bg-[#C25500] text-white rounded-full transition-all shadow-md shadow-orange-500/20 flex items-center justify-center group flex-shrink-0"
+            >
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className="w-5 h-5 group-hover:scale-110 transition-transform" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+                strokeWidth={3}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              </svg>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* List Container */}
+      <div className="bg-white dark:bg-slate-800 rounded-[14px] border-[0.5px] border-[#E5E7EB] dark:border-slate-700/50 shadow-sm overflow-hidden mb-10 mx-4 md:mx-0">
         <div className="px-5 py-4 border-b border-gray-100 dark:border-slate-700/80">
-          <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-            {journals.length} entri jurnal
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            <span className="text-[#EA6C00] font-semibold">{journals.length}</span> entri jurnal
           </p>
         </div>
 
         {journals.length === 0 ? (
-          <div className="p-12 text-center text-gray-400 dark:text-gray-500">
-            <p className="font-medium">Belum ada jurnal.</p>
-            <p className="text-sm mt-1">Klik &quot;Tambah Jurnal&quot; untuk memulai.</p>
+          <div className="py-20 flex flex-col items-center justify-center text-center px-6">
+            <div className="w-16 h-16 bg-[#FFF0E6] dark:bg-orange-900/20 rounded-full flex items-center justify-center mb-4 border border-orange-100 dark:border-orange-900/30">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-[#EA6C00]">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-gray-500 dark:text-gray-300">Belum ada jurnal.</p>
+            <p className="text-xs text-gray-400 mt-1">Klik &quot;Tambah Jurnal&quot; untuk memulai pencatatan.</p>
+            <Link
+              href="?add=true"
+              className="mt-4 px-5 py-2 bg-[#EA6C00] hover:bg-[#C25500] text-white text-xs font-bold rounded-[10px] shadow-md shadow-orange-500/10 transition-all active:scale-95"
+            >
+              Tambah Jurnal
+            </Link>
           </div>
         ) : (
           <div className="divide-y divide-gray-100 dark:divide-slate-700/80">
@@ -115,6 +156,11 @@ export default function JurnalUmumClient({
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-medium text-slate-500 dark:text-slate-400">{journal.reference}</span>
                       <span className="text-sm text-slate-400 dark:text-slate-500">{formatDate(journal.date)}</span>
+                      {journal.isAuto && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800 uppercase tracking-wider">
+                          AUTO
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{journal.description || "-"}</p>
                   </div>

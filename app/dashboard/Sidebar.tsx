@@ -81,9 +81,10 @@ export default function Sidebar() {
       ],
     },
     {
-      title: "Data",
+      title: "Data Master",
       items: [
-        { title: "Konsumen", href: "/dashboard/konsumen", icon: "/group.svg" },
+        { title: "Pelanggan", href: "/dashboard/pelanggan", icon: "/group.svg" },
+        { title: "Master Unit", href: "/dashboard/unit", icon: "/folder.svg" }, // reusing folder icon for unit
         {
           title: "Kuitansi",
           href: "/dashboard/kuitansi",
@@ -111,6 +112,7 @@ export default function Sidebar() {
 
   return (
     <div
+      suppressHydrationWarning
       className={`relative z-50 bg-gray-100 dark:bg-[#0f172a] text-gray-600 dark:text-gray-300 h-screen transition-all duration-300 flex flex-col shadow-xl border-r border-gray-200 dark:border-gray-800 p-3 pt-5 border-2 m-3 rounded-2xl ${
         isExpanded ? "w-64" : "w-20"
       }`}

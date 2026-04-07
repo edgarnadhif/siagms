@@ -16,7 +16,7 @@ model User {
   email     String   @unique
   password  String
   role      Role     @default(USER)
-  createdAt      DateTime        @default(now())
+  createdAt DateTime @default(now())
 
   calendarEvents CalendarEvent[]
 }
@@ -44,22 +44,25 @@ enum ProjectStatus {
   AKTIF
   SELESAI
   BATAL
+  TERJUAL
 }
 
 model Project {
-  id          String        @id @default(cuid())
-  code        String        @unique
-  name        String
-  description String?
-  location    String?
-  startDate   DateTime?
-  endDate     DateTime?
-  status      ProjectStatus @default(AKTIF)
-  budget      Decimal       @default(0)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id           String        @id @default(cuid())
+  code         String        @unique
+  name         String
+  description  String?
+  location     String?
+  startDate    DateTime?
+  endDate      DateTime?
+  status       ProjectStatus @default(AKTIF)
+  budget       Decimal       @default(0)
+  handoverDate DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
   transactions Transaction[]
+  units        Unit[]
 }
 
 // ─── CHART OF ACCOUNTS (Daftar Akun) ────────────────────────────
@@ -85,6 +88,9 @@ model Account {
   normalBalance NormalBalance
   description   String?
   isActive      Boolean       @default(true)
+  parentId      String?
+  parent        Account?      @relation("SubAccount", fields: [parentId], references: [id])
+  children      Account[]     @relation("SubAccount")
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -96,8 +102,29 @@ model Account {
 enum TransactionCategory {
   BOOKING_FEE
   DOWN_PAYMENT
-  BIAYA_PROYEK
+  ANGSURAN_KPR
+  PELUNASAN_CASH
+  PENCAIRAN_KPR
+  BIAYA_KONSTRUKSI
+  BIAYA_MARKETING
   BIAYA_OPERASIONAL
+  BIAYA_GAJI
+  LAIN_LAIN
+}
+
+enum SkemaPembayaran {
+  cash
+  kpr
+}
+
+enum SumberPembayaran {
+  pembeli
+  bank_kpr
+}
+
+enum StatusPengakuan {
+  diterima
+  diakui
 }
 
 model Transaction {
@@ -110,8 +137,19 @@ model Transaction {
   amount      Decimal
   projectId   String?
   project     Project?            @relation(fields: [projectId], references: [id])
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+
+  skema_pembayaran  SkemaPembayaran  @default(cash)
+  sumber_pembayaran SumberPembayaran @default(pembeli)
+  status_pengakuan  StatusPengakuan  @default(diterima)
+
+  unitId String?
+  unit   Unit?   @relation(fields: [unitId], references: [id])
+
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   journalEntries JournalEntry[]
 }
@@ -124,24 +162,93 @@ model JournalEntry {
   date          DateTime
   description   String?
   transactionId String?
-  transaction   Transaction? @relation(fields: [transactionId], references: [id])
+  transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: Cascade)
   accountId     String
   account       Account      @relation(fields: [accountId], references: [id])
+  unitId        String?
+  unit          Unit?        @relation(fields: [unitId], references: [id])
   debit         Decimal      @default(0)
   credit        Decimal      @default(0)
   createdAt     DateTime     @default(now())
+  isAuto        Boolean      @default(false)
 }
 
-// ─── CUSTOMER (Konsumen) ────────────────────────────────────────
+// ─── MASTER DATA: UNIT & PELANGGAN ──────────────────────────────
+
+enum PaymentMethod {
+  KPR
+  CASH
+}
+
+enum UnitStatus {
+  TERSEDIA
+  BOOKING
+  INDENT
+  AKAD
+  LUNAS
+  SERAH_TERIMA
+}
 
 model Customer {
-  id        String   @id @default(cuid())
-  name      String
-  phone     String?
-  email     String?
-  address   String?
+  id            String        @id @default(cuid())
+  customerCode  String        @unique
+  name          String
+  nik           String        @unique
+  phone         String
+  email         String?
+  address       String
+  paymentMethod PaymentMethod
+
+  bankName     String?
+  kprAccountNo String?
+  kprAmount    Decimal?
+  kprTenor     Int?
+  kprAkadDate  DateTime?
+
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  unit         Unit?
+  transactions Transaction[]
+  serahTerimas SerahTerima[]
+}
+
+model Unit {
+  id           String     @id @default(cuid())
+  unitCode     String     @unique
+  blockName    String
+  unitNumber   String
+  type         String
+  landArea     Decimal
+  buildingArea Decimal
+  price        Decimal
+  status       UnitStatus @default(TERSEDIA)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id])
+
+  customerId String?   @unique
+  customer   Customer? @relation(fields: [customerId], references: [id])
+
+  transactions   Transaction[]
+  serahTerimas   SerahTerima[]
+  journalEntries JournalEntry[]
+}
+
+model SerahTerima {
+  id         String   @id @default(cuid())
+  unitId     String
+  unit       Unit     @relation(fields: [unitId], references: [id])
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+  date       DateTime
+  handoverNo String
+  notes      String?
+  createdAt  DateTime @default(now())
 }
 
 // ─── CALENDAR EVENT ──────────────────────────────────────────────
@@ -168,9 +275,9 @@ model CalendarEvent {
   isLocked    Boolean     @default(false)
 
   // Relasi ke User
-  createdBy   Int
-  user        User        @relation(fields: [createdBy], references: [id])
-  
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdBy Int
+  user      User @relation(fields: [createdBy], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

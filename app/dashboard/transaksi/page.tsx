@@ -25,6 +25,7 @@ export default async function TransaksiPage(props: {
     },
     include: {
       project: { select: { code: true, name: true } },
+      journalEntries: { select: { id: true } },
     },
     orderBy: { date: "desc" },
   });
@@ -32,6 +33,16 @@ export default async function TransaksiPage(props: {
   const projects = await prisma.project.findMany({
     where: { status: "AKTIF" },
     select: { id: true, code: true, name: true },
+    orderBy: { name: "asc" },
+  });
+
+  const units = await prisma.unit.findMany({
+    where: { status: { not: "TERSEDIA" } },
+    include: { customer: true },
+    orderBy: { blockName: "asc" },
+  });
+
+  const customers = await prisma.customer.findMany({
     orderBy: { name: "asc" },
   });
 
@@ -46,12 +57,16 @@ export default async function TransaksiPage(props: {
     amount: Number(t.amount),
     projectCode: t.project?.code || "-",
     projectName: t.project?.name || null,
+    projectId: t.projectId,
+    hasJournal: (t as any).journalEntries?.length > 0,
   }));
 
   return (
     <TransaksiClient
       transactions={serialized}
       projects={projects}
+      units={units}
+      customers={customers}
       search={search}
       category={category}
       projectFilter={projectFilter}

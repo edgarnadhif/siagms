@@ -2,7 +2,7 @@
 
 import { Project } from "@prisma/client";
 import { useState } from "react";
-import { deleteProject } from "@/app/actions";
+import { deleteProject, markProjectTerjual } from "@/app/actions";
 import { useRouter } from "next/navigation";
 import EditProjectModal from "./EditProjectModal";
 
@@ -23,6 +23,7 @@ export default function ProjectCard({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isHandover, setIsHandover] = useState(false);
   const router = useRouter();
 
   const profit = totalIncome - totalExpense;
@@ -35,6 +36,8 @@ export default function ProjectCard({
         return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
       case "BATAL":
         return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+      case "TERJUAL":
+        return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
       default:
         return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
     }
@@ -48,6 +51,8 @@ export default function ProjectCard({
         return "Selesai";
       case "BATAL":
         return "Batal";
+      case "TERJUAL":
+        return "Terjual / Diserahterimakan";
       default:
         return status;
     }
@@ -85,15 +90,32 @@ export default function ProjectCard({
     }
   };
 
+  const handleSerahTerima = async () => {
+    if (!confirm("Tandai proyek/unit ini telah diserahterimakan? Ini akan mengakui seluruh pembayaran sebagai Pendapatan di Jurnal dan Laba Rugi.")) return;
+    setIsHandover(true);
+    try {
+      const result = await markProjectTerjual(project.id);
+      if (result?.error) {
+        alert(result.error);
+      } else {
+        router.refresh();
+      }
+    } catch {
+      alert("Terjadi kesalahan sistem");
+    } finally {
+      setIsHandover(false);
+    }
+  };
+
   return (
     <>
-      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-3xl p-5 shadow-sm flex flex-col relative overflow-hidden hover:shadow-md transition-shadow">
+      <div className="bg-white dark:bg-slate-800 border-[0.5px] border-[#F3F4F6] dark:border-slate-700/50 rounded-2xl p-5 shadow-sm flex flex-col relative overflow-hidden transition-all duration-150 ease-in-out hover:shadow-lg hover:border-[1.5px] hover:border-[#EA6C00] group">
         {/* Header */}
-        <div className="flex justify-between items-start mb-4">
+        <div className="flex justify-between items-start mb-5">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/20 flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-[#FFF0E6] dark:bg-[#431407] flex items-center justify-center shrink-0 border border-orange-100 dark:border-orange-900/20">
               <svg
-                className="w-4 h-4 text-red-500"
+                className="w-4 h-4 text-[#EA6C00] dark:text-[#F97316]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -106,148 +128,116 @@ export default function ProjectCard({
                 />
               </svg>
             </div>
-            <h2 className="font-bold text-gray-900 dark:text-white">
+            <h2 className="font-bold text-gray-900 dark:text-white tracking-tight">
               {project.code}
             </h2>
           </div>
           <span
-            className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusStyle(
-              project.status
-            )}`}
+            className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+              project.status === 'AKTIF' ? 'bg-[#DCFCE7] text-[#16A34A]' :
+              project.status === 'TERJUAL' ? 'bg-emerald-100 text-emerald-700' :
+              'bg-[#F3F4F6] text-[#6B7280]'
+            }`}
           >
             {getStatusLabel(project.status)}
           </span>
         </div>
 
         {/* Title & Desc */}
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 leading-tight">
+        <div className="mb-1.5">
+          <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 leading-tight">
             {project.name}
           </h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
-            {project.description || "Deskripsi"}
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 line-clamp-1">
+            {project.description || "Deskripsi Proyek"}
           </p>
         </div>
 
-        {/* Location & Date */}
-        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-4 px-1">
+        {/* Location & Date - RESTORED */}
+        <div className="flex items-center justify-between text-[11px] text-gray-400 dark:text-gray-500 mb-3 px-1">
           <div className="flex items-center gap-1.5">
-            <svg
-              className="w-3.5 h-3.5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-              />
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            <span>{project.location || "Lokasi tidak diketahui"}</span>
+            <span className="truncate max-w-[120px]">{project.location || "Lokasi"}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <svg
-              className="w-3.5 h-3.5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-              />
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
             <span>{formatDate(project.startDate)}</span>
           </div>
         </div>
 
-        {/* Financial Summary */}
-        <div className="bg-gray-200 dark:bg-slate-700/50 rounded-xl p-3 flex justify-between items-center text-center mb-4">
-          <div className="flex-1 border-r border-gray-300 dark:border-slate-600/50 px-1">
-            <p className="text-[10px] uppercase font-semibold text-gray-600 dark:text-gray-400 mb-1">
+        {/* Financial Summary Stat Row */}
+        <div className="bg-[#F9FAFB] dark:bg-white/[0.05] rounded-[10px] p-[10px_16px] flex justify-between items-center text-center mb-3 border border-[#F3F4F6] dark:border-white/5">
+          <div className="flex-1 px-1">
+            <p className="text-[10px] uppercase font-semibold text-gray-400 dark:text-gray-500 mb-1 tracking-widest">
               Pendapatan
             </p>
-            <p className="text-xs font-medium text-gray-800 dark:text-gray-200">
-              Rp {formatCurrency(totalIncome).replace("Rp", "").trim()}
+            <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+              {formatCurrency(totalIncome).split(',')[0]}
             </p>
           </div>
-          <div className="flex-1 border-r border-gray-300 dark:border-slate-600/50 px-1">
-            <p className="text-[10px] uppercase font-semibold text-gray-600 dark:text-gray-400 mb-1">
+          <div className="flex-1 px-1 border-x border-gray-100 dark:border-white/5">
+            <p className="text-[10px] uppercase font-semibold text-gray-400 dark:text-gray-500 mb-1 tracking-widest">
               Pengeluaran
             </p>
-            <p className="text-xs font-medium text-gray-800 dark:text-gray-200">
-              Rp {formatCurrency(totalExpense).replace("Rp", "").trim()}
+            <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+              {formatCurrency(totalExpense).split(',')[0]}
             </p>
           </div>
           <div className="flex-1 px-1">
-            <p className="text-[10px] uppercase font-semibold text-gray-600 dark:text-gray-400 mb-1">
+            <p className="text-[10px] uppercase font-semibold text-gray-400 dark:text-gray-500 mb-1 tracking-widest">
               Profit
             </p>
-            <p className="text-xs font-medium text-gray-800 dark:text-gray-200">
-              Rp {formatCurrency(profit).replace("Rp", "").trim()}
+            <p className="text-sm font-bold text-[#EA6C00]">
+              {formatCurrency(profit).split(',')[0]}
             </p>
           </div>
         </div>
 
-        {/* Transaksi & Budget */}
-        <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-4 px-1">
-          <span>Transaksi : {transactionCount}</span>
+        {/* Transaksi & Budget Footer */}
+        <div className="flex justify-between items-center text-[11px] text-gray-400 mb-3 px-1 font-medium">
+          <span>Transaksi : <span className="text-gray-600 dark:text-gray-400">{transactionCount}</span></span>
           <span>
-            Budget : Rp{" "}
-            {formatCurrency(Number(project.budget)).replace("Rp", "").trim()}
+            Budget : <span className="text-gray-600 dark:text-gray-400">{formatCurrency(Number(project.budget)).split(',')[0]}</span>
           </span>
         </div>
 
-        {/* Divider */}
-        <div className="h-px bg-gray-200 dark:bg-slate-700 -mx-5 mb-4"></div>
+        {/* Divider - Made more subtle */}
+        <div className="h-px bg-gray-50 dark:bg-slate-700/50 -mx-5 mb-4"></div>
 
-        {/* Actions */}
-        <div className="flex justify-end gap-3 px-1 mt-auto">
+        {/* Actions - No background, text + icon only */}
+        <div className="flex justify-end gap-5 px-1 mt-auto">
+          {project.status !== 'TERJUAL' && (
+            <button
+              onClick={handleSerahTerima}
+              disabled={isHandover}
+              className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors disabled:opacity-50"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+              </svg>
+              {isHandover ? "Memproses..." : "Serah Terima"}
+            </button>
+          )}
           <button
             onClick={() => setShowEditModal(true)}
-            className="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#EA6C00] transition-colors"
           >
-            <svg
-              className="w-3.5 h-3.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L5.32 18.67l1.47-3.32a4.5 4.5 0 011.13-1.897l8.94-8.94zM16.862 4.487L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
-              />
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
             Edit
           </button>
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+            className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-red-500 transition-colors"
           >
-            <svg
-              className="w-3.5 h-3.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
-              />
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
             Hapus
           </button>

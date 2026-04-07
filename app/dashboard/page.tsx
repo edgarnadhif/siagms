@@ -49,6 +49,48 @@ export default async function DashboardPage(props: {
     totalBudget = projs.reduce((sum, p) => sum + Number(p.budget), 0);
   }
 
+  // 1.8 Unit Statistics & KPIs
+  const unitSummary = await prisma.unit.groupBy({
+    by: ['status'],
+    where: projectFilter ? { projectId: projectFilter } : {},
+    _count: { id: true },
+    _sum: { price: true }
+  });
+
+  const unitStats = {
+    TERSEDIA: 0,
+    BOOKING: 0,
+    INDENT: 0,
+    AKAD: 0,
+    LUNAS: 0,
+    SERAH_TERIMA: 0,
+  };
+
+  let pendapatanDiakui = 0;
+  unitSummary.forEach(group => {
+    if (group.status in unitStats) {
+      (unitStats as any)[group.status] = group._count.id;
+    }
+    if (group.status === 'SERAH_TERIMA') {
+      pendapatanDiakui = Number(group._sum.price || 0);
+    }
+  });
+
+  // Calculate Piutang KPR (Units with status AKAD where method is KPR)
+  const akadUnits = await prisma.unit.findMany({
+    where: {
+      status: 'AKAD',
+      ...(projectFilter ? { projectId: projectFilter } : {}),
+      customer: { paymentMethod: 'KPR' }
+    },
+    include: { transactions: true }
+  });
+  
+  const piutangKPR = akadUnits.reduce((sum, u) => {
+    const paid = u.transactions.reduce((acc, t) => acc + Number(t.amount), 0);
+    return sum + (Number(u.price) - paid);
+  }, 0);
+
   // 2. Transaksi Terbaru (Limit to 50 for breakdown table processing)
   const transactions = await prisma.transaction.findMany({
     where: projectFilter ? { projectId: projectFilter } : {},
@@ -90,9 +132,9 @@ export default async function DashboardPage(props: {
     if (cashFlowMap.has(key)) {
       const data = cashFlowMap.get(key)!;
       const amount = Number(tx.amount);
-      if (["BOOKING_FEE", "DOWN_PAYMENT"].includes(tx.category)) {
+      if (["BOOKING_FEE", "DOWN_PAYMENT", "ANGSURAN_KPR", "PELUNASAN_CASH", "PENCAIRAN_KPR"].includes(tx.category)) {
         data.masuk += amount;
-      } else if (["BIAYA_PROYEK", "BIAYA_OPERASIONAL"].includes(tx.category)) {
+      } else if (["BIAYA_KONSTRUKSI", "BIAYA_MARKETING", "BIAYA_OPERASIONAL", "BIAYA_GAJI"].includes(tx.category)) {
         data.keluar += amount;
       }
     }
@@ -107,26 +149,47 @@ export default async function DashboardPage(props: {
 
   // 3. Breakdown Biaya / Penerimaan from Transactions
   const breakdownMap = new Map<string, number>();
-  let totalBookingFee = 0;
-  let totalDownPayment = 0;
-  
   for (const trx of transactions) {
     const amount = Number(trx.amount);
-    
     // Sum for breakdown (expense related categories)
-    if (["BIAYA_PROYEK", "BIAYA_OPERASIONAL"].includes(trx.category)) {
+    if (["BIAYA_KONSTRUKSI", "BIAYA_MARKETING", "BIAYA_OPERASIONAL", "BIAYA_GAJI"].includes(trx.category)) {
       const current = breakdownMap.get(trx.category) || 0;
       breakdownMap.set(trx.category, current + amount);
     }
+  }
 
-    // Revenue specifics
-    if (trx.category === "BOOKING_FEE") totalBookingFee += amount;
-    if (trx.category === "DOWN_PAYMENT") totalDownPayment += amount;
+  // Calculate kas diterina & pendapatan diakui from ALL transactions accurately, not just latest 50
+  const txAgg = await prisma.transaction.groupBy({
+    by: ['status_pengakuan', 'category'],
+    where: {
+      category: { in: ["BOOKING_FEE", "DOWN_PAYMENT", "ANGSURAN_KPR", "PELUNASAN_CASH", "PENCAIRAN_KPR"] },
+      ...(projectFilter ? { projectId: projectFilter } : {})
+    },
+    _sum: { amount: true }
+  });
+
+  let kasDiterima = 0;
+  let pendapatanDiakuiTx = 0;
+  let totalBookingFee = 0;
+  let totalDownPayment = 0;
+  let totalPelunasan = 0;
+
+  for (const group of txAgg) {
+    const sumAmt = Number(group._sum.amount || 0);
+    kasDiterima += sumAmt;
+    if (group.status_pengakuan === 'diakui') {
+      pendapatanDiakuiTx += sumAmt;
+    }
+    if (group.category === 'BOOKING_FEE') totalBookingFee += sumAmt;
+    if (group.category === 'DOWN_PAYMENT') totalDownPayment += sumAmt;
+    if (['PELUNASAN_CASH', 'PENCAIRAN_KPR', 'ANGSURAN_KPR'].includes(group.category)) totalPelunasan += sumAmt;
   }
 
   const breakdownData = [
-    { label: "Biaya Proyek", value: breakdownMap.get("BIAYA_PROYEK") || 0, color: "#EA6C00" },
-    { label: "Biaya Operasional", value: breakdownMap.get("BIAYA_OPERASIONAL") || 0, color: "#ef4444" },
+    { label: "Konstruksi", value: breakdownMap.get("BIAYA_KONSTRUKSI") || 0, color: "#EA6C00" },
+    { label: "Marketing", value: breakdownMap.get("BIAYA_MARKETING") || 0, color: "#f97316" },
+    { label: "Gaji", value: breakdownMap.get("BIAYA_GAJI") || 0, color: "#fb923c" },
+    { label: "Operasional", value: breakdownMap.get("BIAYA_OPERASIONAL") || 0, color: "#ef4444" },
   ].filter(d => d.value > 0);
 
   // If no expense breakdown found, provide an empty base for the UI so it doesn't break
@@ -149,8 +212,8 @@ export default async function DashboardPage(props: {
     status: p.status,
   }));
 
-  // Map latest 5 transactions for UI table
-  const recentTransactions = transactions.slice(0, 5).map((trx: any) => ({
+  // Map latest transactions for UI table (pass all 50 from line 57 for pagination)
+  const recentTransactions = transactions.map((trx: any) => ({
     id: trx.id,
     date: trx.date.toISOString(),
     reference: trx.reference,
@@ -172,7 +235,12 @@ export default async function DashboardPage(props: {
       recentTransactions={recentTransactions}
       totalBookingFee={totalBookingFee}
       totalDownPayment={totalDownPayment}
+      totalPelunasan={totalPelunasan}
+      kasDiterima={kasDiterima}
+      pendapatanDiakui={pendapatanDiakui}
       projectFilter={projectFilter || "all"}
+      unitStats={unitStats}
+      piutangKPR={piutangKPR}
     />
   );
 }

@@ -20,6 +20,7 @@ export default async function DaftarAkunPage(props: {
           }
         : {}),
       ...(type ? { type: type as any } : {}),
+      isActive: true, // HANYA TAMPILKAN YANG AKTIF
     },
     orderBy: [{ type: "asc" }, { code: "asc" }],
   });

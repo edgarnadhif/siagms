@@ -32,6 +32,7 @@ export default async function JurnalUmumPage(props: {
     entries: { id: string; accountCode: string; accountName: string; debit: number; credit: number }[];
     totalDebit: number;
     totalCredit: number;
+    isAuto: boolean;
   }>();
 
   for (const entry of entries) {
@@ -43,6 +44,7 @@ export default async function JurnalUmumPage(props: {
         entries: [],
         totalDebit: 0,
         totalCredit: 0,
+        isAuto: (entry as any).isAuto || false,
       });
     }
     const group = groupedMap.get(entry.reference)!;

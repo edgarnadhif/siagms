@@ -39,6 +39,7 @@ export default function LaporanClient({
   totalAset,
   totalKewajiban,
   totalEkuitas,
+  pendapatanBelumDiakui = 0,
 }: {
   activeTab: string;
   fromDate: string;
@@ -57,6 +58,7 @@ export default function LaporanClient({
   totalAset: number;
   totalKewajiban: number;
   totalEkuitas: number;
+  pendapatanBelumDiakui?: number;
 }) {
   const periodLabel = fromDate && toDate ? `${fromDate} s/d ${toDate}` : "Semua Periode";
 
@@ -159,8 +161,12 @@ export default function LaporanClient({
                   ))
                 )}
               </div>
-              <div className="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 flex justify-between items-center text-sm">
-                <span className="font-bold text-slate-600 dark:text-slate-300 uppercase">Total Pendapatan</span>
+              <div className="bg-amber-50/50 dark:bg-amber-900/10 px-4 py-3 flex justify-between items-center text-sm border-t border-gray-100 dark:border-slate-700/50">
+                <span className="text-amber-700 dark:text-amber-500 italic">Pendapatan belum diakui (dalam proses)</span>
+                <span className="font-semibold text-amber-700 dark:text-amber-500">{formatRupiah(pendapatanBelumDiakui)}</span>
+              </div>
+              <div className="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 flex justify-between items-center text-sm border-t border-gray-200 dark:border-slate-700">
+                <span className="font-bold text-slate-600 dark:text-slate-300 uppercase">Total Pendapatan Diakui</span>
                 <span className="font-bold text-slate-800 dark:text-slate-200">{formatRupiah(totalPendapatan)}</span>
               </div>
             </div>

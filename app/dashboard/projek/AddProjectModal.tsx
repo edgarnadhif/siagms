@@ -1,12 +1,22 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState, useRef } from "react";
 import { createProject } from "@/app/actions";
 import { useRouter } from "next/navigation";
+
+const STATUS_OPTIONS = [
+  { value: "AKTIF", label: "Aktif", color: "bg-emerald-500" },
+  { value: "SELESAI", label: "Selesai", color: "bg-blue-500" },
+  { value: "BATAL", label: "Batal", color: "bg-gray-500" },
+];
 
 export default function AddProjectModal() {
   const [state, formAction, isPending] = useActionState(createProject, null);
   const router = useRouter();
+  
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState("AKTIF");
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (state?.success) {
@@ -15,68 +25,151 @@ export default function AddProjectModal() {
     }
   }, [state, router]);
 
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const handleClose = () => {
     router.push("/dashboard/projek");
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg shadow-xl overflow-hidden relative border border-gray-200 dark:border-slate-700">
-        <div className="p-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Tambah Proyek</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[2px] p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-[16px] w-full max-w-lg shadow-2xl overflow-hidden relative border border-gray-100 dark:border-slate-700">
+        <div className="p-8">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-8">Tambah Proyek</h2>
           
-          <form action={formAction} className="space-y-4">
+          <form action={formAction} className="space-y-5">
+            <div className="grid grid-cols-2 gap-5">
+              <div>
+                <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Kode Proyek *</label>
+                <input 
+                  required 
+                  type="text" 
+                  name="code" 
+                  placeholder="e.g. PRJ-001" 
+                  className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all placeholder:text-gray-300" 
+                />
+              </div>
+              
+              <div className="relative" ref={dropdownRef}>
+                <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Status *</label>
+                <input type="hidden" name="status" value={selectedStatus} />
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(!isOpen)}
+                  className={`w-full flex items-center justify-between px-4 py-2.5 border rounded-[10px] text-sm transition-all outline-none ${
+                    isOpen 
+                      ? "border-[#EA6C00] ring-[3px] ring-[#EA6C00]/10 bg-white dark:bg-slate-800" 
+                      : "border-[#E5E7EB] dark:border-slate-600 bg-transparent"
+                  }`}
+                >
+                  <span className="font-semibold text-gray-700 dark:text-gray-200">
+                    {STATUS_OPTIONS.find(opt => opt.value === selectedStatus)?.label}
+                  </span>
+                  <svg
+                    className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+
+                {isOpen && (
+                  <div className="absolute z-[60] left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-[12px] shadow-xl overflow-hidden p-1.5 animate-in slide-in-from-top-2 duration-200">
+                    {STATUS_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => {
+                          setSelectedStatus(option.value);
+                          setIsOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-sm font-semibold rounded-lg transition-colors flex items-center gap-3 ${
+                          selectedStatus === option.value
+                            ? "bg-[#EA6C00] text-white"
+                            : "text-gray-600 dark:text-gray-300 hover:bg-[#FFF0E6] hover:text-[#EA6C00] dark:hover:bg-slate-700"
+                        }`}
+                      >
+                        <div className={`w-2 h-2 rounded-full ${option.color} ${selectedStatus === option.value ? "bg-white" : ""}`} />
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Nama Proyek *</label>
+              <input 
+                required 
+                type="text" 
+                name="name" 
+                placeholder="Masukkan nama proyek" 
+                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all placeholder:text-gray-300" 
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Deskripsi Proyek</label>
+              <textarea 
+                name="description" 
+                placeholder="Tambahkan detail proyek (opsional)" 
+                rows={3} 
+                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all resize-none placeholder:text-gray-300" 
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Kode Proyek *</label>
-                <input required type="text" name="code" placeholder="Masukan" className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-red-500 outline-none transition-shadow" />
-              </div>
-              <div className="relative">
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Status *</label>
-                <select required name="status" className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-red-500 appearance-none outline-none transition-shadow">
-                  <option value="AKTIF" className="text-gray-900">Aktif</option>
-                  <option value="SELESAI" className="text-gray-900">Selesai</option>
-                  <option value="BATAL" className="text-gray-900">Batal</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-400 top-5">
-                  <svg className="fill-current w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Nama Proyek *</label>
-              <input required type="text" name="name" placeholder="Masukan" className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-red-500 outline-none transition-shadow" />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Deskripsi Proyek</label>
-              <textarea name="description" placeholder="Optional" rows={3} className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-red-500 outline-none transition-shadow resize-none"></textarea>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[10px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Tanggal Mulai</label>
-                <input type="date" name="startDate" className="w-full px-2 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-xs bg-transparent text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-red-500 outline-none transition-shadow" />
+                <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Tanggal Mulai</label>
+                <input 
+                  type="date" 
+                  name="startDate" 
+                  className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all" 
+                />
               </div>
               <div>
-                <label className="block text-[10px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Budget (Rp)</label>
-                <input type="number" name="budget" placeholder="Masukan" className="w-full px-2 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-xs bg-transparent text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-red-500 outline-none transition-shadow" />
+                <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Budget (Rp)</label>
+                <input 
+                  type="number" 
+                  name="budget" 
+                  placeholder="Nominal budget" 
+                  className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all placeholder:text-gray-300" 
+                />
               </div>
             </div>
 
             {state?.error && (
-              <div className="text-red-500 text-xs font-medium mt-2 p-2 bg-red-50 dark:bg-red-900/30 rounded border border-red-100 dark:border-red-800">
+              <div className="text-red-500 text-xs font-semibold mt-2 p-3 bg-red-50 dark:bg-red-900/10 rounded-[10px] border border-red-100 dark:border-red-900/20">
                 {state.error}
               </div>
             )}
 
-            <div className="flex justify-end gap-3 pt-5 mt-6 border-t border-gray-100 dark:border-slate-700">
-              <button type="button" onClick={handleClose} disabled={isPending} className="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:bg-slate-700 dark:text-gray-200 dark:border-slate-600 dark:hover:bg-slate-600 transition-colors disabled:opacity-50">
+            <div className="flex justify-end gap-3 pt-6 mt-8 border-t border-gray-100 dark:border-slate-700">
+              <button 
+                type="button" 
+                onClick={handleClose} 
+                disabled={isPending} 
+                className="px-6 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 bg-white dark:bg-transparent border border-[#E5E7EB] rounded-[10px] hover:bg-gray-50 transition-all active:scale-95 disabled:opacity-50"
+              >
                 Batal
               </button>
-              <button type="submit" disabled={isPending} className="px-5 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 focus:ring-2 focus:ring-red-400 focus:outline-none transition-all disabled:opacity-50">
-                {isPending ? "Menyimpan..." : "Simpan"}
+              <button 
+                type="submit" 
+                disabled={isPending} 
+                className="px-8 py-2.5 text-sm font-bold text-white bg-[#EA6C00] hover:bg-[#C25500] rounded-[10px] shadow-lg shadow-orange-500/20 transition-all active:scale-95 disabled:opacity-50"
+              >
+                {isPending ? "Menyimpan..." : "Simpan Proyek"}
               </button>
             </div>
           </form>

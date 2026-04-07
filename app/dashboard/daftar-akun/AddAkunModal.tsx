@@ -9,6 +9,32 @@ export default function AddAkunModal() {
   const [state, formAction, isPending] = useActionState(createAccount, null);
   const router = useRouter();
 
+  const [code, setCode] = React.useState("");
+  const [type, setType] = React.useState("");
+  const [normalBalance, setNormalBalance] = React.useState("DEBIT");
+
+  const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Hanya izinkan angka max 4 digit
+    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+    setCode(val);
+
+    if (val.length > 0) {
+      const firstDigit = val[0];
+      if (firstDigit === '1') { setType("ASET"); setNormalBalance("DEBIT"); }
+      else if (firstDigit === '2') { setType("KEWAJIBAN"); setNormalBalance("KREDIT"); }
+      else if (firstDigit === '3') { setType("EKUITAS"); setNormalBalance("KREDIT"); }
+      else if (firstDigit === '4') { setType("PENDAPATAN"); setNormalBalance("KREDIT"); }
+      else if (firstDigit === '5') { setType("BEBAN"); setNormalBalance("DEBIT"); }
+    }
+  };
+
+  const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setType(val);
+    if (val === "ASET" || val === "BEBAN") setNormalBalance("DEBIT");
+    else if (val === "KEWAJIBAN" || val === "EKUITAS" || val === "PENDAPATAN") setNormalBalance("KREDIT");
+  };
+
   useEffect(() => {
     if (state?.success) {
       router.push("/dashboard/daftar-akun");
@@ -45,7 +71,11 @@ export default function AddAkunModal() {
                   type="text"
                   name="code"
                   required
-                  placeholder="Contoh: 1-1000"
+                  value={code}
+                  onChange={handleCodeChange}
+                  pattern="^[1-5]\d{3}$"
+                  title="Kode harus 4 digit angka (1100 - 5999)"
+                  placeholder="Contoh: 1100"
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
                 />
               </div>
@@ -56,6 +86,8 @@ export default function AddAkunModal() {
                 <select
                   name="type"
                   required
+                  value={type}
+                  onChange={handleTypeChange}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none outline-none transition-shadow"
                   style={{
                     backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E")`,
@@ -66,11 +98,11 @@ export default function AddAkunModal() {
                   }}
                 >
                   <option value="">Pilih tipe</option>
-                  <option value="ASET">Aset</option>
-                  <option value="KEWAJIBAN">Kewajiban</option>
-                  <option value="EKUITAS">Ekuitas</option>
-                  <option value="PENDAPATAN">Pendapatan</option>
-                  <option value="BEBAN">Beban</option>
+                  <option value="ASET">Aset (1xxx)</option>
+                  <option value="KEWAJIBAN">Kewajiban (2xxx)</option>
+                  <option value="EKUITAS">Ekuitas (3xxx)</option>
+                  <option value="PENDAPATAN">Pendapatan (4xxx)</option>
+                  <option value="BEBAN">Beban (5xxx)</option>
                 </select>
               </div>
             </div>
@@ -95,6 +127,8 @@ export default function AddAkunModal() {
               <select
                 name="normalBalance"
                 required
+                value={normalBalance}
+                onChange={(e) => setNormalBalance(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none outline-none transition-shadow"
                 style={{
                   backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E")`,

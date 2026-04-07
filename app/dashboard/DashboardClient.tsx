@@ -18,8 +18,8 @@ const rbcLocalizer = dateFnsLocalizer({
 });
 
 // ─── Helpers ────────────────────────────────────────────────────
-function formatRupiah(num: number) {
-  return "Rp " + num.toLocaleString("id-ID");
+function formatRupiah(num: number | undefined | null) {
+  return "Rp " + (num || 0).toLocaleString("id-ID");
 }
 
 function formatCompact(num: number) {
@@ -188,10 +188,10 @@ function SummaryCard({
 }: { title: string; value: string; subtitle: string; icon: React.ReactNode; accent?: boolean; }) {
   return (
     <div className={cn(
-      "rounded-2xl p-5 flex  flex-col justify-between relative overflow-hidden transition-all duration-300 group shadow-sm",
+      "rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden transition-all duration-300 group shadow-sm",
       accent
         ? "bg-[#18202f] text-white"
-        : "bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-gray-100"
+        : "bg-white dark:bg-slate-800 border-[0.5px] border-[#E5E7EB] dark:border-slate-700 text-gray-900 dark:text-gray-100"
     )}>
       <div className="flex items-center justify-between mb-3">
         <span className={cn("text-xs font-semibold uppercase tracking-widest", accent ? "text-slate-100" : "text-gray-500 dark:text-gray-400")}>
@@ -211,7 +211,7 @@ function SummaryCard({
 
 function Card({ children, className = "", title, action }: { children: React.ReactNode; className?: string; title?: string; action?: React.ReactNode; }) {
   return (
-    <div className={cn("bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-5 shadow-sm", className)}>
+    <div className={cn("bg-white dark:bg-slate-800 rounded-[14px] border-[0.5px] border-[#E5E7EB] dark:border-slate-700 p-5 shadow-sm", className)}>
       {(title || action) && (
         <div className="flex items-center justify-between mb-4 border-b border-gray-100 dark:border-slate-700 pb-3">
           {title && <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">{title}</h3>}
@@ -287,14 +287,14 @@ function MiniCalendar({ events, selectedDate, onSelectDate, onNavigate }: {
     return (
       <button 
         type="button"
-        className={`relative flex items-center justify-center mx-auto transition-all text-xs font-semibold hover:shadow-xs w-7 h-7 rounded-lg ${
+        className={`relative flex items-center justify-center mx-auto transition-all text-xs font-semibold hover:shadow-xs w-7 h-7 ${
           isSelected 
-            ? "bg-[#EA6C00] text-white!" 
+            ? "bg-[#EA6C00] text-white rounded-lg" 
             : isToday 
-              ? "bg-[rgba(234,108,0,0.1)] dark:bg-[rgba(234,108,0,0.2)] text-[#EA6C00]! outline outline-[1.5px] outline-[#EA6C00] outline-offset-1" 
+              ? "bg-[#FFF0E6] border-2 border-[#EA6C00] text-[#EA6C00] rounded-[8px]" 
               : bg 
-                ? "bg-[#FFF0E6] dark:bg-[rgba(234,108,0,0.15)] text-gray-800 dark:text-[#E5E7EB]!" 
-                : "text-gray-800 dark:text-[#E5E7EB]!"
+                ? "bg-[#FFF0E6] dark:bg-[rgba(234,108,0,0.15)] text-gray-800 dark:text-[#E5E7EB]! rounded-lg" 
+                : "text-gray-800 dark:text-[#E5E7EB]! rounded-lg"
         }`}
       >
         {label}
@@ -327,16 +327,12 @@ function MiniCalendar({ events, selectedDate, onSelectDate, onNavigate }: {
         date={selectedDate}
         onNavigate={(date) => onNavigate(date)}
         selectable
-        onSelectSlot={({ start }) => onSelectDate(start)}
         dayPropGetter={dayPropGetter}
-        eventPropGetter={eventPropGetter}
+        eventPropGetter={() => ({ style: { display: 'none' } })}
         components={{ 
-          toolbar: MiniToolbar,
-          month: {
-            dateHeader: CustomDateHeader
-          }
+          toolbar: (props: any) => <MiniToolbar label={props.label} onNavigate={props.onNavigate} />,
+          month: { dateHeader: CustomDateHeader }
         }}
-        popup={false}
         style={{ height: 280 }}
       />
     </div>
@@ -356,7 +352,12 @@ export default function DashboardClient({
   recentTransactions,
   totalBookingFee,
   totalDownPayment,
+  totalPelunasan,
   projectFilter,
+  kasDiterima,
+  pendapatanDiakui,
+  unitStats,
+  piutangKPR,
 }: {
   totalRevenue: number;
   totalExpenses: number;
@@ -369,7 +370,19 @@ export default function DashboardClient({
   recentTransactions: any[];
   totalBookingFee: number;
   totalDownPayment: number;
+  totalPelunasan: number;
   projectFilter: string;
+  kasDiterima: number;
+  pendapatanDiakui: number;
+  unitStats: {
+    TERSEDIA: number;
+    BOOKING: number;
+    INDENT: number;
+    AKAD: number;
+    LUNAS: number;
+    SERAH_TERIMA: number;
+  };
+  piutangKPR: number;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -377,6 +390,40 @@ export default function DashboardClient({
 
   const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [itemsPerPageOpen, setItemsPerPageOpen] = useState(false);
+  const itemsPerPageRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (itemsPerPageRef.current && !itemsPerPageRef.current.contains(event.target as Node)) {
+        setItemsPerPageOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const totalPages = Math.ceil(recentTransactions.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedTransactions = recentTransactions.slice(startIndex, startIndex + itemsPerPage);
+
+  const getPageNumbers = () => {
+    const pages = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 3) {
+        pages.push(1, 2, 3, 4, "...", totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1, "...", totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages);
+      }
+    }
+    return pages;
+  };
 
   const fetchCalendarEvents = useCallback((date: Date) => {
     const month = date.getMonth() + 1;
@@ -395,7 +442,6 @@ export default function DashboardClient({
     fetchCalendarEvents(selectedDate);
   }, [fetchCalendarEvents, selectedDate]);
 
-  // Filter events for the selected date
   const selectedDateEvents = calendarEvents.filter(evt => {
     const evtDate = new Date(evt.date);
     return evtDate.getFullYear() === selectedDate.getFullYear()
@@ -403,22 +449,8 @@ export default function DashboardClient({
       && evtDate.getDate() === selectedDate.getDate();
   });
 
-  // Switch project filter
-  const handleProjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    // Kept for backward compatibility if used anywhere else in the file, otherwise can safely be omitted.
-    const params = new URLSearchParams(searchParams.toString());
-    const val = e.target.value;
-    if (val === "all") {
-      params.delete("project");
-    } else {
-      params.set("project", val);
-    }
-    router.replace(`${pathname}?${params.toString()}`);
-  };
-
   return (
     <div className="border-2 shadow-xl border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-100 dark:bg-[#0f172a] text-gray-600 dark:text-gray-300 pt-4 md:p-5 md:pt-5 min-h-screen">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
@@ -429,271 +461,112 @@ export default function DashboardClient({
           selectedProject={projectFilter}
           onSelect={(val) => {
             const params = new URLSearchParams(searchParams.toString());
-            if (val === "all") {
-              params.delete("project");
-            } else {
-              params.set("project", val);
-            }
+            if (val === "all") params.delete("project");
+            else params.set("project", val);
             router.replace(`${pathname}?${params.toString()}`);
           }}
         />
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-3 mb-4 lg:mb-3">
-        <SummaryCard title="Total Pendapatan" value={formatRupiah(totalRevenue)} subtitle="Saldo normal Kredit" accent
+        <SummaryCard title="Kas Diterima" value={formatRupiah(kasDiterima)} subtitle="DP + Booking + KPR Cair" accent
+          icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>}
+        />
+        <SummaryCard title="Pendapatan Diakui" value={formatRupiah(pendapatanDiakui)} subtitle="Nilai unit Lunas / Serah Terima"
           icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" /></svg>}
         />
-        <SummaryCard title="Total Beban/Biaya" value={formatRupiah(totalExpenses)} subtitle="Saldo normal Debit"
+        <SummaryCard title="Total Beban/Biaya" value={formatRupiah(totalExpenses)} subtitle="HPP + Operasional"
           icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>}
         />
-        <SummaryCard title="Laba Bersih" value={formatRupiah(labaBersih)} subtitle="Pendapatan - Beban"
-          icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>}
-        />
-        <SummaryCard title="Total Transaksi" value={totalTransaksi.toLocaleString("id-ID")} subtitle="Transaksi Kas Terdaftar"
-          icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
+        <SummaryCard title="Piutang KPR" value={formatRupiah(piutangKPR)} subtitle="Tagihan KPR yang belum cair"
+          icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>}
         />
       </div>
-      <div className=" grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-3 mb-4 lg:mb-3">
-        {/* Breakdown Biaya */}
-        <Card title="Breakdown Biaya">
-          <div className="flex flex-col items-center gap-6 mt-2">
-            <div className="flex-shrink-0">
-              <DonutChart data={breakdownData} size={200} />
-            </div>
-            <div className="flex flex-col gap-3 w-full">
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-3 mb-4 lg:mb-3">
+        <Card title="Proporsi Pengeluaran" action={<button className="text-xs text-[#EA6C00] font-bold hover:underline">Detail Biaya</button>}>
+          <div className="flex flex-col md:flex-row items-center gap-6 py-2">
+            <DonutChart data={breakdownData} />
+            <div className="flex-1 w-full space-y-2.5">
               {breakdownData.map((d, i) => (
-                <div key={i} className="flex justify-between items-center py-2 border-b border-gray-50 dark:border-slate-700/50 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors px-2 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm" style={{ backgroundColor: d.color }} />
-                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{d.label}</span>
+                <div key={i} className="flex items-center justify-between group">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-2 h-2 rounded-full ring-2 ring-white dark:ring-slate-800" style={{ backgroundColor: d.color }}></div>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{d.label}</span>
                   </div>
-                  <p className="text-xs font-bold text-gray-900 dark:text-gray-100">{formatRupiah(d.value)}</p>
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{formatRupiah(d.value)}</span>
                 </div>
               ))}
             </div>
           </div>
         </Card>
 
-        {/* Kalender Widget */}
-        <div className="lg:col-span-1">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-5 shadow-sm h-[520px] flex flex-col overflow-hidden">
-            {/* Card Header */}
-            <div className="flex items-center justify-between mb-4 border-b border-gray-100 dark:border-slate-700 pb-3 flex-shrink-0">
-              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">Kalender</h3>
-              <Link href="/dashboard/calendar" className="text-xs font-semibold text-[#EA6C00] hover:text-[#C25500] dark:text-[#F97316] dark:hover:text-[#FFF0E6] transition-colors border border-[#EA6C00] dark:border-[#F97316] px-3 py-1.5 rounded-md hover:bg-[#FFF0E6] dark:hover:bg-[#431407]">
-                Lihat semua
-              </Link>
-            </div>
-            {/* Calendar grid — fixed, no shrink */}
-            <div className="flex-shrink-0">
-              <MiniCalendar
-                events={calendarEvents}
-                selectedDate={selectedDate}
-                onSelectDate={(date) => setSelectedDate(date)}
-                onNavigate={(date) => {
-                  setSelectedDate(date);
-                  fetchCalendarEvents(date);
-                }}
-              />
-            </div>
-            {/* Agenda for selected date */}
-            <div className="mt-4 flex-1 flex flex-col min-h-0">
-              <h4 className="text-xs font-bold text-gray-500 dark:text-[#6B7280] uppercase tracking-wider mb-2 flex-shrink-0">Agenda Hari Ini</h4>
-              {selectedDateEvents.length === 0 ? (
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="text-center text-sm text-gray-400 italic">Tidak ada agenda untuk tanggal ini.</div>
-                </div>
-              ) : (
-                <div className="flex flex-col" style={{ gap: '10px' }}>
-                  {selectedDateEvents.slice(0, 2).map((evt, i) => {
-                    const startStr = new Date(evt.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-                    const endStr = evt.endDate ? new Date(evt.endDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : null;
-                    const timeRange = endStr ? `${startStr} - ${endStr}` : startStr;
-                    
-                    const dotColor = evt.type === 'AUTO' || evt.isLocked ? '#E24B4A' : evt.status === 'DONE' ? '#639922' : '#EA6C00';
-                    return (
-                      <div key={i} className="flex items-center justify-between">
-                        {/* Left: dot + name + date */}
-                        <div className="flex items-start gap-2 min-w-0">
-                          <span
-                            className="flex-shrink-0 rounded-full mt-1.5"
-                            style={{ width: '6px', height: '6px', background: dotColor }}
-                          />
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-medium text-gray-800 dark:text-[#E5E7EB] truncate">{evt.title}</span>
-                          </div>
-                        </div>
-                        {/* Right: time range */}
-                        <span className="text-[10px] font-medium text-gray-400 dark:text-[#6B7280] flex-shrink-0 ml-2">{timeRange}</span>
-                      </div>
-                    );
-                  })}
-                  {selectedDateEvents.length > 2 && (
-                    <Link
-                      href={`/dashboard/calendar?date=${format(selectedDate, 'yyyy-MM-dd')}`}
-                      className="text-xs font-semibold text-[#EA6C00] dark:text-[#F97316] mt-2 hover:underline text-center block w-full"
-                    >
-                      Selengkapnya ({selectedDateEvents.length - 2})
-                    </Link>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Project List */}
-        <div className="lg:col-span-1">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-5 shadow-sm h-[520px] flex flex-col overflow-hidden">
-            {/* Card Header */}
-            <div className="flex items-center justify-between mb-4 border-b border-gray-100 dark:border-slate-700 pb-3 flex-shrink-0">
-              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">Status Proyek Aktif</h3>
-              <Link href="/dashboard/projek" className="text-xs font-semibold text-[#EA6C00] hover:text-[#C25500] dark:text-[#F97316] dark:hover:text-[#FFF0E6] transition-colors border border-[#EA6C00] dark:border-[#F97316] px-3 py-1.5 rounded-md hover:bg-[#FFF0E6] dark:hover:bg-[#431407]">
-                Kelola Proyek
-              </Link>
-            </div>
-            {/* List with fixed height to fit into flex-col card */}
-            <div className="flex-1 flex flex-col min-h-0">
-              <div className="flex flex-col gap-2 overflow-y-auto custom-scrollbar pr-1">
-                {projects.length === 0 ? (
-                  <div className="text-center text-sm text-gray-500 py-10 italic">Belum ada proyek.</div>
-                ) : projects.slice(0, 5).map((p, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 hover:border-[#EA6C00] dark:hover:border-[#F97316] transition-all shadow-sm group">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-[#FFF0E6] dark:bg-[#431407] flex items-center justify-center font-bold text-[#EA6C00] dark:text-[#F97316] text-xs border border-orange-100 dark:border-[#EA6C00]/40">
-                        {p.code.substring(0,2)}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-gray-800 dark:text-gray-100 leading-tight">{p.name}</p>
-                        <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Mulai: {formatDate(p.startDate)}</p>
-                      </div>
-                    </div>
-                    <div className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                      p.status === 'AKTIF' ? 'bg-green-50 text-green-600 border-green-200 dark:bg-green-900/20 dark:border-green-800' :
-                      p.status === 'SELESAI' ? 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800' :
-                      'bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:border-red-800'
-                    }`}>
-                      {p.status}
-                    </div>
+        <Card title="Status Stok Unit" action={<Link href="/dashboard/unit" className="text-xs text-[#EA6C00] font-bold hover:underline">Master Unit</Link>}>
+          <div className="flex flex-col md:flex-row items-center gap-6 py-2">
+            <DonutChart data={[
+              { label: "Tersedia", value: unitStats.TERSEDIA, color: "#10b981" },
+              { label: "Booking", value: unitStats.BOOKING, color: "#3b82f6" },
+              { label: "Proses Akad", value: unitStats.AKAD, color: "#f59e0b" },
+              { label: "Lunas", value: unitStats.LUNAS, color: "#a855f7" },
+              { label: "Serah Terima", value: unitStats.SERAH_TERIMA, color: "#64748b" },
+            ]} />
+            <div className="flex-1 w-full space-y-2.5">
+              {[
+                { label: "Tersedia", value: unitStats.TERSEDIA, color: "#10b981" },
+                { label: "Booking/Indent", value: unitStats.BOOKING + unitStats.INDENT, color: "#3b82f6" },
+                { label: "Akad", value: unitStats.AKAD, color: "#f59e0b" },
+                { label: "Lunas", value: unitStats.LUNAS, color: "#a855f7" },
+                { label: "Terjual (ST)", value: unitStats.SERAH_TERIMA, color: "#64748b" },
+              ].map((d, i) => (
+                <div key={i} className="flex items-center justify-between group">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-2 h-2 rounded-full ring-2 ring-white dark:ring-slate-800" style={{ backgroundColor: d.color }}></div>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{d.label}</span>
                   </div>
-                ))}
-              </div>
-              
-              {projects.length > 5 && (
-                <div className="mt-4 pt-3 text-center border-t border-gray-50 dark:border-slate-700/50">
-                  <Link
-                    href="/dashboard/projek"
-                    className="text-xs font-semibold text-[#EA6C00] dark:text-[#F97316] hover:underline"
-                  >
-                    Selengkapnya ({projects.length - 5})
-                  </Link>
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{d.value} Unit</span>
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-3 mb-4 lg:mb-3">
-        {/* Budget vs Realisasi */}
-        <Card title="Budget vs Realisasi">
-          <div className="flex flex-col gap-5 mt-4">
-            {/* Budget Bar */}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between text-xs font-semibold text-gray-500 dark:text-gray-400">
-                <span>Budget</span>
-                <span className="text-gray-700 dark:text-gray-200 font-bold">{formatCompact(totalBudget)}</span>
-              </div>
-              <div className="relative h-8 w-full bg-gray-100 dark:bg-slate-700/50 rounded-full overflow-hidden" style={{ opacity: 0.95 }}>
-                <div
-                  className="absolute left-0 top-0 h-full rounded-full transition-all duration-1000"
-                  style={{
-                    width: `${Math.max(totalBudget, totalExpenses) > 0 ? (totalBudget / Math.max(totalBudget, totalExpenses)) * 100 : 0}%`,
-                    background: '#EA6C00',
-                    boxShadow: '0 2px 8px rgba(234,108,0,0.25)'
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Realisasi Bar */}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between text-xs font-semibold text-gray-500 dark:text-gray-400">
-                <span>Realisasi</span>
-                <span className="text-gray-700 dark:text-gray-200 font-bold">{formatCompact(totalExpenses)}</span>
-              </div>
-              <div className="relative h-8 w-full bg-gray-100 dark:bg-slate-700/50 rounded-full overflow-hidden" style={{ opacity: 0.95 }}>
-                <div
-                  className="absolute left-0 top-0 h-full rounded-full border-2 border-[#EA6C00] transition-all duration-1000"
-                  style={{
-                    width: `${Math.max(totalBudget, totalExpenses) > 0 ? (totalExpenses / Math.max(totalBudget, totalExpenses)) * 100 : 0}%`,
-                    background: '#FFF0E6',
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Legend */}
-            <div className="flex items-center gap-8 mt-2">
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full" style={{ background: '#EA6C00' }}></span>
-                <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">Budget</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full border-2 border-[#EA6C00]" style={{ background: '#FFF0E6' }}></span>
-                <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">Realisasi</span>
-              </div>
-            </div>
-
-            {/* Summary */}
-            <div className="mt-1 flex items-center justify-between px-1">
-              <span className="text-xs text-gray-400">
-                {totalExpenses > totalBudget
-                  ? <span className="text-red-500 font-semibold">Melebihi budget sebesar {formatCompact(totalExpenses - totalBudget)}</span>
-                  : <span className="text-[#EA6C00] font-semibold">Sisa budget: {formatCompact(totalBudget - totalExpenses)}</span>
-                }
-              </span>
-              <span className="text-xs font-bold text-gray-500">
-                {Math.max(totalBudget, totalExpenses) > 0
-                  ? `${Math.round((totalExpenses / totalBudget) * 100)}%`
-                  : '0%'} terpakai
-              </span>
+              ))}
             </div>
           </div>
         </Card>
 
-        {/* Ringkasan Penerimaan */}
-        <Card title="Ringkasan Transaksi Masuk">
-          <div className="flex flex-col gap-1 mt-2">
-            <div className="flex items-center justify-between p-[10px_12px] hover:bg-[#FFF0E6] dark:hover:bg-[#431407] rounded-lg transition-all group">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#FFF0E6] dark:bg-[#431407] flex items-center justify-center">
-                  <svg className="w-4 h-4 text-[#EA6C00] dark:text-[#F97316]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>
+        <Card title="Agenda Proyek" action={<Link href="/dashboard/calendar" className="text-xs text-[#EA6C00] font-bold hover:underline">Full Agenda</Link>}>
+          <div className="py-2">
+             <MiniCalendar 
+               events={calendarEvents} 
+               selectedDate={selectedDate} 
+               onSelectDate={setSelectedDate}
+               onNavigate={setSelectedDate}
+             />
+             <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700">
+                <div className="flex items-start gap-3">
+                   <div className="w-8 h-8 rounded-lg bg-[#EA6C00]/10 flex items-center justify-center text-[#EA6C00] shrink-0 font-bold text-xs">
+                      {selectedDate.getDate()}
+                   </div>
+                   <div className="flex-1">
+                      <p className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">{format(selectedDate, 'eeee, dd MMM yyyy', { locale: idLocale })}</p>
+                      <div className="mt-2 space-y-2">
+                        {selectedDateEvents.length > 0 ? (
+                          selectedDateEvents.map((evt, idx) => (
+                            <div key={idx} className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-900/50 rounded-lg group">
+                               <div className="flex items-center gap-2">
+                                  <div className={`w-1.5 h-1.5 rounded-full ${evt.status === 'DONE' ? 'bg-emerald-500' : 'bg-[#EA6C00]'}`}></div>
+                                  <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400 line-clamp-1">{evt.title}</span>
+                               </div>
+                               <span className="text-[10px] text-slate-400 font-bold">{evt.time}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-[10px] text-slate-400 italic">Tidak ada agenda hari ini</p>
+                        )}
+                      </div>
+                   </div>
                 </div>
-                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Total Booking Fee</span>
-              </div>
-              <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{formatRupiah(totalBookingFee)}</span>
-            </div>
-            <div className="flex items-center justify-between p-[10px_12px] hover:bg-[#FFF0E6] dark:hover:bg-[#431407] rounded-lg transition-all group">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#FFF0E6] dark:bg-[#431407] flex items-center justify-center">
-                  <svg className="w-4 h-4 text-[#EA6C00] dark:text-[#F97316]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
-                </div>
-                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Total Down Payment</span>
-              </div>
-              <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{formatRupiah(totalDownPayment)}</span>
-            </div>
-            
-            <div className="mt-4 bg-[#0f172a] dark:bg-slate-900 rounded-xl p-4 flex items-center justify-between shadow-sm">
-              <span className="text-sm font-bold text-slate-300">Total Kas Masuk (BF+DP)</span>
-              <span className="text-lg font-bold text-white">{formatRupiah(totalBookingFee + totalDownPayment)}</span>
-            </div>
+             </div>
           </div>
         </Card>
       </div>
 
-      {/* Arus Kas Chart */}
       <div className="mb-4 lg:mb-3">
         <Card title="Arus Kas (6 Bulan Terakhir)">
           <div className="h-[320px] w-full mt-4">
@@ -751,7 +624,7 @@ export default function DashboardClient({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#F3F4F6] dark:divide-slate-700/50">
-                    {recentTransactions.map((trx) => (
+                    {paginatedTransactions.map((trx) => (
                       <tr key={trx.id} className="hover:bg-[#FFF0E6] dark:hover:bg-[#431407] transition-all duration-150 group">
                         <td className="px-5 py-4 whitespace-nowrap text-xs font-medium text-slate-600 dark:text-slate-400">{formatDate(trx.date)}</td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm font-bold text-slate-800 dark:text-slate-200">{trx.reference}</td>
@@ -768,6 +641,99 @@ export default function DashboardClient({
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {/* Pagination UI */}
+            {recentTransactions.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-[#F3F4F6] dark:border-slate-700/50 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="text-sm text-gray-500 dark:text-gray-400 order-2 md:order-1">
+                  Total Transaksi: <span className="font-bold text-gray-900 dark:text-white">{recentTransactions.length}</span>
+                </div>
+                
+                <div className="flex items-center gap-1 order-1 md:order-2">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 text-gray-400 hover:text-[#EA6C00] disabled:opacity-30 disabled:hover:text-gray-400 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  
+                  {getPageNumbers().map((num, idx) => (
+                    num === "..." ? (
+                      <span key={`dots-${idx}`} className="px-3 py-1 text-gray-400">...</span>
+                    ) : (
+                      <button
+                        key={`page-${num}`}
+                        onClick={() => setCurrentPage(num as number)}
+                        className={`w-8 h-8 rounded-lg text-sm font-bold transition-all ${
+                          currentPage === num
+                            ? "bg-[#FFF0E6] text-[#EA6C00] border border-[#EA6C00]"
+                            : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700"
+                        }`}
+                      >
+                        {num}
+                      </button>
+                    )
+                  ))}
+
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="p-2 text-gray-400 hover:text-[#EA6C00] disabled:opacity-30 disabled:hover:text-gray-400 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-3 order-3">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Show:</span>
+                  <div className="relative" ref={itemsPerPageRef}>
+                    <button
+                      type="button"
+                      onClick={() => setItemsPerPageOpen(!itemsPerPageOpen)}
+                      className="flex items-center gap-2 px-2 py-1 min-w-[50px] justify-between border border-[#EA6C00] rounded-lg text-xs font-bold text-[#EA6C00] bg-white dark:bg-slate-800 transition-all active:scale-95"
+                    >
+                      <span>{itemsPerPage}</span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className={`w-3 h-3 transition-transform duration-200 ${itemsPerPageOpen ? "rotate-180" : ""}`}
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+
+                    {itemsPerPageOpen && (
+                      <div className="absolute z-50 bottom-full left-0 mb-2 w-[60px] bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-[10px] shadow-lg overflow-hidden flex flex-col p-1 animate-in slide-in-from-bottom-2 duration-200">
+                        {[5, 10, 20].map((val) => (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => {
+                              setItemsPerPage(val);
+                              setCurrentPage(1);
+                              setItemsPerPageOpen(false);
+                            }}
+                            className={`text-center py-1.5 text-xs font-bold rounded-md transition-all ${
+                              itemsPerPage === val
+                                ? "bg-[#EA6C00] text-white"
+                                : "text-[#374151] dark:text-gray-300 hover:bg-[#FFF0E6] dark:hover:bg-orange-900/30 hover:text-[#EA6C00]"
+                            }`}
+                          >
+                            {val}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
           </Card>

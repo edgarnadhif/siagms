@@ -71,6 +71,17 @@ export default async function LaporanKeuanganPage(props: {
   const totalBeban = beban.reduce((s, a) => s + a.balance, 0);
   const labaBersih = totalPendapatan - totalBeban;
 
+  // Hitung Pendapatan Belum Diakui (status diterima)
+  const txDiKredit = await prisma.transaction.aggregate({
+    where: {
+      status_pengakuan: 'diterima',
+      category: { in: ['BOOKING_FEE', 'DOWN_PAYMENT', 'PELUNASAN'] },
+      ...(projectFilter ? { projectId: projectFilter } : {})
+    },
+    _sum: { amount: true }
+  });
+  const pendapatanBelumDiakui = Number(txDiKredit._sum?.amount || 0);
+
   // Neraca
   const aset = allBalances.filter((a) => a.type === "ASET");
   const kewajiban = allBalances.filter((a) => a.type === "KEWAJIBAN");
@@ -107,6 +118,7 @@ export default async function LaporanKeuanganPage(props: {
       totalAset={totalAset}
       totalKewajiban={totalKewajiban}
       totalEkuitas={totalEkuitas}
+      pendapatanBelumDiakui={pendapatanBelumDiakui}
     />
   );
 }

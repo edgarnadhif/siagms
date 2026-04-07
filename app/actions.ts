@@ -309,6 +309,66 @@ export async function deleteAccount(accountId: string) {
 
 // ─── TRANSACTION (Transaksi) ────────────────────────────────
 
+export async function updateTransaction(prevState: any, formData: FormData) {
+  const id = formData.get('id') as string
+  const reference = formData.get('reference') as string
+  const dateStr = formData.get('date') as string
+  const description = formData.get('description') as string
+  const note = formData.get('note') as string
+  const category = formData.get('category') as string
+  const amountStr = formData.get('amount') as string
+  const projectId = formData.get('projectId') as string
+  const skema_pembayaran = (formData.get('skema_pembayaran') as string) || 'cash'
+  const sumber_pembayaran = (formData.get('sumber_pembayaran') as string) || 'pembeli'
+  const status_pengakuan = (formData.get('status_pengakuan') as string) || 'diterima'
+
+  if (!id || !reference || !dateStr || !description || !category || !amountStr) {
+    return { error: 'Semua data wajib diisi' }
+  }
+
+  const date = new Date(dateStr)
+  const amount = parseFloat(amountStr.replace(/[^\d.-]/g, ''))
+
+  if (isNaN(amount) || amount <= 0) {
+    return { error: 'Jumlah harus berupa angka positif' }
+  }
+
+  try {
+    const transaction = await prisma.transaction.update({
+      where: { id },
+      data: {
+        reference,
+        date,
+        description,
+        note: note || null,
+        category: category as any,
+        amount,
+        projectId: projectId || null,
+        skema_pembayaran: skema_pembayaran as any,
+        sumber_pembayaran: sumber_pembayaran as any,
+        status_pengakuan: status_pengakuan as any,
+      }
+    })
+
+    // Hapus jurnal otomatis lama dan buat yang baru
+    await prisma.journalEntry.deleteMany({
+      where: { transactionId: id, isAuto: true }
+    });
+    await createAutoJournal(transaction);
+
+    revalidatePath('/dashboard/transaksi')
+    revalidatePath('/dashboard/jurnal-umum')
+    revalidatePath('/dashboard/buku-besar')
+    revalidatePath('/dashboard')
+    return { success: true }
+  } catch (err: any) {
+    if (err?.code === 'P2002') {
+      return { error: 'Nomor referensi sudah digunakan oleh transaksi lain' }
+    }
+    return { error: 'Terjadi kesalahan sistem: ' + err?.message }
+  }
+}
+
 export async function createTransaction(prevState: any, formData: FormData) {
   const reference = formData.get('reference') as string
   const dateStr = formData.get('date') as string
@@ -317,6 +377,11 @@ export async function createTransaction(prevState: any, formData: FormData) {
   const category = formData.get('category') as string
   const amountStr = formData.get('amount') as string
   const projectId = formData.get('projectId') as string
+  const skema_pembayaran = (formData.get('skema_pembayaran') as string) || 'cash'
+  const sumber_pembayaran = (formData.get('sumber_pembayaran') as string) || 'pembeli'
+  const status_pengakuan = (formData.get('status_pengakuan') as string) || 'diterima'
+  const unitId = formData.get('unitId') as string
+  const customerId = formData.get('customerId') as string
 
   if (!reference || !dateStr || !description || !category || !amountStr) {
     return { error: 'Referensi, Tanggal, Keterangan, Kategori, dan Jumlah wajib diisi' }
@@ -329,8 +394,17 @@ export async function createTransaction(prevState: any, formData: FormData) {
     return { error: 'Jumlah harus berupa angka positif' }
   }
 
+  // Determine unit status update based on category
+  const unitStatusMap: Record<string, string> = {
+    BOOKING_FEE: 'BOOKING',
+    DOWN_PAYMENT: 'INDENT',
+    PENCAIRAN_KPR: 'LUNAS',
+    PELUNASAN_CASH: 'LUNAS',
+  };
+  const newUnitStatus = category ? unitStatusMap[category] : null;
+
   try {
-    await prisma.transaction.create({
+    const transaction = await prisma.transaction.create({
       data: {
         reference,
         date,
@@ -339,11 +413,29 @@ export async function createTransaction(prevState: any, formData: FormData) {
         category: category as any,
         amount,
         projectId: projectId || null,
+        skema_pembayaran: skema_pembayaran as any,
+        sumber_pembayaran: sumber_pembayaran as any,
+        status_pengakuan: status_pengakuan as any,
+        unitId: unitId || null,
+        customerId: customerId || null,
       }
-    })
+    });
+
+    // Auto-update unit status
+    if (unitId && newUnitStatus) {
+      await prisma.unit.update({
+        where: { id: unitId },
+        data: { status: newUnitStatus as any }
+      });
+    }
+
+    await createAutoJournal(transaction);
 
     revalidatePath('/dashboard/transaksi')
+    revalidatePath('/dashboard/jurnal-umum')
+    revalidatePath('/dashboard/buku-besar')
     revalidatePath('/dashboard')
+    revalidatePath('/dashboard/unit')
     return { success: true }
   } catch (err: any) {
     if (err?.code === 'P2002') {
@@ -369,10 +461,128 @@ export async function deleteTransaction(transactionId: string) {
     })
 
     revalidatePath('/dashboard/transaksi')
+    revalidatePath('/dashboard/jurnal-umum')
+    revalidatePath('/dashboard/buku-besar')
     revalidatePath('/dashboard')
     return { success: true }
   } catch (err: any) {
     return { error: 'Terjadi kesalahan sistem: ' + err?.message }
+  }
+}
+
+export async function deleteTransactions(transactionIds: string[]) {
+  if (!transactionIds || transactionIds.length === 0) {
+    return { error: 'Tidak ada transaksi yang dipilih' }
+  }
+
+  try {
+    // Delete related journal entries first
+    await prisma.journalEntry.deleteMany({
+      where: { transactionId: { in: transactionIds } },
+    })
+
+    await prisma.transaction.deleteMany({
+      where: { id: { in: transactionIds } },
+    })
+
+    revalidatePath('/dashboard/transaksi')
+    revalidatePath('/dashboard/jurnal-umum')
+    revalidatePath('/dashboard/buku-besar')
+    revalidatePath('/dashboard')
+    return { success: true }
+  } catch (err: any) {
+    return { error: 'Terjadi kesalahan sistem: ' + err?.message }
+  }
+}
+
+// ─── AUTO JOURNAL HELPER ────────────────────────────────────────
+
+const ACCOUNTS_TEMPLATE = {
+  bank:             { code: '1200', name: 'Bank',                              type: 'ASET',       normalBalance: 'DEBIT'  },
+  pendapatanMuka:   { code: '2100', name: 'Pendapatan Diterima di Muka',       type: 'KEWAJIBAN',  normalBalance: 'KREDIT' },
+  pendapatan:       { code: '4100', name: 'Pendapatan Penjualan Unit',         type: 'PENDAPATAN', normalBalance: 'KREDIT' },
+  bebanKonstruksi:  { code: '5200', name: 'Beban Konstruksi',                  type: 'BEBAN',      normalBalance: 'DEBIT'  },
+  bebanMarketing:   { code: '5300', name: 'Beban Marketing & Penjualan',       type: 'BEBAN',      normalBalance: 'DEBIT'  },
+  bebanGaji:        { code: '5400', name: 'Beban Gaji & Upah',                 type: 'BEBAN',      normalBalance: 'DEBIT'  },
+  bebanOperasional: { code: '5500', name: 'Beban Operasional Kantor',          type: 'BEBAN',      normalBalance: 'DEBIT'  },
+};
+
+async function ensureAccount(templateKey: keyof typeof ACCOUNTS_TEMPLATE) {
+  const tpl = ACCOUNTS_TEMPLATE[templateKey];
+  let acc = await prisma.account.findFirst({
+    where: { OR: [{ code: tpl.code }, { name: { contains: tpl.name, mode: 'insensitive' } }] }
+  });
+  if (!acc) {
+    acc = await prisma.account.create({
+      data: { code: tpl.code, name: tpl.name, type: tpl.type as any, normalBalance: tpl.normalBalance as any, isActive: true }
+    });
+  }
+  return acc;
+}
+
+async function createAutoJournal(trans: any) {
+  let entries: { accountId: string; debit: number; credit: number }[] = [];
+  const bank = await ensureAccount('bank');
+  const amount = Number(trans.amount);
+  const defaultDesc = `Auto Journal - ${trans.description}`;
+
+  switch (trans.category) {
+    case 'BOOKING_FEE':
+    case 'DOWN_PAYMENT':
+    case 'ANGSURAN_KPR': {
+      const pMuka = await ensureAccount('pendapatanMuka');
+      entries.push({ accountId: bank.id, debit: amount, credit: 0 });
+      entries.push({ accountId: pMuka.id, debit: 0, credit: amount });
+      break;
+    }
+    case 'PENCAIRAN_KPR':
+    case 'PELUNASAN_CASH': {
+      const pend = await ensureAccount('pendapatan');
+      entries.push({ accountId: bank.id, debit: amount, credit: 0 });
+      entries.push({ accountId: pend.id, debit: 0, credit: amount });
+      break;
+    }
+    case 'BIAYA_KONSTRUKSI': {
+      const bKons = await ensureAccount('bebanKonstruksi');
+      entries.push({ accountId: bKons.id, debit: amount, credit: 0 });
+      entries.push({ accountId: bank.id, debit: 0, credit: amount });
+      break;
+    }
+    case 'BIAYA_MARKETING': {
+      const bMkt = await ensureAccount('bebanMarketing');
+      entries.push({ accountId: bMkt.id, debit: amount, credit: 0 });
+      entries.push({ accountId: bank.id, debit: 0, credit: amount });
+      break;
+    }
+    case 'BIAYA_GAJI': {
+      const bGaji = await ensureAccount('bebanGaji');
+      entries.push({ accountId: bGaji.id, debit: amount, credit: 0 });
+      entries.push({ accountId: bank.id, debit: 0, credit: amount });
+      break;
+    }
+    case 'BIAYA_OPERASIONAL': {
+      const bOps = await ensureAccount('bebanOperasional');
+      entries.push({ accountId: bOps.id, debit: amount, credit: 0 });
+      entries.push({ accountId: bank.id, debit: 0, credit: amount });
+      break;
+    }
+    default:
+      break;
+  }
+
+  if (entries.length > 0) {
+    await prisma.journalEntry.createMany({
+      data: entries.map(e => ({
+        reference: trans.reference,
+        date: trans.date,
+        description: defaultDesc,
+        transactionId: trans.id,
+        accountId: e.accountId,
+        debit: e.debit,
+        credit: e.credit,
+        isAuto: true
+      }))
+    });
   }
 }
 
@@ -447,5 +657,176 @@ export async function deleteJournalEntriesByReference(reference: string) {
     return { success: true }
   } catch (err: any) {
     return { error: 'Terjadi kesalahan sistem: ' + err?.message }
+  }
+}
+
+// ─── REVENUE RECOGNITION (Pengakuan Pendapatan) ─────────────────────────
+
+export async function markProjectTerjual(projectId: string) {
+  if (!projectId) {
+    return { error: 'ID proyek tidak valid' }
+  }
+
+  try {
+    const proj = await prisma.project.findUnique({ where: { id: projectId } })
+    if (!proj) return { error: 'Proyek tidak ditemukan' }
+    if (proj.status === 'TERJUAL') return { error: 'Proyek sudah diserahterimakan (TERJUAL)' }
+
+    // Hitung total kas masuk untuk proyek ini
+    const { _sum } = await prisma.transaction.aggregate({
+      where: {
+        projectId,
+        category: { in: ['BOOKING_FEE', 'DOWN_PAYMENT', 'PELUNASAN'] }
+      },
+      _sum: { amount: true }
+    });
+
+    const totalMasuk = Number(_sum.amount || 0);
+
+    // Update status_pengakuan transaksi terkait menjadi 'diakui'
+    await prisma.transaction.updateMany({
+      where: {
+        projectId,
+        category: { in: ['BOOKING_FEE', 'DOWN_PAYMENT', 'PELUNASAN'] }
+      },
+      data: { status_pengakuan: 'diakui' }
+    });
+
+    // Update status proyek
+    await prisma.project.update({
+      where: { id: projectId },
+      data: { 
+        status: 'TERJUAL',
+        handoverDate: new Date()
+      }
+    });
+
+    if (totalMasuk > 0) {
+      // Create journal entry for revenue recognition
+      const pMuka = await ensureAccount('pendapatanMuka');
+      const pPenjualan = await ensureAccount('pendapatan');
+      
+      const reference = `REV-${proj.code}-${Date.now().toString().slice(-4)}`;
+      
+      await prisma.journalEntry.createMany({
+        data: [
+          {
+            reference,
+            date: new Date(),
+            description: `Auto Journal - Pengakuan Pendapatan (Serah Terima) ${proj.code}`,
+            accountId: pMuka.id,
+            debit: totalMasuk,
+            credit: 0,
+            isAuto: true,
+            transactionId: null
+          },
+          {
+            reference,
+            date: new Date(),
+            description: `Auto Journal - Pengakuan Pendapatan (Serah Terima) ${proj.code}`,
+            accountId: pPenjualan.id,
+            debit: 0,
+            credit: totalMasuk,
+            isAuto: true,
+            transactionId: null
+          }
+        ]
+      });
+    }
+
+    revalidatePath('/dashboard/projek');
+    revalidatePath('/dashboard/transaksi');
+    revalidatePath('/dashboard/jurnal-umum');
+    revalidatePath('/dashboard/buku-besar');
+    revalidatePath('/dashboard');
+    return { success: true };
+  } catch (err: any) {
+    return { error: 'Terjadi kesalahan sistem: ' + err?.message };
+  }
+}
+
+// ─── SERAH TERIMA UNIT ACTION ───────────────────────────────────
+
+export async function serahTerimaUnit(prevState: any, formData: FormData) {
+  const unitId = formData.get('unitId') as string;
+  const customerId = formData.get('customerId') as string;
+  const handoverNo = formData.get('handoverNo') as string;
+  const dateStr = formData.get('date') as string;
+
+  if (!unitId || !customerId || !handoverNo || !dateStr) {
+    return { error: 'Semua data serah terima harus diisi' };
+  }
+
+  const date = new Date(dateStr);
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Get Unit details
+      const unit = await tx.unit.findUnique({
+        where: { id: unitId },
+        include: { project: true }
+      });
+
+      if (!unit) throw new Error('Unit tidak ditemukan');
+
+      // 2. Create SerahTerima record
+      const st = await tx.serahTerima.create({
+        data: {
+          handoverNo,
+          date,
+          unitId,
+          customerId,
+          notes: `Serah Terima Unit ${unit.unitCode}`,
+        }
+      });
+
+      // 3. Update Unit status
+      await tx.unit.update({
+        where: { id: unitId },
+        data: { status: 'SERAH_TERIMA' }
+      });
+
+      // 4. Create Revenue Recognition Journal
+      // pMuka: 2100 Pendapatan Diterima di Muka
+      // pend: 4100 Pendapatan Penjualan Unit
+      const pMuka = await ensureAccount('pendapatanMuka');
+      const pend = await ensureAccount('pendapatan');
+      const amount = Number(unit.price);
+
+      await tx.journalEntry.createMany({
+        data: [
+          {
+            reference: handoverNo,
+            date,
+            description: `Pengakuan Pendapatan - ST Unit ${unit.unitCode}`,
+            accountId: pMuka.id,
+            debit: amount,
+            credit: 0,
+            isAuto: true,
+            unitId: unitId,
+          },
+          {
+            reference: handoverNo,
+            date,
+            description: `Pengakuan Pendapatan - ST Unit ${unit.unitCode}`,
+            accountId: pend.id,
+            debit: 0,
+            credit: amount,
+            isAuto: true,
+            unitId: unitId,
+          }
+        ]
+      });
+
+      return st;
+    });
+
+    revalidatePath('/dashboard/unit');
+    revalidatePath('/dashboard/transaksi');
+    revalidatePath('/dashboard/jurnal-umum');
+    revalidatePath('/dashboard');
+    return { success: true };
+  } catch (err: any) {
+    return { error: 'Gagal melakukan serah terima: ' + err.message };
   }
 }
