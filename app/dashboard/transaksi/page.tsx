@@ -1,9 +1,11 @@
 import { prisma } from "@/lib/db";
+import { requireAuth } from "@/lib/auth";
 import TransaksiClient from "./TransaksiClient";
 
 export default async function TransaksiPage(props: {
   searchParams?: Promise<{ search?: string; category?: string; project?: string; add?: string }>;
 }) {
+  const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
   const searchParams = await props.searchParams;
   const search = searchParams?.search || "";
   const category = searchParams?.category || "";
@@ -12,6 +14,7 @@ export default async function TransaksiPage(props: {
 
   const transactions = await prisma.transaction.findMany({
     where: {
+      tenantId: auth.tenantId,
       ...(search
         ? {
             OR: [
@@ -31,18 +34,19 @@ export default async function TransaksiPage(props: {
   });
 
   const projects = await prisma.project.findMany({
-    where: { status: "AKTIF" },
+    where: { tenantId: auth.tenantId, status: "AKTIF" },
     select: { id: true, code: true, name: true },
     orderBy: { name: "asc" },
   });
 
   const units = await prisma.unit.findMany({
-    where: { status: { not: "TERSEDIA" } },
+    where: { tenantId: auth.tenantId, status: { not: "TERSEDIA" } },
     include: { customer: true },
     orderBy: { blockName: "asc" },
   });
 
   const customers = await prisma.customer.findMany({
+    where: { tenantId: auth.tenantId },
     orderBy: { name: "asc" },
   });
 

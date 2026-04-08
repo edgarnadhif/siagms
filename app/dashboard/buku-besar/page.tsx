@@ -1,9 +1,11 @@
 import { prisma } from "@/lib/db";
+import { requireAuth } from "@/lib/auth";
 import BukuBesarClient from "./BukuBesarClient";
 
 export default async function BukuBesarPage(props: {
   searchParams?: Promise<{ account?: string; from?: string; to?: string }>;
 }) {
+  const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
   const searchParams = await props.searchParams;
   const accountFilter = searchParams?.account || "";
   const fromDate = searchParams?.from || "";
@@ -11,13 +13,13 @@ export default async function BukuBesarPage(props: {
 
   // Fetch all active accounts for the filter dropdown
   const allAccounts = await prisma.account.findMany({
-    where: { isActive: true },
+    where: { tenantId: auth.tenantId, isActive: true },
     select: { id: true, code: true, name: true, type: true, normalBalance: true },
     orderBy: { code: "asc" },
   });
 
   // Build journal entry filter
-  const journalWhere: any = {};
+  const journalWhere: any = { tenantId: auth.tenantId };
   if (accountFilter) {
     journalWhere.accountId = accountFilter;
   }

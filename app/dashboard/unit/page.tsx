@@ -1,9 +1,12 @@
 import { prisma } from "@/lib/db";
+import { requireAuth } from "@/lib/auth";
 import UnitClient from "./UnitClient";
 
 export default async function UnitPage() {
+  const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
   // Fetch all units (active & inactive) so client-side toggle works without refetch
   const units = await prisma.unit.findMany({
+    where: { tenantId: auth.tenantId },
     include: {
       project: { select: { id: true, name: true, code: true } },
       customer: true,
@@ -12,12 +15,12 @@ export default async function UnitPage() {
   });
 
   const projects = await prisma.project.findMany({
-    where: { status: { not: "BATAL" } },
+    where: { tenantId: auth.tenantId, status: { not: "BATAL" } },
     select: { id: true, name: true, code: true },
   });
 
   const customers = await prisma.customer.findMany({
-    where: { isActive: true },
+    where: { tenantId: auth.tenantId, isActive: true },
     select: { id: true, name: true, customerCode: true, paymentMethod: true },
   });
 

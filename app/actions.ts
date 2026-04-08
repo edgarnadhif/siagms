@@ -5,9 +5,21 @@ import bcrypt from 'bcryptjs'
 import { redirect } from 'next/navigation'
 import { createSession, deleteSession } from '@/lib/session'
 import { revalidatePath } from 'next/cache'
+import { getTenantWhere, requireAuth } from '@/lib/auth'
+
+function slugifyTenantName(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
 
 export async function getCompanyProfile() {
-  const profile = await prisma.companyProfile.findFirst()
+  const auth = await requireAuth()
+  const profile = await prisma.companyProfile.findUnique({
+    where: { tenantId: auth.tenantId },
+  })
   if (!profile) {
     return {
       name: "SIAGMS",
@@ -21,13 +33,16 @@ export async function getCompanyProfile() {
 }
 
 export async function updateCompanyProfile(prevState: any, formData: FormData) {
+  const auth = await requireAuth(['SUPER_ADMIN'])
   const name = formData.get('name') as string
   const address = formData.get('address') as string
   const phone = formData.get('phone') as string
   const email = formData.get('email') as string
   const logoUrl = formData.get('logoUrl') as string // In real app, handle file upload
 
-  const existing = await prisma.companyProfile.findFirst()
+  const existing = await prisma.companyProfile.findUnique({
+    where: { tenantId: auth.tenantId },
+  })
 
   if (existing) {
     await prisma.companyProfile.update({
@@ -36,7 +51,7 @@ export async function updateCompanyProfile(prevState: any, formData: FormData) {
     })
   } else {
     await prisma.companyProfile.create({
-      data: { name, address, phone, email, logoUrl },
+      data: { tenantId: auth.tenantId, name, address, phone, email, logoUrl },
     })
   }
 
@@ -47,14 +62,16 @@ export async function updateCompanyProfile(prevState: any, formData: FormData) {
 }
 
 export async function register(prevState: any, formData: FormData) {
+  const companyName = formData.get('companyName') as string
+  const fullName = formData.get('fullName') as string
   const email = formData.get('email') as string
   const password = formData.get('password') as string
 
-  if (!email || !password) {
-    return { error: 'Email and password are required' }
+  if (!companyName || !fullName || !email || !password) {
+    return { error: 'Nama perusahaan, nama owner, email, dan password wajib diisi' }
   }
 
-  const existingUser = await prisma.user.findUnique({
+  const existingUser = await prisma.user.findFirst({
     where: { email },
   })
 
@@ -63,14 +80,37 @@ export async function register(prevState: any, formData: FormData) {
   }
 
   const hashedPassword = await bcrypt.hash(password, 10)
+  const baseSlug = slugifyTenantName(companyName)
+  const existingTenant = await prisma.tenant.findUnique({
+    where: { slug: baseSlug },
+  })
+  const tenantSlug = existingTenant ? `${baseSlug}-${Date.now().toString().slice(-4)}` : baseSlug
 
-  // Default role is USER, but you can change it logic here if needed
-  await prisma.user.create({
-    data: {
-      email,
-      password: hashedPassword,
-      // role: 'USER', // Optional: Explicitly set role if needed, otherwise it uses default from schema
-    },
+  await prisma.$transaction(async (tx) => {
+    const tenant = await tx.tenant.create({
+      data: {
+        name: companyName.trim(),
+        slug: tenantSlug,
+      },
+    })
+
+    await tx.user.create({
+      data: {
+        tenantId: tenant.id,
+        email: email.trim().toLowerCase(),
+        password: hashedPassword,
+        fullName: fullName.trim(),
+        role: 'SUPER_ADMIN',
+      },
+    })
+
+    await tx.companyProfile.create({
+      data: {
+        tenantId: tenant.id,
+        name: companyName.trim(),
+        email: email.trim().toLowerCase(),
+      },
+    })
   })
 
   // Redirect to login after successful registration
@@ -92,11 +132,23 @@ export async function login(prevState: any, formData: FormData) {
     return { error: 'Email and password are required' }
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email },
+  const user = await prisma.user.findFirst({
+    where: {
+      email: email.trim().toLowerCase(),
+      isActive: true,
+    },
   })
 
   if (!user) {
+    return { error: 'Invalid credentials' }
+  }
+
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: user.tenantId },
+    select: { isActive: true },
+  })
+
+  if (!tenant?.isActive) {
     return { error: 'Invalid credentials' }
   }
 
@@ -106,12 +158,206 @@ export async function login(prevState: any, formData: FormData) {
     return { error: 'Invalid credentials' }
   }
 
-  await createSession(String(user.id), remember)
+  await createSession(
+    {
+      userId: user.id,
+      tenantId: user.tenantId,
+      role: user.role as 'SUPER_ADMIN' | 'AKUNTAN' | 'MARKETING',
+    },
+    remember,
+  )
 
   redirect('/dashboard')
 }
 
+const MANAGEABLE_ROLES = ['SUPER_ADMIN', 'AKUNTAN', 'MARKETING'] as const
+
+function isManageableRole(role: string): role is typeof MANAGEABLE_ROLES[number] {
+  return MANAGEABLE_ROLES.includes(role as typeof MANAGEABLE_ROLES[number])
+}
+
+async function countActiveSuperAdmins(tenantId: string) {
+  return prisma.user.count({
+    where: {
+      tenantId,
+      role: 'SUPER_ADMIN',
+      isActive: true,
+    },
+  })
+}
+
+export async function createTenantUser(prevState: any, formData: FormData) {
+  const auth = await requireAuth(['SUPER_ADMIN'])
+  const fullName = (formData.get('fullName') as string)?.trim()
+  const email = (formData.get('email') as string)?.trim().toLowerCase()
+  const password = formData.get('password') as string
+  const role = formData.get('role') as string
+
+  if (!email || !password || !role) {
+    return { error: 'Nama, email, password, dan role wajib diisi' }
+  }
+
+  if (!isManageableRole(role)) {
+    return { error: 'Role user tidak valid' }
+  }
+
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      tenantId: auth.tenantId,
+      email,
+    },
+    select: { id: true },
+  })
+
+  if (existingUser) {
+    return { error: 'Email sudah digunakan pada tenant ini' }
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10)
+
+  await prisma.user.create({
+    data: {
+      tenantId: auth.tenantId,
+      fullName: fullName || null,
+      email,
+      password: hashedPassword,
+      role,
+      isActive: true,
+    },
+  })
+
+  revalidatePath('/dashboard/users')
+  return { success: true }
+}
+
+export async function updateTenantUser(prevState: any, formData: FormData) {
+  const auth = await requireAuth(['SUPER_ADMIN'])
+  const userIdRaw = formData.get('userId') as string
+  const fullName = (formData.get('fullName') as string)?.trim()
+  const email = (formData.get('email') as string)?.trim().toLowerCase()
+  const role = formData.get('role') as string
+  const password = formData.get('password') as string
+
+  const userId = Number(userIdRaw)
+  if (!userId || !email || !role) {
+    return { error: 'Data user tidak lengkap' }
+  }
+
+  if (!isManageableRole(role)) {
+    return { error: 'Role user tidak valid' }
+  }
+
+  const targetUser = await prisma.user.findFirst({
+    where: {
+      id: userId,
+      tenantId: auth.tenantId,
+    },
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      isActive: true,
+    },
+  })
+
+  if (!targetUser) {
+    return { error: 'User tidak ditemukan atau bukan milik tenant ini' }
+  }
+
+  if (targetUser.id === auth.id && role !== 'SUPER_ADMIN') {
+    return { error: 'SUPER_ADMIN tidak dapat menurunkan role dirinya sendiri' }
+  }
+
+  if (targetUser.role === 'SUPER_ADMIN' && role !== 'SUPER_ADMIN') {
+    const superAdminCount = await countActiveSuperAdmins(auth.tenantId)
+    if (superAdminCount <= 1) {
+      return { error: 'Tenant harus memiliki minimal satu SUPER_ADMIN aktif' }
+    }
+  }
+
+  const emailOwner = await prisma.user.findFirst({
+    where: {
+      tenantId: auth.tenantId,
+      email,
+      NOT: { id: userId },
+    },
+    select: { id: true },
+  })
+
+  if (emailOwner) {
+    return { error: 'Email sudah digunakan user lain di tenant ini' }
+  }
+
+  const data: {
+    fullName: string | null
+    email: string
+    role: typeof MANAGEABLE_ROLES[number]
+    password?: string
+  } = {
+    fullName: fullName || null,
+    email,
+    role,
+  }
+
+  if (password?.trim()) {
+    data.password = await bcrypt.hash(password.trim(), 10)
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data,
+  })
+
+  revalidatePath('/dashboard/users')
+  revalidatePath('/dashboard')
+  return { success: true }
+}
+
+export async function deactivateTenantUser(userId: number) {
+  const auth = await requireAuth(['SUPER_ADMIN'])
+
+  if (!userId) {
+    return { error: 'ID user tidak valid' }
+  }
+
+  const targetUser = await prisma.user.findFirst({
+    where: {
+      id: userId,
+      tenantId: auth.tenantId,
+      isActive: true,
+    },
+    select: {
+      id: true,
+      role: true,
+    },
+  })
+
+  if (!targetUser) {
+    return { error: 'User tidak ditemukan atau sudah nonaktif' }
+  }
+
+  if (targetUser.id === auth.id) {
+    return { error: 'Anda tidak dapat menghapus akun Anda sendiri' }
+  }
+
+  if (targetUser.role === 'SUPER_ADMIN') {
+    const superAdminCount = await countActiveSuperAdmins(auth.tenantId)
+    if (superAdminCount <= 1) {
+      return { error: 'Tenant harus memiliki minimal satu SUPER_ADMIN aktif' }
+    }
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { isActive: false },
+  })
+
+  revalidatePath('/dashboard/users')
+  return { success: true }
+}
+
 export async function createProject(prevState: any, formData: FormData) {
+  const auth = await requireAuth(['SUPER_ADMIN', 'MARKETING'])
   const code = formData.get('code') as string
   const name = formData.get('name') as string
   const description = formData.get('description') as string
@@ -129,6 +375,7 @@ export async function createProject(prevState: any, formData: FormData) {
   try {
     await prisma.project.create({
       data: {
+        tenantId: auth.tenantId,
         code,
         name,
         description,
@@ -150,6 +397,7 @@ export async function createProject(prevState: any, formData: FormData) {
 }
 
 export async function updateProject(prevState: any, formData: FormData) {
+  const auth = await requireAuth(['SUPER_ADMIN', 'MARKETING'])
   const id = formData.get('id') as string
   const code = formData.get('code') as string
   const name = formData.get('name') as string
@@ -167,6 +415,15 @@ export async function updateProject(prevState: any, formData: FormData) {
   const budget = budgetStr ? parseFloat(budgetStr.replace(/\D/g, '')) : 0
 
   try {
+    const project = await prisma.project.findFirst({
+      where: getTenantWhere(auth.tenantId, { id }),
+      select: { id: true },
+    })
+
+    if (!project) {
+      return { error: 'Proyek tidak ditemukan atau bukan milik tenant ini' }
+    }
+
     await prisma.project.update({
       where: { id },
       data: {
@@ -191,6 +448,7 @@ export async function updateProject(prevState: any, formData: FormData) {
 }
 
 export async function deleteProject(projectId: string) {
+  const auth = await requireAuth(['SUPER_ADMIN'])
   if (!projectId) {
     return { error: 'ID proyek tidak valid' }
   }
@@ -199,6 +457,14 @@ export async function deleteProject(projectId: string) {
     // TODO: Check linked transactions once Transaction model is migrated
     // const transactionCount = await prisma.transaction.count({ where: { projectId } })
     // if (transactionCount > 0) return { error: '...' }
+
+    const project = await prisma.project.findFirst({
+      where: getTenantWhere(auth.tenantId, { id: projectId }),
+    })
+
+    if (!project) {
+      return { error: 'Proyek tidak ditemukan atau bukan milik tenant ini' }
+    }
 
     await prisma.project.delete({
       where: { id: projectId },

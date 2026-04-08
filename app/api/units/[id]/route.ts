@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTenantWhere, requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 const EDITABLE_STATUSES = ["TERSEDIA", "BOOKING"];
@@ -6,9 +7,10 @@ const DELETABLE_STATUSES = ["TERSEDIA"];
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
     const { id } = await context.params;
-    const unit = await prisma.unit.findUnique({
-      where: { id },
+    const unit = await prisma.unit.findFirst({
+      where: getTenantWhere(auth.tenantId, { id }),
       include: {
         project: { select: { id: true, name: true, code: true } },
         customer: true,
@@ -28,7 +30,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       const p = prisma as any;
       if (p.cancellation) {
         cancellations = await p.cancellation.findMany({
-          where: { unitId: id },
+          where: getTenantWhere(auth.tenantId, { unitId: id }),
           orderBy: { tanggalBatal: "desc" },
         });
       }
@@ -48,10 +50,11 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
 export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
     const { id } = await context.params;
     const body = await request.json();
 
-    const current = await prisma.unit.findUnique({ where: { id } });
+    const current = await prisma.unit.findFirst({ where: getTenantWhere(auth.tenantId, { id }) });
     if (!current) {
       return NextResponse.json({ success: false, data: null, message: "Unit tidak ditemukan" }, { status: 404 });
     }
@@ -67,7 +70,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
     const unitCode = `${blockName}/${unitNumber}`;
 
     const existing = await prisma.unit.findFirst({
-      where: { unitCode, projectId, NOT: { id } },
+      where: getTenantWhere(auth.tenantId, { unitCode, projectId, NOT: { id } }),
     });
     if (existing) {
       return NextResponse.json({ success: false, data: null, message: "Nomor unit sudah terpakai di proyek ini" }, { status: 400 });
@@ -99,10 +102,11 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
 
 export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
     const { id } = await context.params;
 
-    const unit = await prisma.unit.findUnique({
-      where: { id },
+    const unit = await prisma.unit.findFirst({
+      where: getTenantWhere(auth.tenantId, { id }),
       include: { transactions: true }
     });
 

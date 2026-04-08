@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
     const { id } = await context.params;
     const body = await request.json();
     const { customerId } = body;
@@ -12,7 +14,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     }
 
     const result = await prisma.$transaction(async (tx) => {
-      const unit = await tx.unit.findUnique({ where: { id } });
+      const unit = await tx.unit.findFirst({ where: { id, tenantId: auth.tenantId } });
       if (!unit) {
         throw new Error("Unit tidak ditemukan");
       }
@@ -25,7 +27,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         throw new Error("Unit ini sudah dimiliki oleh pelanggan lain");
       }
 
-      const customer = await tx.customer.findUnique({ where: { id: customerId } });
+      const customer = await tx.customer.findFirst({ where: { id: customerId, tenantId: auth.tenantId } });
       if (!customer) {
         throw new Error("Pelanggan tidak ditemukan");
       }

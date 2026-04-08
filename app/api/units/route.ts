@@ -1,18 +1,20 @@
 import { NextResponse } from "next/server";
+import { getTenantWhere, requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 export async function GET(request: Request) {
   try {
+    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const projectId = searchParams.get("projectId");
 
     const units = await prisma.unit.findMany({
-      where: {
+      where: getTenantWhere(auth.tenantId, {
         isActive: true,
         ...(status && status !== "SEMUA" ? { status: status as any } : {}),
         ...(projectId && projectId !== "SEMUA" ? { projectId } : {}),
-      },
+      }),
       include: {
         project: { select: { id: true, name: true, code: true } },
         customer: true,
@@ -28,11 +30,14 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
     const body = await request.json();
 
     let newCode = `UNIT-${body.blockName}${body.unitNumber}`;
 
-    const exists = await prisma.unit.findUnique({ where: { unitCode: newCode } });
+    const exists = await prisma.unit.findFirst({
+      where: getTenantWhere(auth.tenantId, { unitCode: newCode }),
+    });
     if (exists) {
       if (exists.isActive) {
         return NextResponse.json({ success: false, data: null, message: "Unit dengan kode ini sudah ada" }, { status: 400 });
@@ -44,6 +49,7 @@ export async function POST(request: Request) {
     const unit = await prisma.unit.create({
       data: {
         ...body,
+        tenantId: auth.tenantId,
         unitCode: newCode,
       },
     });

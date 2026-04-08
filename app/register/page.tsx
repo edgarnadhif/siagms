@@ -13,6 +13,26 @@ export default function RegisterPage() {
         <h1 className="text-3xl font-bold mb-6 text-center text-gray-800 dark:text-white">Register</h1>
         <form action={formAction} className="flex flex-col gap-4">
           <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nama Perusahaan</label>
+            <input
+              name="companyName"
+              type="text"
+              placeholder="PT Maju Properti"
+              required
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nama Owner</label>
+            <input
+              name="fullName"
+              type="text"
+              placeholder="Nama owner perusahaan"
+              required
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
+          </div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
             <input
               name="email"

@@ -6,12 +6,12 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { logout, getCompanyProfile } from "@/app/actions";
+import type { AppRole } from "@/lib/session";
 
-export default function Sidebar() {
+export default function Sidebar({ role }: { role: AppRole }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const pathname = usePathname();
   const { theme, setTheme, resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
   const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
   const [companyProfile, setCompanyProfile] = useState<{
     name: string;
@@ -19,7 +19,6 @@ export default function Sidebar() {
   }>({ name: "SIAGMS", logoUrl: null });
 
   useEffect(() => {
-    setMounted(true);
     getCompanyProfile().then((profile) => {
       if (profile) {
         setCompanyProfile({
@@ -42,73 +41,87 @@ export default function Sidebar() {
           title: "Dashboard",
           href: "/dashboard",
           icon: "/dashboard.svg",
+          roles: ["SUPER_ADMIN", "AKUNTAN", "MARKETING"],
         },
         {
           title: "Projek",
           href: "/dashboard/projek",
           icon: "/folder.svg",
+          roles: ["SUPER_ADMIN", "MARKETING"],
         },
         {
           title: "Transaksi",
           href: "/dashboard/transaksi",
           icon: "/credit_card.svg",
+          roles: ["SUPER_ADMIN", "AKUNTAN"],
         },
         {
           title: "Kalender",
           href: "/dashboard/calendar",
           icon: "/calendar_month.svg",
+          roles: ["SUPER_ADMIN", "AKUNTAN", "MARKETING"],
         },
         {
           title: "Jurnal Umum",
           href: "/dashboard/jurnal-umum",
           icon: "/book_5.svg",
+          roles: ["SUPER_ADMIN", "AKUNTAN"],
         },
         {
           title: "Daftar Akun",
           href: "/dashboard/daftar-akun",
           icon: "/lists.svg",
+          roles: ["SUPER_ADMIN", "AKUNTAN"],
         },
         {
           title: "Buku Besar",
           href: "/dashboard/buku-besar",
           icon: "/library_books.svg",
+          roles: ["SUPER_ADMIN", "AKUNTAN"],
         },
         {
           title: "Laporan Keuangan",
           href: "/dashboard/laporan",
           icon: "/finance_mode.svg",
+          roles: ["SUPER_ADMIN", "AKUNTAN"],
         },
       ],
     },
     {
       title: "Data Master",
       items: [
-        { title: "Pelanggan", href: "/dashboard/pelanggan", icon: "/group.svg" },
-        { title: "Master Unit", href: "/dashboard/unit", icon: "/folder.svg" }, // reusing folder icon for unit
+        { title: "Pelanggan", href: "/dashboard/pelanggan", icon: "/group.svg", roles: ["SUPER_ADMIN", "AKUNTAN", "MARKETING"] },
+        { title: "Master Unit", href: "/dashboard/unit", icon: "/folder.svg", roles: ["SUPER_ADMIN", "AKUNTAN", "MARKETING"] },
         {
           title: "Kuitansi",
           href: "/dashboard/kuitansi",
           icon: "/receipt.svg",
+          roles: ["SUPER_ADMIN", "AKUNTAN", "MARKETING"],
         },
       ],
     },
     {
       title: "Pengaturan",
       items: [
-        { title: "Kelola User", href: "/dashboard/users", icon: "/person.svg" },
+        { title: "Kelola User", href: "/dashboard/users", icon: "/person.svg", roles: ["SUPER_ADMIN"] },
         {
           title: "Profil Perusahaan",
           href: "/dashboard/profil",
           icon: "/domain.svg",
+          roles: ["SUPER_ADMIN"],
         },
         {
           title: "Panduan",
           href: "/dashboard/panduan",
           icon: "/developer_guide.svg",
+          roles: ["SUPER_ADMIN", "AKUNTAN", "MARKETING"],
         },
       ],
     },
-  ];
+  ].map((group) => ({
+    ...group,
+    items: group.items.filter((item) => item.roles.includes(role)),
+  })).filter((group) => group.items.length > 0);
 
   return (
     <div
@@ -220,7 +233,7 @@ export default function Sidebar() {
                             height={20}
                             className={`w-5 h-5 dark:invert ${isActive ? "" : "opacity-60"}`}
                             style={
-                              mounted && isActive && resolvedTheme !== "dark"
+                              isActive && resolvedTheme !== "dark"
                                 ? {
                                     filter:
                                       "invert(18%) sepia(88%) saturate(2759%) hue-rotate(346deg) brightness(96%) contrast(92%)",
@@ -248,54 +261,52 @@ export default function Sidebar() {
 
       <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-800 shrink-0">
           <ul className="space-y-1">
-            {mounted && (
-              <li className="relative">
-                <button
-                  onClick={() => setThemeDropdownOpen(!themeDropdownOpen)}
-                  className={`flex items-center w-full px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-600 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors group mb-1 ${
-                    !isExpanded ? "justify-center" : ""
-                  }`}
-                  title={!isExpanded ? "Tema Aplikasi" : ""}
-                >
-                  <span className="text-lg transition-colors group-hover:text-blue-500 dark:group-hover:text-blue-400 text-gray-500 dark:text-gray-400 flex shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.813-3.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
-                    </svg>
+            <li className="relative">
+              <button
+                onClick={() => setThemeDropdownOpen(!themeDropdownOpen)}
+                className={`flex items-center w-full px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-600 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors group mb-1 ${
+                  !isExpanded ? "justify-center" : ""
+                }`}
+                title={!isExpanded ? "Tema Aplikasi" : ""}
+              >
+                <span className="text-lg transition-colors group-hover:text-blue-500 dark:group-hover:text-blue-400 text-gray-500 dark:text-gray-400 flex shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.813-3.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
+                  </svg>
+                </span>
+                {isExpanded && (
+                  <span className="ml-3 truncate text-sm">
+                    Tema Aplikasi
                   </span>
-                  {isExpanded && (
-                    <span className="ml-3 truncate text-sm">
-                      Tema Aplikasi
-                    </span>
-                  )}
-                </button>
-                
-                {themeDropdownOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setThemeDropdownOpen(false)}></div>
-                    <div className={`absolute bottom-0 bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 shadow-xl rounded-xl p-1.5 w-40 z-50 ${isExpanded ? "left-full ml-3" : "left-14"}`}>
-                      <button onClick={() => { setTheme('light'); setThemeDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${theme === 'light' ? 'bg-blue-50 dark:bg-slate-700/80 text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
-                        </svg>
-                        Light Mode
-                      </button>
-                      <button onClick={() => { setTheme('dark'); setThemeDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${theme === 'dark' ? 'bg-blue-50 dark:bg-slate-700/80 text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
-                        </svg>
-                        Dark Mode
-                      </button>
-                      <button onClick={() => { setTheme('system'); setThemeDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${theme === 'system' ? 'bg-blue-50 dark:bg-slate-700/80 text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" />
-                        </svg>
-                        System
-                      </button>
-                    </div>
-                  </>
                 )}
-              </li>
-            )}
+              </button>
+              
+              {themeDropdownOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setThemeDropdownOpen(false)}></div>
+                  <div className={`absolute bottom-0 bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 shadow-xl rounded-xl p-1.5 w-40 z-50 ${isExpanded ? "left-full ml-3" : "left-14"}`}>
+                    <button onClick={() => { setTheme('light'); setThemeDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${theme === 'light' ? 'bg-blue-50 dark:bg-slate-700/80 text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                      </svg>
+                      Light Mode
+                    </button>
+                    <button onClick={() => { setTheme('dark'); setThemeDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${theme === 'dark' ? 'bg-blue-50 dark:bg-slate-700/80 text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                      </svg>
+                      Dark Mode
+                    </button>
+                    <button onClick={() => { setTheme('system'); setThemeDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${theme === 'system' ? 'bg-blue-50 dark:bg-slate-700/80 text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" />
+                      </svg>
+                      System
+                    </button>
+                  </div>
+                </>
+              )}
+            </li>
             <li>
               <button
                 onClick={() => logout()}

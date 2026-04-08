@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { requireAuth } from "@/lib/auth";
 import Link from "next/link";
 import { ProjectStatus } from "@prisma/client";
 import AddProjectModal from "./AddProjectModal";
@@ -10,12 +11,14 @@ export default async function ProjectPage({
 }: {
   searchParams: Promise<{ search?: string; status?: string; add?: string }>;
 }) {
+  const auth = await requireAuth(["SUPER_ADMIN", "MARKETING"]);
   const { search = "", status = "", add } = await searchParams;
   const showAddModal = add === "true";
 
   const rawProjects = await prisma.project.findMany({
     where: {
       AND: [
+        { tenantId: auth.tenantId },
         search
           ? {
               OR: [

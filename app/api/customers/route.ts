@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server";
+import { getTenantWhere, requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 export async function GET(request: Request) {
   try {
+    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
     const { searchParams } = new URL(request.url);
     const paymentMethod = searchParams.get("paymentMethod");
 
     const customers = await prisma.customer.findMany({
-      where: {
+      where: getTenantWhere(auth.tenantId, {
         isActive: true,
         ...(paymentMethod && paymentMethod !== "SEMUA" ? { paymentMethod: paymentMethod as any } : {}),
-      },
+      }),
       include: {
         unit: true,
       },
@@ -25,10 +27,12 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
     const body = await request.json();
 
     // Auto-generate customerCode
     const lastCustomer = await prisma.customer.findFirst({
+      where: { tenantId: auth.tenantId },
       orderBy: { customerCode: "desc" },
     });
 
@@ -41,6 +45,7 @@ export async function POST(request: Request) {
     const customer = await prisma.customer.create({
       data: {
         ...body,
+        tenantId: auth.tenantId,
         customerCode: newCode,
       },
     });

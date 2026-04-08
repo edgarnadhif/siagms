@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,27 +6,53 @@ datasource db {
   provider = "postgresql"
 }
 
-// ─── AUTH ────────────────────────────────────────────────────────
-
-model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
-
+model Tenant {
+  id             String          @id @default(cuid())
+  name           String
+  slug           String          @unique
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  users          User[]
+  companyProfile CompanyProfile?
+  projects       Project[]
+  accounts       Account[]
+  transactions   Transaction[]
+  journalEntries JournalEntry[]
+  customers      Customer[]
+  units          Unit[]
+  serahTerimas   SerahTerima[]
+  cancellations  Cancellation[]
   calendarEvents CalendarEvent[]
 }
 
 enum Role {
-  USER
-  ADMIN
+  SUPER_ADMIN
+  AKUNTAN
+  MARKETING
 }
 
-// ─── COMPANY ────────────────────────────────────────────────────
+model User {
+  id             Int             @id @default(autoincrement())
+  tenantId       String
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  email          String
+  password       String
+  fullName       String?
+  role           Role            @default(MARKETING)
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  calendarEvents CalendarEvent[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId, role])
+}
 
 model CompanyProfile {
   id        Int      @id @default(autoincrement())
+  tenantId  String   @unique
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name      String   @default("SIAGMS")
   address   String?
   phone     String?
@@ -37,8 +60,6 @@ model CompanyProfile {
   logoUrl   String?
   updatedAt DateTime @updatedAt
 }
-
-// ─── PROJECT ────────────────────────────────────────────────────
 
 enum ProjectStatus {
   AKTIF
@@ -49,7 +70,9 @@ enum ProjectStatus {
 
 model Project {
   id           String        @id @default(cuid())
-  code         String        @unique
+  tenantId     String
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  code         String
   name         String
   description  String?
   location     String?
@@ -60,12 +83,12 @@ model Project {
   handoverDate DateTime?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
-
   transactions Transaction[]
   units        Unit[]
-}
 
-// ─── CHART OF ACCOUNTS (Daftar Akun) ────────────────────────────
+  @@unique([tenantId, code])
+  @@index([tenantId, status])
+}
 
 enum AccountType {
   ASET
@@ -81,23 +104,25 @@ enum NormalBalance {
 }
 
 model Account {
-  id            String        @id @default(cuid())
-  code          String        @unique
-  name          String
-  type          AccountType
-  normalBalance NormalBalance
-  description   String?
-  isActive      Boolean       @default(true)
-  parentId      String?
-  parent        Account?      @relation("SubAccount", fields: [parentId], references: [id])
-  children      Account[]     @relation("SubAccount")
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-
+  id             String         @id @default(cuid())
+  tenantId       String
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  code           String
+  name           String
+  type           AccountType
+  normalBalance  NormalBalance
+  description    String?
+  isActive       Boolean        @default(true)
+  parentId       String?
+  parent         Account?       @relation("SubAccount", fields: [parentId], references: [id])
+  children       Account[]      @relation("SubAccount")
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
   journalEntries JournalEntry[]
-}
 
-// ─── TRANSACTIONS (Transaksi) ───────────────────────────────────
+  @@unique([tenantId, code])
+  @@index([tenantId, isActive])
+}
 
 enum TransactionCategory {
   BOOKING_FEE
@@ -128,36 +153,37 @@ enum StatusPengakuan {
 }
 
 model Transaction {
-  id          String              @id @default(cuid())
-  reference   String              @unique
-  date        DateTime
-  description String
-  note        String?
-  category    TransactionCategory
-  amount      Decimal
-  projectId   String?
-  project     Project?            @relation(fields: [projectId], references: [id])
+  id                 String              @id @default(cuid())
+  tenantId           String
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  reference          String
+  date               DateTime
+  description        String
+  note               String?
+  category           TransactionCategory
+  amount             Decimal
+  projectId          String?
+  project            Project?            @relation(fields: [projectId], references: [id])
+  skema_pembayaran   SkemaPembayaran     @default(cash)
+  sumber_pembayaran  SumberPembayaran    @default(pembeli)
+  status_pengakuan   StatusPengakuan     @default(diterima)
+  unitId             String?
+  unit               Unit?               @relation(fields: [unitId], references: [id])
+  customerId         String?
+  customer           Customer?           @relation(fields: [customerId], references: [id])
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  journalEntries     JournalEntry[]
 
-  skema_pembayaran  SkemaPembayaran  @default(cash)
-  sumber_pembayaran SumberPembayaran @default(pembeli)
-  status_pengakuan  StatusPengakuan  @default(diterima)
-
-  unitId String?
-  unit   Unit?   @relation(fields: [unitId], references: [id])
-
-  customerId String?
-  customer   Customer? @relation(fields: [customerId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  journalEntries JournalEntry[]
+  @@unique([tenantId, reference])
+  @@index([tenantId, date])
+  @@index([tenantId, category])
 }
-
-// ─── JOURNAL ENTRIES (Jurnal Umum) ──────────────────────────────
 
 model JournalEntry {
   id            String       @id @default(cuid())
+  tenantId      String
+  tenant        Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   reference     String
   date          DateTime
   description   String?
@@ -171,9 +197,10 @@ model JournalEntry {
   credit        Decimal      @default(0)
   createdAt     DateTime     @default(now())
   isAuto        Boolean      @default(false)
-}
 
-// ─── MASTER DATA: UNIT & PELANGGAN ──────────────────────────────
+  @@index([tenantId, date])
+  @@index([tenantId, reference])
+}
 
 enum PaymentMethod {
   KPR
@@ -191,57 +218,65 @@ enum UnitStatus {
 
 model Customer {
   id            String        @id @default(cuid())
-  customerCode  String        @unique
+  tenantId      String
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customerCode  String
   name          String
-  nik           String        @unique
+  nik           String
   phone         String
   email         String?
   address       String
   paymentMethod PaymentMethod
+  bankName      String?
+  kprAccountNo  String?
+  kprAmount     Decimal?
+  kprTenor      Int?
+  kprAkadDate   DateTime?
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  unit          Unit?
+  transactions  Transaction[]
+  serahTerimas  SerahTerima[]
 
-  bankName     String?
-  kprAccountNo String?
-  kprAmount    Decimal?
-  kprTenor     Int?
-  kprAkadDate  DateTime?
-
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  unit         Unit?
-  transactions Transaction[]
-  serahTerimas SerahTerima[]
+  @@unique([tenantId, customerCode])
+  @@unique([tenantId, nik])
+  @@index([tenantId, isActive])
 }
 
 model Unit {
-  id           String     @id @default(cuid())
-  unitCode     String     @unique
-  blockName    String
-  unitNumber   String
-  type         String
-  landArea     Decimal
-  buildingArea Decimal
-  price        Decimal
-  status       UnitStatus @default(TERSEDIA)
-  isActive     Boolean    @default(true)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-
-  projectId String
-  project   Project @relation(fields: [projectId], references: [id])
-
-  customerId String?   @unique
-  customer   Customer? @relation(fields: [customerId], references: [id])
-
+  id             String         @id @default(cuid())
+  tenantId       String
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  unitCode       String
+  blockName      String
+  unitNumber     String
+  type           String
+  landArea       Decimal
+  buildingArea   Decimal
+  price          Decimal
+  status         UnitStatus     @default(TERSEDIA)
+  isActive       Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  projectId      String
+  project        Project        @relation(fields: [projectId], references: [id])
+  customerId     String?        @unique
+  customer       Customer?      @relation(fields: [customerId], references: [id])
   transactions   Transaction[]
   serahTerimas   SerahTerima[]
   journalEntries JournalEntry[]
   cancellations  Cancellation[]
+
+  @@unique([tenantId, unitCode])
+  @@index([tenantId, status])
+  @@index([tenantId, projectId])
 }
 
 model SerahTerima {
   id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   unitId     String
   unit       Unit     @relation(fields: [unitId], references: [id])
   customerId String
@@ -254,18 +289,20 @@ model SerahTerima {
 
 model Cancellation {
   id            String   @id @default(cuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   unitId        String
   unit          Unit     @relation(fields: [unitId], references: [id])
   customerId    String
-  customerName  String   // snapshot nama pelanggan saat pembatalan
-  customerCode  String   // snapshot kode pelanggan
+  customerName  String
+  customerCode  String
   tanggalBatal  DateTime
   alasan        String
   totalBFHangus Decimal  @default(0)
   createdAt     DateTime @default(now())
-}
 
-// ─── CALENDAR EVENT ──────────────────────────────────────────────
+  @@index([tenantId, unitId])
+}
 
 enum EventType {
   AUTO
@@ -280,6 +317,8 @@ enum EventStatus {
 
 model CalendarEvent {
   id          String      @id @default(cuid())
+  tenantId    String
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   title       String
   description String?
   date        DateTime
@@ -287,11 +326,11 @@ model CalendarEvent {
   type        EventType   @default(MANUAL)
   status      EventStatus @default(PENDING)
   isLocked    Boolean     @default(false)
+  createdBy   Int
+  user        User        @relation(fields: [createdBy], references: [id])
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
-  // Relasi ke User
-  createdBy Int
-  user      User @relation(fields: [createdBy], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  @@index([tenantId, date])
+  @@index([tenantId, createdBy])
 }

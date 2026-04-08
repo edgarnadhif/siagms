@@ -1,17 +1,27 @@
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
 const CANCELLABLE_STATUSES = ["BOOKING", "INDENT"];
 
 // Ensure critical accounts exist (mirrors helper in actions.ts)
-async function ensureAccountByCode(code: string, name: string, type: string, normalBalance: string) {
+async function ensureAccountByCode(
+  tenantId: string,
+  code: string,
+  name: string,
+  type: string,
+  normalBalance: string,
+) {
   let acc = await prisma.account.findFirst({
-    where: { OR: [{ code }, { name: { contains: name, mode: "insensitive" } }] },
+    where: {
+      tenantId,
+      OR: [{ code }, { name: { contains: name, mode: "insensitive" } }],
+    },
   });
   if (!acc) {
     acc = await prisma.account.create({
-      data: { code, name, type: type as any, normalBalance: normalBalance as any, isActive: true },
+      data: { tenantId, code, name, type: type as any, normalBalance: normalBalance as any, isActive: true },
     });
   }
   return acc;
@@ -22,6 +32,7 @@ export async function POST(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
     const { id: unitId } = await context.params;
     const body = await request.json();
 
@@ -54,12 +65,12 @@ export async function POST(
       include: {
         customer: true,
         transactions: {
-          where: { category: "BOOKING_FEE" },
+          where: { category: "BOOKING_FEE", tenantId: auth.tenantId },
         },
       },
     });
 
-    if (!unit) {
+    if (!unit || unit.tenantId !== auth.tenantId) {
       return NextResponse.json(
         { success: false, data: null, message: "Unit tidak ditemukan" },
         { status: 404 }
@@ -96,12 +107,14 @@ export async function POST(
       //    Debit  2100 Pendapatan Diterima di Muka
       //    Kredit 4200 Pendapatan Lain-lain
       const accPendapatanMuka = await ensureAccountByCode(
+        auth.tenantId,
         "2100",
         "Pendapatan Diterima di Muka",
         "KEWAJIBAN",
         "KREDIT"
       );
       const accPendapatanLain = await ensureAccountByCode(
+        auth.tenantId,
         "4200",
         "Pendapatan Lain-lain",
         "PENDAPATAN",
@@ -117,6 +130,7 @@ export async function POST(
         await tx.journalEntry.createMany({
           data: [
             {
+              tenantId: auth.tenantId,
               reference: journalRef,
               date: cancelDate,
               description: journalDesc,
@@ -127,6 +141,7 @@ export async function POST(
               isAuto: true,
             },
             {
+              tenantId: auth.tenantId,
               reference: journalRef,
               date: cancelDate,
               description: journalDesc,
@@ -143,6 +158,7 @@ export async function POST(
       // 3. Catat di tabel Cancellation
       const cancellation = await tx.cancellation.create({
         data: {
+          tenantId: auth.tenantId,
           unitId,
           customerId: unit.customer!.id,
           customerName: unit.customer!.name,

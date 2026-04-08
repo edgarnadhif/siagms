@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
+import { getTenantWhere, requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
     const { id } = await context.params;
-    const customer = await prisma.customer.findUnique({
-      where: { id },
+    const customer = await prisma.customer.findFirst({
+      where: getTenantWhere(auth.tenantId, { id }),
       include: {
         unit: true,
       },
@@ -23,10 +25,11 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
 export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
     const { id } = await context.params;
     const body = await request.json();
 
-    const current = await prisma.customer.findUnique({ where: { id } });
+    const current = await prisma.customer.findFirst({ where: getTenantWhere(auth.tenantId, { id }) });
     if (!current) {
       return NextResponse.json({ success: false, data: null, message: "Pelanggan tidak ditemukan" }, { status: 404 });
     }
@@ -90,10 +93,11 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
 
 export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
     const { id } = await context.params;
 
-    const current = await prisma.customer.findUnique({
-      where: { id },
+    const current = await prisma.customer.findFirst({
+      where: getTenantWhere(auth.tenantId, { id }),
       include: { unit: true },
     });
 

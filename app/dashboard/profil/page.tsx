@@ -1,8 +1,12 @@
 import { prisma } from "@/lib/db";
+import { requireAuth } from "@/lib/auth";
 import ProfilForm from "./ProfilForm";
 
 export default async function ProfilPage() {
-  const profile = await prisma.companyProfile.findFirst();
+  const auth = await requireAuth(["SUPER_ADMIN"]);
+  const profile = await prisma.companyProfile.findUnique({
+    where: { tenantId: auth.tenantId },
+  });
 
   const initialData = profile || {
     name: "SIAGMS",

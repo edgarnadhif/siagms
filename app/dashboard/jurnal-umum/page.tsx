@@ -1,23 +1,28 @@
 import { prisma } from "@/lib/db";
+import { requireAuth } from "@/lib/auth";
 import JurnalUmumClient from "./JurnalUmumClient";
 
 export default async function JurnalUmumPage(props: {
   searchParams?: Promise<{ search?: string; add?: string }>;
 }) {
+  const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
   const searchParams = await props.searchParams;
   const search = searchParams?.search || "";
   const showAddModal = searchParams?.add === "true";
 
   // Fetch all journal entries and group by reference
   const entries = await prisma.journalEntry.findMany({
-    where: search
+    where: {
+      tenantId: auth.tenantId,
+      ...(search
       ? {
           OR: [
             { reference: { contains: search, mode: "insensitive" } },
             { description: { contains: search, mode: "insensitive" } },
           ],
         }
-      : {},
+      : {}),
+    },
     include: {
       account: { select: { code: true, name: true } },
     },
@@ -65,7 +70,7 @@ export default async function JurnalUmumPage(props: {
 
   // Fetch accounts for the modal
   const accounts = await prisma.account.findMany({
-    where: { isActive: true },
+    where: { tenantId: auth.tenantId, isActive: true },
     select: { id: true, code: true, name: true },
     orderBy: { code: "asc" },
   });
