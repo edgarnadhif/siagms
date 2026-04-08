@@ -725,7 +725,17 @@ export default function UnitClient({
         </div>
       )}
 
-      {detailId && <UnitDetailModal unitId={detailId} onClose={() => setDetailId(null)} />}
+      {detailId && (
+        <UnitDetailModal
+          unitId={detailId}
+          onClose={() => setDetailId(null)}
+          onCancelSuccess={() => {
+            // Refresh unit status in the table by reloading unit data
+            setDetailId(null);
+            window.location.reload();
+          }}
+        />
+      )}
     </>
   );
 }

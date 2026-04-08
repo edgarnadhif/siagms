@@ -237,6 +237,7 @@ model Unit {
   transactions   Transaction[]
   serahTerimas   SerahTerima[]
   journalEntries JournalEntry[]
+  cancellations  Cancellation[]
 }
 
 model SerahTerima {
@@ -249,6 +250,19 @@ model SerahTerima {
   handoverNo String
   notes      String?
   createdAt  DateTime @default(now())
+}
+
+model Cancellation {
+  id            String   @id @default(cuid())
+  unitId        String
+  unit          Unit     @relation(fields: [unitId], references: [id])
+  customerId    String
+  customerName  String   // snapshot nama pelanggan saat pembatalan
+  customerCode  String   // snapshot kode pelanggan
+  tanggalBatal  DateTime
+  alasan        String
+  totalBFHangus Decimal  @default(0)
+  createdAt     DateTime @default(now())
 }
 
 // ─── CALENDAR EVENT ──────────────────────────────────────────────

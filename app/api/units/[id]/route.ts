@@ -22,7 +22,25 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       return NextResponse.json({ success: false, data: null, message: "Unit tidak ditemukan" }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, data: unit, message: "Berhasil mengambil data unit" });
+    // Fetch cancellations separately — gracefully handles case where table doesn't exist yet
+    let cancellations: any[] = [];
+    try {
+      const p = prisma as any;
+      if (p.cancellation) {
+        cancellations = await p.cancellation.findMany({
+          where: { unitId: id },
+          orderBy: { tanggalBatal: "desc" },
+        });
+      }
+    } catch (e) {
+      // Table may not exist yet or field mismatch — ignore
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      data: { ...unit, cancellations }, 
+      message: "Berhasil mengambil data unit" 
+    });
   } catch (error: any) {
     return NextResponse.json({ success: false, data: null, message: error.message }, { status: 500 });
   }
@@ -33,7 +51,6 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
     const { id } = await context.params;
     const body = await request.json();
 
-    // Get current unit to validate status
     const current = await prisma.unit.findUnique({ where: { id } });
     if (!current) {
       return NextResponse.json({ success: false, data: null, message: "Unit tidak ditemukan" }, { status: 404 });
@@ -46,50 +63,35 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
       );
     }
 
-    // Validate required fields
-    if (!body.blockName || !body.unitNumber) {
-      return NextResponse.json({ success: false, data: null, message: "Blok dan nomor unit wajib diisi" }, { status: 400 });
-    }
-    if (parseFloat(body.landArea) <= 0 || parseFloat(body.buildingArea) <= 0 || parseFloat(body.price) <= 0) {
-      return NextResponse.json({ success: false, data: null, message: "Luas dan harga harus bernilai positif" }, { status: 400 });
-    }
+    const { blockName, unitNumber, type, landArea, buildingArea, price, projectId } = body;
+    const unitCode = `${blockName}/${unitNumber}`;
 
-    // Check for duplicate blok+nomor unit (excluding self)
-    const newCode = `UNIT-${body.blockName}${body.unitNumber}`;
-    const duplicate = await prisma.unit.findFirst({
-      where: {
-        blockName: body.blockName,
-        unitNumber: body.unitNumber,
-        id: { not: id },
-        isActive: true,
-      },
+    const existing = await prisma.unit.findFirst({
+      where: { unitCode, projectId, NOT: { id } },
     });
-    if (duplicate) {
-      return NextResponse.json(
-        { success: false, data: null, message: "Kombinasi blok dan nomor unit sudah digunakan oleh unit lain" },
-        { status: 400 }
-      );
+    if (existing) {
+      return NextResponse.json({ success: false, data: null, message: "Nomor unit sudah terpakai di proyek ini" }, { status: 400 });
     }
 
-    const unit = await prisma.unit.update({
+    const updated = await prisma.unit.update({
       where: { id },
       data: {
-        blockName: body.blockName,
-        unitNumber: body.unitNumber,
-        type: body.type,
-        landArea: parseFloat(body.landArea),
-        buildingArea: parseFloat(body.buildingArea),
-        price: parseFloat(body.price),
-        projectId: body.projectId,
-        unitCode: newCode,
+        blockName,
+        unitNumber,
+        unitCode,
+        type,
+        landArea: landArea ? parseFloat(landArea) : undefined,
+        buildingArea: buildingArea ? parseFloat(buildingArea) : undefined,
+        price: price ? parseFloat(price) : undefined,
+        projectId,
       },
       include: {
         project: { select: { id: true, name: true, code: true } },
         customer: true,
-      },
+      }
     });
 
-    return NextResponse.json({ success: true, data: unit, message: "Data unit berhasil diperbarui" });
+    return NextResponse.json({ success: true, data: updated, message: "Data unit diperbarui" });
   } catch (error: any) {
     return NextResponse.json({ success: false, data: null, message: error.message }, { status: 500 });
   }
@@ -99,35 +101,29 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
   try {
     const { id } = await context.params;
 
-    const current = await prisma.unit.findUnique({
+    const unit = await prisma.unit.findUnique({
       where: { id },
-      include: { transactions: { take: 1 } },
+      include: { transactions: true }
     });
 
-    if (!current) {
+    if (!unit) {
       return NextResponse.json({ success: false, data: null, message: "Unit tidak ditemukan" }, { status: 404 });
     }
 
-    if (current.transactions.length > 0) {
-      return NextResponse.json(
-        { success: false, data: null, message: "Unit tidak dapat dihapus karena sudah memiliki riwayat transaksi" },
-        { status: 403 }
-      );
+    if (!DELETABLE_STATUSES.includes(unit.status)) {
+      return NextResponse.json({ success: false, data: null, message: "Hanya unit berstatus TERSEDIA yang dapat dihapus" }, { status: 403 });
     }
 
-    if (!DELETABLE_STATUSES.includes(current.status)) {
-      return NextResponse.json(
-        { success: false, data: null, message: "Unit hanya dapat dihapus jika berstatus TERSEDIA" },
-        { status: 403 }
-      );
+    if (unit.transactions.length > 0) {
+      return NextResponse.json({ success: false, data: null, message: "Unit memiliki riwayat transaksi" }, { status: 403 });
     }
 
-    const unit = await prisma.unit.update({
+    await prisma.unit.update({
       where: { id },
-      data: { isActive: false },
+      data: { isActive: false }
     });
 
-    return NextResponse.json({ success: true, data: unit, message: "Data unit berhasil dihapus" });
+    return NextResponse.json({ success: true, data: null, message: "Unit berhasil dinonaktifkan" });
   } catch (error: any) {
     return NextResponse.json({ success: false, data: null, message: error.message }, { status: 500 });
   }
