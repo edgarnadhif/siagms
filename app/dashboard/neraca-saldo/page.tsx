@@ -1,9 +1,11 @@
 import { prisma } from "@/lib/db";
+import { requireAuth } from "@/lib/auth";
 import NeracaSaldoClient from "./NeracaSaldoClient";
 
 export default async function NeracaSaldoPage(props: {
   searchParams?: Promise<{ from?: string; to?: string; project?: string }>;
 }) {
+  const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
   const searchParams = await props.searchParams;
   const fromDate = searchParams?.from || "";
   const toDate = searchParams?.to || "";
@@ -17,9 +19,10 @@ export default async function NeracaSaldoPage(props: {
   // Get all journal entries with account info
   const entries = await prisma.journalEntry.findMany({
     where: {
+      tenantId: auth.tenantId,
       ...(fromDate || toDate ? { date: dateFilter } : {}),
       ...(projectFilter
-        ? { transaction: { projectId: projectFilter } }
+        ? { transaction: { is: { projectId: projectFilter } } }
         : {}),
     },
     include: {
@@ -83,6 +86,7 @@ export default async function NeracaSaldoPage(props: {
 
   // Get projects for filter
   const projects = await prisma.project.findMany({
+    where: { tenantId: auth.tenantId },
     select: { id: true, code: true, name: true },
     orderBy: { name: "asc" },
   });

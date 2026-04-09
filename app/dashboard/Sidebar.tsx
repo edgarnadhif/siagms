@@ -47,7 +47,7 @@ export default function Sidebar({ role }: { role: AppRole }) {
           title: "Projek",
           href: "/dashboard/projek",
           icon: "/folder.svg",
-          roles: ["SUPER_ADMIN", "MARKETING"],
+          roles: ["SUPER_ADMIN", "MARKETING", "AKUNTAN"],
         },
         {
           title: "Transaksi",

@@ -3,11 +3,18 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { serahTerimaUnit } from "@/app/actions";
 import { useActionState } from "react";
+import { useRouter } from "next/navigation";
 
 interface UnitDetailModalProps {
   unitId: string;
   onClose: () => void;
   onCancelSuccess?: (updatedUnitId: string) => void;
+}
+
+const ST_REVENUE_CATEGORIES = ["BOOKING_FEE", "DOWN_PAYMENT", "PENCAIRAN_KPR", "PELUNASAN_CASH"] as const;
+
+function formatRupiah(value: number) {
+  return `Rp ${new Intl.NumberFormat("id-ID").format(value)}`;
 }
 
 // ─── Toast ─────────────────────────────────────────────────────────────────
@@ -251,12 +258,128 @@ function CancelPurchaseModal({ unit, totalBF, onClose, onSuccess }: CancelModalP
   );
 }
 
+interface AkadProcessModalProps {
+  unit: any;
+  onClose: () => void;
+  onSuccess: (message: string) => void;
+}
+
+function AkadProcessModal({ unit, onClose, onSuccess }: AkadProcessModalProps) {
+  const [tanggalAkad, setTanggalAkad] = useState(new Date().toISOString().split("T")[0]);
+  const [namaBank, setNamaBank] = useState(unit.customer?.bankName || "");
+  const [nomorAkad, setNomorAkad] = useState("");
+  const [nilaiKPR, setNilaiKPR] = useState(String(Number(unit.customer?.kprAmount || 0) || ""));
+  const [catatan, setCatatan] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError(null);
+
+    if (!tanggalAkad || !namaBank.trim() || !nomorAkad.trim() || !nilaiKPR || Number(nilaiKPR) <= 0) {
+      setError("Tanggal akad, nama bank, nomor akad, dan nilai KPR wajib diisi");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/units/${unit.id}/akad`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tanggalAkad,
+          namaBank,
+          nomorAkad,
+          nilaiKPR: Number(nilaiKPR),
+          catatan,
+        }),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        onSuccess(result.message);
+      } else {
+        setError(result.message);
+      }
+    } catch {
+      setError("Terjadi kesalahan sistem. Coba lagi.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col">
+        <div className="flex items-center gap-4 p-6 border-b border-orange-100 dark:border-orange-900/30 bg-orange-50 dark:bg-orange-950/30">
+          <div className="w-11 h-11 rounded-xl bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.25 6.75h7.5m-7.5 4.5h7.5m-7.5 4.5h4.5M3.75 5.25A2.25 2.25 0 016 3h12a2.25 2.25 0 012.25 2.25v13.5A2.25 2.25 0 0118 21H6a2.25 2.25 0 01-2.25-2.25V5.25z" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-orange-800 dark:text-orange-300">Proses Akad KPR</h3>
+            <p className="text-sm text-orange-700/80 dark:text-orange-400/80 mt-0.5">Simpan data akad sebelum pencairan KPR diproses.</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex flex-col">
+          <div className="p-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Tanggal Akad *</label>
+                <input type="date" value={tanggalAkad} onChange={(e) => setTanggalAkad(e.target.value)} className="w-full h-11 px-4 rounded-[10px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm" required />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Nama Bank *</label>
+                <input type="text" value={namaBank} onChange={(e) => setNamaBank(e.target.value)} className="w-full h-11 px-4 rounded-[10px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm" required />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Nomor Akad *</label>
+                <input type="text" value={nomorAkad} onChange={(e) => setNomorAkad(e.target.value)} className="w-full h-11 px-4 rounded-[10px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm" required />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Nilai KPR Disetujui *</label>
+                <input type="number" min="1" value={nilaiKPR} onChange={(e) => setNilaiKPR(e.target.value)} className="w-full h-11 px-4 rounded-[10px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm" required />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Catatan</label>
+              <textarea value={catatan} onChange={(e) => setCatatan(e.target.value)} rows={3} className="w-full p-4 rounded-[10px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm resize-none" placeholder="Catatan tambahan akad (opsional)" />
+            </div>
+
+            {error && <div className="text-red-500 text-xs font-bold p-3 bg-red-50 dark:bg-red-950/20 rounded-xl border border-red-100 dark:border-red-900/30">{error}</div>}
+          </div>
+
+          <div className="px-6 pb-6 flex gap-3">
+            <button type="button" onClick={onClose} className="flex-1 h-11 text-sm font-bold text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-[10px] transition-all">
+              Batal
+            </button>
+            <button type="submit" disabled={loading} className="flex-[2] h-11 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-[10px] shadow-lg shadow-orange-500/20 transition-all">
+              {loading ? "Memproses..." : "Konfirmasi Akad"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function UnitDetailModal({ unitId, onClose, onCancelSuccess }: UnitDetailModalProps) {
   const [unit, setUnit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showSTForm, setShowSTForm] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showAkadModal, setShowAkadModal] = useState(false);
+  const router = useRouter();
 
   const [stState, stAction, isStPending] = useActionState(serahTerimaUnit, null);
 
@@ -270,18 +393,7 @@ export default function UnitDetailModal({ unitId, onClose, onCancelSuccess }: Un
   }, []);
   const removeToast = useCallback((id: number) => setToasts((prev) => prev.filter((t) => t.id !== id)), []);
 
-  useEffect(() => {
-    fetchUnitDetail();
-  }, [unitId]);
-
-  useEffect(() => {
-    if (stState?.success) {
-      fetchUnitDetail();
-      setShowSTForm(false);
-    }
-  }, [stState]);
-
-  const fetchUnitDetail = async () => {
+  const fetchUnitDetail = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/units/${unitId}`);
@@ -294,7 +406,19 @@ export default function UnitDetailModal({ unitId, onClose, onCancelSuccess }: Un
     } finally {
       setLoading(false);
     }
-  };
+  }, [unitId]);
+
+  useEffect(() => {
+    fetchUnitDetail();
+  }, [fetchUnitDetail]);
+
+  useEffect(() => {
+    if (stState?.success) {
+      fetchUnitDetail();
+      setShowSTForm(false);
+      showToast(stState.message || "Serah terima berhasil diproses.", "success");
+    }
+  }, [fetchUnitDetail, showToast, stState]);
 
   const handleCancelSuccess = (msg: string) => {
     setShowCancelModal(false);
@@ -303,6 +427,36 @@ export default function UnitDetailModal({ unitId, onClose, onCancelSuccess }: Un
     fetchUnitDetail();
     // Notify parent if needed
     onCancelSuccess?.(unitId);
+  };
+
+  const handleAkadSuccess = (msg: string) => {
+    setShowAkadModal(false);
+    showToast(msg, "success");
+    fetchUnitDetail();
+    onCancelSuccess?.(unitId);
+  };
+
+  const handleSTSubmitConfirm = (event: React.FormEvent<HTMLFormElement>) => {
+    if (!canProcessST) {
+      event.preventDefault();
+      return;
+    }
+
+    const confirmationMessage = [
+      `Total pendapatan yang akan diakui: ${formatRupiah(stBreakdown.total)}`,
+      `- Booking Fee    : ${formatRupiah(stBreakdown.bookingFee)}`,
+      `- Down Payment   : ${formatRupiah(stBreakdown.downPayment)}`,
+      `- Pencairan KPR  : ${formatRupiah(stBreakdown.pencairanKpr)}`,
+      `- Pelunasan Cash : ${formatRupiah(stBreakdown.pelunasanCash)}`,
+      "--------------------------------",
+      `Total            : ${formatRupiah(stBreakdown.total)}`,
+      "",
+      "Konfirmasi serah terima?"
+    ].join("\n");
+
+    if (!window.confirm(confirmationMessage)) {
+      event.preventDefault();
+    }
   };
 
   if (loading) {
@@ -322,16 +476,36 @@ export default function UnitDetailModal({ unitId, onClose, onCancelSuccess }: Un
   if (!unit) return null;
 
   const totalPrice = Number(unit.price);
+  const latestAkad = unit.akadRecords?.[0] || null;
   const totalPaid = unit.transactions.reduce((acc: number, t: any) => acc + Number(t.amount), 0);
   const totalBF = unit.transactions
     .filter((t: any) => t.category === "BOOKING_FEE")
     .reduce((acc: number, t: any) => acc + Number(t.amount), 0);
+  const stBreakdown = unit.transactions.reduce(
+    (acc: { bookingFee: number; downPayment: number; pencairanKpr: number; pelunasanCash: number; total: number }, transaction: any) => {
+      if (!ST_REVENUE_CATEGORIES.includes(transaction.category)) {
+        return acc;
+      }
+
+      const amount = Number(transaction.amount);
+      if (transaction.category === "BOOKING_FEE") acc.bookingFee += amount;
+      if (transaction.category === "DOWN_PAYMENT") acc.downPayment += amount;
+      if (transaction.category === "PENCAIRAN_KPR") acc.pencairanKpr += amount;
+      if (transaction.category === "PELUNASAN_CASH") acc.pelunasanCash += amount;
+      acc.total += amount;
+      return acc;
+    },
+    { bookingFee: 0, downPayment: 0, pencairanKpr: 0, pelunasanCash: 0, total: 0 }
+  );
   const remaining = Math.max(0, totalPrice - totalPaid);
   const payPercent = Math.min(100, Math.round((totalPaid / totalPrice) * 100));
   const isFullyPaid = payPercent >= 100;
+  const canProcessST = isFullyPaid && stBreakdown.total > 0;
 
   const CANCELLABLE_STATUSES = ["BOOKING", "INDENT"];
   const canCancel = CANCELLABLE_STATUSES.includes(unit.status);
+  const canProcessAkad = unit.status === "INDENT";
+  const canInputPencairan = unit.status === "AKAD" && latestAkad;
 
   const getStatusStep = (status: string) => {
     const steps = ["TERSEDIA", "BOOKING", "INDENT", "AKAD", "LUNAS", "SERAH_TERIMA"];
@@ -356,6 +530,14 @@ export default function UnitDetailModal({ unitId, onClose, onCancelSuccess }: Un
           totalBF={totalBF}
           onClose={() => setShowCancelModal(false)}
           onSuccess={handleCancelSuccess}
+        />
+      )}
+
+      {showAkadModal && (
+        <AkadProcessModal
+          unit={unit}
+          onClose={() => setShowAkadModal(false)}
+          onSuccess={handleAkadSuccess}
         />
       )}
 
@@ -439,10 +621,16 @@ export default function UnitDetailModal({ unitId, onClose, onCancelSuccess }: Un
                       <span className="font-bold">{unit.customer?.paymentMethod || "—"}</span>
                     </div>
                     {unit.customer?.paymentMethod === "KPR" && (
-                      <div className="flex justify-between">
-                        <span>Bank</span>
-                        <span className="font-bold">{unit.customer?.bankName || "—"}</span>
-                      </div>
+                      <>
+                        <div className="flex justify-between">
+                          <span>Bank</span>
+                          <span className="font-bold">{latestAkad?.namaBank || unit.customer?.bankName || "—"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Plafon</span>
+                          <span className="font-bold">Rp {new Intl.NumberFormat("id-ID").format(Number(latestAkad?.nilaiKPR || unit.customer?.kprAmount || 0))}</span>
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>
@@ -481,6 +669,22 @@ export default function UnitDetailModal({ unitId, onClose, onCancelSuccess }: Un
                         <div className="mt-3 text-center">
                           <p className={`text-xs font-bold transition-colors ${isActive ? "text-slate-800 dark:text-white" : "text-slate-400"}`}>{step.label}</p>
                           <p className="text-[10px] text-slate-400 mt-0.5 max-w-[80px] leading-tight">{step.desc}</p>
+                          {step.id === "AKAD" && canProcessAkad && (
+                            <button
+                              onClick={() => setShowAkadModal(true)}
+                              className="mt-2 px-3 py-1.5 rounded-lg text-[10px] font-black bg-orange-100 text-orange-700 hover:bg-orange-500 hover:text-white transition-all"
+                            >
+                              Proses Akad KPR
+                            </button>
+                          )}
+                          {step.id === "AKAD" && canInputPencairan && (
+                            <button
+                              onClick={() => router.push(`/dashboard/transaksi?add=true&category=PENCAIRAN_KPR&unitId=${unit.id}&projectId=${unit.projectId}&customerId=${unit.customerId}`)}
+                              className="mt-2 px-3 py-1.5 rounded-lg text-[10px] font-black bg-orange-500 text-white hover:bg-orange-600 transition-all"
+                            >
+                              Input Pencairan KPR
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
@@ -522,6 +726,43 @@ export default function UnitDetailModal({ unitId, onClose, onCancelSuccess }: Un
               <div className="space-y-4">
                 <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                  Data Akad
+                </h3>
+
+                {latestAkad ? (
+                  <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/30 p-5 rounded-3xl space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">Tanggal Akad</span>
+                      <span className="font-bold text-slate-800 dark:text-white">
+                        {new Date(latestAkad.tanggalAkad).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">Nomor Akad</span>
+                      <span className="font-bold text-slate-800 dark:text-white">{latestAkad.nomorAkad}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">Bank</span>
+                      <span className="font-bold text-slate-800 dark:text-white">{latestAkad.namaBank}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">Nilai KPR</span>
+                      <span className="font-black text-orange-600">Rp {new Intl.NumberFormat("id-ID").format(Number(latestAkad.nilaiKPR))}</span>
+                    </div>
+                    {latestAkad.catatan && (
+                      <div className="text-[11px] text-slate-500 bg-white dark:bg-slate-900/50 border border-orange-100 dark:border-orange-900/20 rounded-xl px-3 py-2">
+                        {latestAkad.catatan}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-slate-50 dark:bg-slate-900/40 border border-dashed border-slate-300 dark:border-slate-700 p-5 rounded-3xl text-sm text-slate-400">
+                    Data akad belum dicatat untuk unit ini.
+                  </div>
+                )}
+
+                <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
                   Serah Terima Unit
                 </h3>
 
@@ -535,9 +776,25 @@ export default function UnitDetailModal({ unitId, onClose, onCancelSuccess }: Un
                     <h4 className="text-lg font-bold text-emerald-800 dark:text-emerald-400">Unit Telah Diserahterimakan</h4>
                     <p className="text-sm text-emerald-600/80 mt-1">Pendapatan telah diakui dalam sistem akuntansi secara otomatis.</p>
                   </div>
+                ) : !latestAkad && unit.customer?.paymentMethod === "KPR" ? (
+                  <div className="bg-slate-50 dark:bg-slate-900/40 border border-dashed border-slate-300 dark:border-slate-700 p-8 rounded-3xl flex flex-col items-center text-center">
+                    <p className="text-slate-400 text-sm font-medium">Catat data akad KPR terlebih dahulu sebelum proses pencairan dan serah terima.</p>
+                  </div>
                 ) : !isFullyPaid ? (
                   <div className="bg-slate-50 dark:bg-slate-900/40 border border-dashed border-slate-300 dark:border-slate-700 p-8 rounded-3xl flex flex-col items-center text-center">
                     <p className="text-slate-400 text-sm font-medium">Selesaikan pelunasan 100% untuk mengaktifkan fitur Serah Terima.</p>
+                    {canInputPencairan && (
+                      <button
+                        onClick={() => router.push(`/dashboard/transaksi?add=true&category=PENCAIRAN_KPR&unitId=${unit.id}&projectId=${unit.projectId}&customerId=${unit.customerId}`)}
+                        className="mt-4 px-5 h-11 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-[10px] shadow-lg shadow-orange-500/20 transition-all"
+                      >
+                        Input Pencairan KPR
+                      </button>
+                    )}
+                  </div>
+                ) : stBreakdown.total <= 0 ? (
+                  <div className="bg-slate-50 dark:bg-slate-900/40 border border-dashed border-slate-300 dark:border-slate-700 p-8 rounded-3xl flex flex-col items-center text-center">
+                    <p className="text-slate-400 text-sm font-medium">Belum ada Booking Fee, Down Payment, Pencairan KPR, atau Pelunasan Cash yang bisa diakui saat serah terima.</p>
                   </div>
                 ) : !showSTForm ? (
                   <button
@@ -550,9 +807,42 @@ export default function UnitDetailModal({ unitId, onClose, onCancelSuccess }: Un
                     PROSES SERAH TERIMA
                   </button>
                 ) : (
-                  <form action={stAction} className="bg-white dark:bg-slate-800 border-2 border-orange-500/20 p-6 rounded-[24px] space-y-4 shadow-xl">
+                  <form action={stAction} onSubmit={handleSTSubmitConfirm} className="bg-white dark:bg-slate-800 border-2 border-orange-500/20 p-6 rounded-[24px] space-y-4 shadow-xl">
                     <input type="hidden" name="unitId" value={unitId} />
                     <input type="hidden" name="customerId" value={unit.customerId} />
+                    <div className="rounded-2xl border border-orange-100 dark:border-orange-900/30 bg-orange-50/70 dark:bg-orange-950/20 p-4 space-y-3">
+                      <div>
+                        <p className="text-[11px] font-black text-orange-500 uppercase tracking-[0.2em]">Konfirmasi Pengakuan Pendapatan</p>
+                        <h4 className="text-base font-black text-slate-800 dark:text-white mt-1">
+                          Total pendapatan yang akan diakui: {formatRupiah(stBreakdown.total)}
+                        </h4>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="text-slate-500">Booking Fee</span>
+                          <span className="font-bold text-slate-800 dark:text-white">{formatRupiah(stBreakdown.bookingFee)}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="text-slate-500">Down Payment</span>
+                          <span className="font-bold text-slate-800 dark:text-white">{formatRupiah(stBreakdown.downPayment)}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="text-slate-500">Pencairan KPR</span>
+                          <span className="font-bold text-slate-800 dark:text-white">{formatRupiah(stBreakdown.pencairanKpr)}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="text-slate-500">Pelunasan Cash</span>
+                          <span className="font-bold text-slate-800 dark:text-white">{formatRupiah(stBreakdown.pelunasanCash)}</span>
+                        </div>
+                      </div>
+                      <div className="border-t border-orange-200 dark:border-orange-900/30 pt-3 flex items-center justify-between gap-4">
+                        <span className="text-sm font-black text-slate-700 dark:text-slate-200">Total</span>
+                        <span className="text-lg font-black text-orange-600">{formatRupiah(stBreakdown.total)}</span>
+                      </div>
+                      <p className="text-[11px] font-medium text-orange-700/80 dark:text-orange-300/80">
+                        Konfirmasi serah terima akan membuat jurnal Debit 2100 dan Kredit 4100 sebesar total penerimaan unit ini.
+                      </p>
+                    </div>
                     <div>
                       <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5 ml-1">
                         No. Berita Acara <span className="text-[#EA6C00]">*</span>
@@ -570,7 +860,7 @@ export default function UnitDetailModal({ unitId, onClose, onCancelSuccess }: Un
                     )}
                     <div className="flex gap-2 pt-2">
                       <button type="button" onClick={() => setShowSTForm(false)} className="flex-1 h-11 text-sm font-bold text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-[10px] transition-all">Batal</button>
-                      <button type="submit" disabled={isStPending} className="flex-[2] h-11 text-sm font-black text-white bg-[#EA6C00] hover:bg-[#C25500] rounded-[10px] shadow-lg shadow-orange-500/20 transition-all active:scale-95 disabled:opacity-50">
+                      <button type="submit" disabled={isStPending || !canProcessST} className="flex-[2] h-11 text-sm font-black text-white bg-[#EA6C00] hover:bg-[#C25500] rounded-[10px] shadow-lg shadow-orange-500/20 transition-all active:scale-95 disabled:opacity-50">
                         {isStPending ? "Memproses..." : "Konfirmasi ST"}
                       </button>
                     </div>
@@ -586,7 +876,7 @@ export default function UnitDetailModal({ unitId, onClose, onCancelSuccess }: Un
                     </div>
                     <div>
                       <p className="text-xs font-bold text-blue-800 dark:text-blue-400">INFO AKUNTANSI</p>
-                      <p className="text-[11px] text-blue-600/80 leading-relaxed mt-1 font-medium italic">Sistem akan otomatis melakukan pengakuan pendapatan (sebesar harga unit) saat proses serah terima diproses.</p>
+                      <p className="text-[11px] text-blue-600/80 leading-relaxed mt-1 font-medium italic">Sistem akan otomatis melakukan pengakuan pendapatan berdasarkan total penerimaan unit yang sudah masuk: Booking Fee, Down Payment, Pencairan KPR, dan Pelunasan Cash.</p>
                     </div>
                   </div>
                 </div>

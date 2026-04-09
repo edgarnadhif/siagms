@@ -120,6 +120,17 @@ export default function AddProjectModal() {
             </div>
 
             <div>
+              <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Lokasi *</label>
+              <input 
+                required 
+                type="text" 
+                name="location" 
+                placeholder="Masukkan lokasi proyek" 
+                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all placeholder:text-gray-300" 
+              />
+            </div>
+
+            <div>
               <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Deskripsi Proyek</label>
               <textarea 
                 name="description" 
@@ -139,14 +150,25 @@ export default function AddProjectModal() {
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Budget (Rp)</label>
+                <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Target Selesai</label>
+                <input 
+                  type="date" 
+                  name="endDate" 
+                  className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all" 
+                />
+              </div>
+            </div>
+
+            <div>
+                <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Budget (Rp) *</label>
                 <input 
                   type="number" 
                   name="budget" 
-                  placeholder="Nominal budget" 
+                  min="1000000"
+                  required
+                  placeholder="Minimal 1000000" 
                   className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all placeholder:text-gray-300" 
                 />
-              </div>
             </div>
 
             {state?.error && (

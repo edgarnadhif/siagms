@@ -30,17 +30,27 @@ interface Project {
 const CATEGORY_LABELS: Record<string, string> = {
   BOOKING_FEE: "Booking Fee",
   DOWN_PAYMENT: "Down Payment",
-  PELUNASAN: "Pelunasan",
-  BIAYA_PROYEK: "Biaya Proyek",
+  ANGSURAN_KPR: "Angsuran KPR",
+  PELUNASAN_CASH: "Pelunasan Cash",
+  PENCAIRAN_KPR: "Pencairan KPR",
+  BIAYA_KONSTRUKSI: "Biaya Konstruksi",
+  BIAYA_MARKETING: "Biaya Marketing",
   BIAYA_OPERASIONAL: "Biaya Operasional",
+  BIAYA_GAJI: "Biaya Gaji",
+  LAIN_LAIN: "Lain-lain",
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
   BOOKING_FEE: "text-[#185FA5] bg-[#E6F1FB] border-[#BEE1FF] dark:text-blue-300 dark:bg-blue-900/40 dark:border-blue-700",
   DOWN_PAYMENT: "text-[#15803D] bg-[#DCFCE7] border-[#BBF7D0] dark:text-emerald-300 dark:bg-emerald-900/40 dark:border-emerald-700",
-  PELUNASAN: "text-[#6B21A8] bg-[#F3E8FF] border-[#E9D5FF] dark:text-purple-300 dark:bg-purple-900/40 dark:border-purple-700",
-  BIAYA_PROYEK: "text-[#D45D00] bg-[#FFF0E6] border-[#FFD8B1] dark:text-orange-300 dark:bg-orange-900/40 dark:border-orange-700",
+  ANGSURAN_KPR: "text-sky-700 bg-sky-100 border-sky-200 dark:text-sky-300 dark:bg-sky-900/40 dark:border-sky-700",
+  PELUNASAN_CASH: "text-[#6B21A8] bg-[#F3E8FF] border-[#E9D5FF] dark:text-purple-300 dark:bg-purple-900/40 dark:border-purple-700",
+  PENCAIRAN_KPR: "text-indigo-700 bg-indigo-100 border-indigo-200 dark:text-indigo-300 dark:bg-indigo-900/40 dark:border-indigo-700",
+  BIAYA_KONSTRUKSI: "text-[#D45D00] bg-[#FFF0E6] border-[#FFD8B1] dark:text-orange-300 dark:bg-orange-900/40 dark:border-orange-700",
+  BIAYA_MARKETING: "text-pink-700 bg-pink-100 border-pink-200 dark:text-pink-300 dark:bg-pink-900/40 dark:border-pink-700",
   BIAYA_OPERASIONAL: "text-[#B91C1C] bg-[#FEE2E2] border-[#FECACA] dark:text-red-300 dark:bg-red-900/40 dark:border-red-700",
+  BIAYA_GAJI: "text-amber-700 bg-amber-100 border-amber-200 dark:text-amber-300 dark:bg-amber-900/40 dark:border-amber-700",
+  LAIN_LAIN: "text-slate-700 bg-slate-100 border-slate-200 dark:text-slate-300 dark:bg-slate-900/40 dark:border-slate-700",
 };
 
 function formatRupiah(num: number) {

@@ -14,6 +14,10 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       include: {
         project: { select: { id: true, name: true, code: true } },
         customer: true,
+        akadRecords: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
         transactions: {
           orderBy: { date: "desc" },
         },

@@ -6,12 +6,15 @@ import AddProjectModal from "./AddProjectModal";
 import ProjectFilters from "./ProjectFilters";
 import ProjectGrid from "./ProjectGrid";
 
+const REVENUE_CATEGORIES = ["BOOKING_FEE", "DOWN_PAYMENT", "PENCAIRAN_KPR", "PELUNASAN_CASH"] as const;
+const EXPENSE_CATEGORIES = ["BIAYA_KONSTRUKSI", "BIAYA_MARKETING", "BIAYA_OPERASIONAL", "BIAYA_GAJI", "LAIN_LAIN"] as const;
+
 export default async function ProjectPage({
   searchParams,
 }: {
   searchParams: Promise<{ search?: string; status?: string; add?: string }>;
 }) {
-  const auth = await requireAuth(["SUPER_ADMIN", "MARKETING"]);
+  const auth = await requireAuth(["SUPER_ADMIN", "MARKETING", "AKUNTAN"]);
   const { search = "", status = "", add } = await searchParams;
   const showAddModal = add === "true";
 
@@ -31,27 +34,64 @@ export default async function ProjectPage({
       ],
     },
     include: {
-      transactions: true,
+      units: { select: { id: true, unitCode: true, status: true } },
     },
     orderBy: { createdAt: "desc" },
   });
 
-  // Serialize Decimal and Date for Client Component
-  const projects = rawProjects.map((p) => ({
-    ...p,
-    budget: Number(p.budget),
-    createdAt: p.createdAt.toISOString(),
-    updatedAt: p.updatedAt.toISOString(),
-    startDate: p.startDate?.toISOString() || null,
-    endDate: p.endDate?.toISOString() || null,
-    transactions: p.transactions.map(t => ({
-      ...t,
-      amount: Number(t.amount),
-      date: t.date.toISOString(),
-      createdAt: t.createdAt.toISOString(),
-      updatedAt: t.updatedAt.toISOString(),
-    }))
-  }));
+  const projects = await Promise.all(
+    rawProjects.map(async (project) => {
+      const [incomeByUnit, incomeDirect, expenses, transactionCount] = await Promise.all([
+        prisma.transaction.aggregate({
+          where: {
+            tenantId: auth.tenantId,
+            unit: { projectId: project.id },
+            category: { in: [...REVENUE_CATEGORIES] },
+          },
+          _sum: { amount: true },
+        }),
+        prisma.transaction.aggregate({
+          where: {
+            tenantId: auth.tenantId,
+            projectId: project.id,
+            unitId: null,
+            category: { in: [...REVENUE_CATEGORIES] },
+          },
+          _sum: { amount: true },
+        }),
+        prisma.transaction.aggregate({
+          where: {
+            tenantId: auth.tenantId,
+            projectId: project.id,
+            category: { in: [...EXPENSE_CATEGORIES] },
+          },
+          _sum: { amount: true },
+        }),
+        prisma.transaction.count({
+          where: {
+            tenantId: auth.tenantId,
+            OR: [{ projectId: project.id }, { unit: { projectId: project.id } }],
+          },
+        }),
+      ]);
+
+      const totalIncome = Number(incomeByUnit._sum.amount || 0) + Number(incomeDirect._sum.amount || 0);
+      const totalExpense = Number(expenses._sum.amount || 0);
+
+      return {
+        ...project,
+        budget: Number(project.budget),
+        createdAt: project.createdAt.toISOString(),
+        updatedAt: project.updatedAt.toISOString(),
+        startDate: project.startDate?.toISOString() || null,
+        endDate: project.endDate?.toISOString() || null,
+        totalIncome,
+        totalExpense,
+        transactionCount,
+      };
+    })
+  );
+
 
   return (
     <div className="bg-gray-100 dark:bg-[#0f172a] border-2 border-gray-200 dark:border-gray-800 rounded-2xl pt-4 md:p-5 md:pt-5 min-h-[calc(100vh-80px)] shadow-xl">

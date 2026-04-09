@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
+import React from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import * as xlsx from "xlsx";
 
@@ -146,7 +146,6 @@ export default function NeracaSaldoClient({
             <span className="text-xs font-medium mt-2 opacity-70 italic">Mohon periksa kembali transaksi atau jurnal umum Anda untuk periode ini.</span>
           </div>
         )}
-      </div>
 
       <style dangerouslySetInnerHTML={{__html: `
         @media print {

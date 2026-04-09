@@ -8,7 +8,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
 function formatRupiah(num: number) {
-  return "Rp " + Math.abs(num).toLocaleString("id-ID");
+  return "Rp " + num.toLocaleString("id-ID");
 }
 
 export default function LaporanClient({
@@ -110,7 +110,10 @@ export default function LaporanClient({
     xlsx.writeFile(wb, `Laporan_${activeTab}_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
-  const isNeracaBalanced = neracaData.totalAset === (neracaData.totalKewajiban + neracaData.totalEkuitas);
+  const kewajibanEkuitas = neracaData.totalKewajiban + neracaData.totalEkuitas;
+  const selisihNeraca = Math.abs(neracaData.totalAset - kewajibanEkuitas);
+  const isNeracaBalanced = selisihNeraca <= 1000;
+
 
   return (
     <div className="border-2 shadow-xl border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-100 dark:bg-[#0f172a] text-gray-600 dark:text-gray-300 pt-4 md:p-5 md:pt-5 min-h-screen printable-area">
@@ -283,7 +286,8 @@ export default function LaporanClient({
                  <span>TOTAL KEWAJIBAN & EKUITAS</span>
                  <span>{formatRupiah(neracaData.totalKewajiban + neracaData.totalEkuitas)}</span>
               </div>
-              {!isNeracaBalanced && <div className="text-right text-xs font-bold text-red-500 uppercase">Warning: Neraca Tidak Balance! Selisih: {formatRupiah(Math.abs(neracaData.totalAset - (neracaData.totalKewajiban + neracaData.totalEkuitas)))}</div>}
+              {!isNeracaBalanced && <div className="text-right text-xs font-bold text-red-500 uppercase mt-1">⚠ Neraca Tidak Balance! Selisih: {formatRupiah(selisihNeraca)}</div>}
+
             </div>
           </div>
         )}

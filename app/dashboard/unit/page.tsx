@@ -24,5 +24,7 @@ export default async function UnitPage() {
     select: { id: true, name: true, customerCode: true, paymentMethod: true },
   });
 
-  return <UnitClient initialData={units} projects={projects} customers={customers} />;
+  const serializedUnits = JSON.parse(JSON.stringify(units));
+
+  return <UnitClient initialData={serializedUnits} projects={projects} customers={customers} />;
 }

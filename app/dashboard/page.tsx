@@ -1,16 +1,41 @@
 import { prisma } from "@/lib/db";
+import { requireAuth } from "@/lib/auth";
 import DashboardClient from "./DashboardClient";
+
+const PENDAPATAN_DIAKUI_CATEGORIES = [
+  "BOOKING_FEE",
+  "DOWN_PAYMENT",
+  "PENCAIRAN_KPR",
+  "PELUNASAN_CASH",
+] as const;
+
+const LABA_RUGI_BEBAN_CATEGORIES = [
+  "BIAYA_KONSTRUKSI",
+  "BIAYA_MARKETING",
+  "BIAYA_GAJI",
+  "BIAYA_OPERASIONAL",
+  "LAIN_LAIN",
+] as const;
 
 export default async function DashboardPage(props: {
   searchParams?: Promise<{ project?: string }>;
 }) {
+  const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
   const searchParams = await props.searchParams;
   const projectFilter = searchParams?.project && searchParams?.project !== "all" ? searchParams.project : null;
 
-  // 1. Get total revenue & expenses from Journal Entries
-  // PENDAPATAN -> Revenue
-  // BEBAN -> Expenses
-  const journalWhere = projectFilter ? { transaction: { projectId: projectFilter } } : {};
+  const journalWhere = {
+    tenantId: auth.tenantId,
+    ...(projectFilter
+      ? {
+          OR: [
+            { unit: { is: { projectId: projectFilter } } },
+            { transaction: { is: { unit: { projectId: projectFilter } } } },
+            { transaction: { is: { projectId: projectFilter, unitId: null } } },
+          ],
+        }
+      : {}),
+  };
 
   const entries = await prisma.journalEntry.findMany({
     where: journalWhere,
@@ -19,39 +44,15 @@ export default async function DashboardPage(props: {
     },
   });
 
-  let totalRevenue = 0;
-  let totalExpenses = 0;
-  // Variables for Neraca Singkat
-  let kas = 0, bank = 0, piutangPembeli = 0, bdk = 0, tanah = 0;
-  let pendDiterimaDiMuka = 0, hutangKontraktor = 0, hutangUsaha = 0, hutangBank = 0;
-  let modalDisetor = 0, labaDitahan = 0;
-  let fallbackPendapatan4100 = 0;
+  const totalRevenue = 0;
+  let modalDisetor = 0;
+  let labaDitahan = 0;
 
   for (const entry of entries) {
-    const type = entry.account.type;
     const code = entry.account.code;
     const debit = Number(entry.debit);
     const credit = Number(entry.credit);
-    const netDebit = debit - credit;
     const netCredit = credit - debit;
-
-    if (code === "4100") fallbackPendapatan4100 += netCredit;
-
-    // Expense is DEBIT normal
-    if (code >= "5100" && code <= "5600") {
-      totalExpenses += netDebit;
-    }
-
-    if (code === "1100") kas += netDebit;
-    if (code === "1200") bank += netDebit;
-    if (code === "1300") piutangPembeli += netDebit;
-    if (code === "1600") bdk += netDebit;
-    if (code === "1700") tanah += netDebit;
-
-    if (code === "2100") pendDiterimaDiMuka += netCredit;
-    if (code === "2200") hutangKontraktor += netCredit;
-    if (code === "2300") hutangUsaha += netCredit;
-    if (code === "2400") hutangBank += netCredit;
 
     if (code === "3100") modalDisetor += netCredit;
     if (code === "3200") labaDitahan += netCredit;
@@ -60,17 +61,20 @@ export default async function DashboardPage(props: {
   // 1.5 Calculate Total Budget
   let totalBudget = 0;
   if (projectFilter) {
-    const proj = await prisma.project.findUnique({ where: { id: projectFilter } });
+    const proj = await prisma.project.findFirst({ where: { id: projectFilter, tenantId: auth.tenantId } });
     if (proj) totalBudget = Number(proj.budget);
   } else {
-    const projs = await prisma.project.findMany();
+    const projs = await prisma.project.findMany({ where: { tenantId: auth.tenantId } });
     totalBudget = projs.reduce((sum, p) => sum + Number(p.budget), 0);
   }
 
   // 1.8 Unit Statistics & KPIs
   const unitSummary = await prisma.unit.groupBy({
     by: ['status'],
-    where: projectFilter ? { projectId: projectFilter } : {},
+    where: {
+      tenantId: auth.tenantId,
+      ...(projectFilter ? { projectId: projectFilter } : {}),
+    },
     _count: { id: true },
     _sum: { price: true }
   });
@@ -84,79 +88,124 @@ export default async function DashboardPage(props: {
     SERAH_TERIMA: 0,
   };
 
-  let pendapatanDiakui = 0;
   unitSummary.forEach(group => {
     if (group.status in unitStats) {
       (unitStats as any)[group.status] = group._count.id;
     }
   });
 
-  // Calculate Pendapatan Diakui based on Serah Terima Units
-  const stUnits = await prisma.unit.findMany({
+  const pendapatanDiakuiAgg = await prisma.transaction.aggregate({
     where: {
-      status: "SERAH_TERIMA",
-      ...(projectFilter ? { projectId: projectFilter } : {})
+      tenantId: auth.tenantId,
+      category: {
+        in: [...PENDAPATAN_DIAKUI_CATEGORIES],
+      },
+      ...(projectFilter ? { projectId: projectFilter } : {}),
+      unit: {
+        is: {
+          tenantId: auth.tenantId,
+          status: { in: ["LUNAS", "SERAH_TERIMA"] },
+          ...(projectFilter ? { projectId: projectFilter } : {}),
+        },
+      },
     },
-    include: {
-      transactions: {
-        where: {
-          category: { in: ["PENCAIRAN_KPR", "PELUNASAN_CASH"] }
-        }
-      }
-    }
+    _sum: { amount: true },
   });
 
-  for (const unit of stUnits) {
-    const totalTx = unit.transactions.reduce((sum, tx) => sum + Number(tx.amount), 0);
-    if (totalTx > 0) {
-      pendapatanDiakui += totalTx;
-    } else {
-      // fallback to 4100 if no transactions are found but it's ST
-      pendapatanDiakui += Number(unit.price); 
-    }
-  }
-  if (pendapatanDiakui === 0) pendapatanDiakui = fallbackPendapatan4100;
-  
+  const pendapatanDiakui = Number(pendapatanDiakuiAgg._sum.amount || 0);
+
+  const totalBebanAgg = await prisma.transaction.aggregate({
+    where: {
+      tenantId: auth.tenantId,
+      category: {
+        in: [...LABA_RUGI_BEBAN_CATEGORIES],
+      },
+      ...(projectFilter ? { projectId: projectFilter } : {}),
+    },
+    _sum: { amount: true },
+  });
+
+  const totalExpenses = Number(totalBebanAgg._sum.amount || 0);
   const labaBersih = pendapatanDiakui - totalExpenses;
 
   // Calculate Piutang KPR (Units with status AKAD where method is KPR)
   const akadUnits = await prisma.unit.findMany({
     where: {
+      tenantId: auth.tenantId,
       status: 'AKAD',
       ...(projectFilter ? { projectId: projectFilter } : {}),
       customer: { paymentMethod: 'KPR' }
     },
-    include: { transactions: true }
+    include: {
+      customer: true,
+      transactions: {
+        where: { category: "PENCAIRAN_KPR" }
+      },
+      akadRecords: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      }
+    }
   });
   
   const piutangKPR = akadUnits.reduce((sum, u) => {
-    const paid = u.transactions.reduce((acc, t) => acc + Number(t.amount), 0);
-    return sum + (Number(u.price) - paid);
+    const nilaiKPRDisetujui = Number(u.akadRecords[0]?.nilaiKPR || u.customer?.kprAmount || 0);
+    const cair = u.transactions.reduce((acc, t) => acc + Number(t.amount), 0);
+    return sum + Math.max(0, nilaiKPRDisetujui - cair);
   }, 0);
 
-  const tersediaUnits = await prisma.unit.aggregate({
-    where: {
-      status: "TERSEDIA",
-      ...(projectFilter ? { projectId: projectFilter } : {})
-    },
-    _sum: { price: true }
-  });
-  const persediaanUnit = Number(tersediaUnits._sum.price || 0);
+  const totalAset = entries.reduce((sum, entry) => {
+    if (entry.account.type !== "ASET") return sum;
+    return sum + (Number(entry.debit) - Number(entry.credit));
+  }, 0);
 
-  const totalAset = kas + bank + piutangPembeli + piutangKPR + persediaanUnit + bdk + tanah;
-  const totalKewajiban = pendDiterimaDiMuka + hutangKontraktor + hutangUsaha + hutangBank;
+  const kewajibanPerAkun = entries
+    .filter((entry) => entry.account.type === "KEWAJIBAN")
+    .reduce((map, entry) => {
+      const code = entry.account.code;
+      const current = map.get(code) || { totalDebit: 0, totalCredit: 0, saldo: 0 };
+      current.totalDebit += Number(entry.debit);
+      current.totalCredit += Number(entry.credit);
+      current.saldo = current.totalCredit - current.totalDebit;
+      map.set(code, current);
+      return map;
+    }, new Map<string, { totalDebit: number; totalCredit: number; saldo: number }>());
+
+  console.log(
+    "[Dashboard Neraca Debug] Kewajiban raw:",
+    JSON.stringify(
+      Array.from(kewajibanPerAkun.entries()).map(([code, value]) => ({
+        code,
+        totalDebit: value.totalDebit,
+        totalCredit: value.totalCredit,
+        saldo: value.saldo,
+      }))
+    )
+  );
+
+  const totalKewajiban = entries.reduce((sum, entry) => {
+    if (entry.account.type !== "KEWAJIBAN") return sum;
+    return sum + (Number(entry.credit) - Number(entry.debit));
+  }, 0);
+
   const totalEkuitas = modalDisetor + labaDitahan + labaBersih;
 
   // 2. Transaksi Terbaru (Limit to 50 for breakdown table processing)
   const transactions = await prisma.transaction.findMany({
-    where: projectFilter ? { projectId: projectFilter } : {},
+    where: {
+      tenantId: auth.tenantId,
+      ...(projectFilter ? { projectId: projectFilter } : {}),
+    },
     orderBy: { date: "desc" },
     include: { project: { select: { code: true } } },
     take: 50,
   });
 
   const totalTransaksiCount = await prisma.transaction.count({
-    where: projectFilter ? { projectId: projectFilter } : {},
+    where: {
+      tenantId: auth.tenantId,
+      ...(projectFilter ? { projectId: projectFilter } : {}),
+    },
   });
 
   // 2.5 Hitung Arus Kas (6 Bulan Terakhir)
@@ -167,6 +216,7 @@ export default async function DashboardPage(props: {
 
   const cxFlowTx = await prisma.transaction.findMany({
     where: {
+      tenantId: auth.tenantId,
       ...(projectFilter ? { projectId: projectFilter } : {}),
       date: { gte: sixMonthsAgo }
     },
@@ -218,6 +268,7 @@ export default async function DashboardPage(props: {
   const txAgg = await prisma.transaction.groupBy({
     by: ['status_pengakuan', 'category'],
     where: {
+      tenantId: auth.tenantId,
       category: { in: ["BOOKING_FEE", "DOWN_PAYMENT", "ANGSURAN_KPR", "PELUNASAN_CASH", "PENCAIRAN_KPR"] },
       ...(projectFilter ? { projectId: projectFilter } : {})
     },
@@ -255,6 +306,7 @@ export default async function DashboardPage(props: {
 
   // 4. Projects List
   const projects = await prisma.project.findMany({
+    where: { tenantId: auth.tenantId },
     orderBy: { createdAt: "desc" },
     take: 10,
     select: { id: true, code: true, name: true, startDate: true, status: true },

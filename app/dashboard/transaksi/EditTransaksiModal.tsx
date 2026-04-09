@@ -14,9 +14,14 @@ interface Project {
 const CATEGORIES = [
   { id: "BOOKING_FEE", label: "Booking Fee" },
   { id: "DOWN_PAYMENT", label: "Down Payment" },
-  { id: "PELUNASAN", label: "Pelunasan" },
-  { id: "BIAYA_PROYEK", label: "Biaya Proyek" },
+  { id: "ANGSURAN_KPR", label: "Angsuran KPR" },
+  { id: "PELUNASAN_CASH", label: "Pelunasan Cash" },
+  { id: "PENCAIRAN_KPR", label: "Pencairan KPR" },
+  { id: "BIAYA_KONSTRUKSI", label: "Biaya Konstruksi" },
+  { id: "BIAYA_MARKETING", label: "Biaya Marketing" },
   { id: "BIAYA_OPERASIONAL", label: "Biaya Operasional" },
+  { id: "BIAYA_GAJI", label: "Biaya Gaji" },
+  { id: "LAIN_LAIN", label: "Lain-lain" },
 ];
 
 export default function EditTransaksiModal({ 

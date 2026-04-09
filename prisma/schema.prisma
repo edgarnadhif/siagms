@@ -18,9 +18,11 @@ model Tenant {
   projects       Project[]
   accounts       Account[]
   transactions   Transaction[]
+  journals       Journal[]
   journalEntries JournalEntry[]
   customers      Customer[]
   units          Unit[]
+  unitAkads      UnitAkad[]
   serahTerimas   SerahTerima[]
   cancellations  Cancellation[]
   calendarEvents CalendarEvent[]
@@ -171,19 +173,39 @@ model Transaction {
   unit               Unit?               @relation(fields: [unitId], references: [id])
   customerId         String?
   customer           Customer?           @relation(fields: [customerId], references: [id])
+  kwitansiNo         String?
+  kwitansiDate       DateTime?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   journalEntries     JournalEntry[]
 
   @@unique([tenantId, reference])
+  @@unique([tenantId, kwitansiNo])
   @@index([tenantId, date])
   @@index([tenantId, category])
+  @@index([tenantId, kwitansiNo])
+}
+
+model Journal {
+  id          String         @id @default(cuid())
+  tenantId    String
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  referenceNo String
+  description String
+  date        DateTime
+  createdAt   DateTime       @default(now())
+  entries     JournalEntry[]
+
+  @@unique([tenantId, referenceNo])
+  @@index([tenantId, date])
 }
 
 model JournalEntry {
   id            String       @id @default(cuid())
   tenantId      String
   tenant        Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  journalId     String?
+  journal       Journal?     @relation(fields: [journalId], references: [id], onDelete: Cascade)
   reference     String
   date          DateTime
   description   String?
@@ -200,6 +222,7 @@ model JournalEntry {
 
   @@index([tenantId, date])
   @@index([tenantId, reference])
+  @@index([tenantId, journalId])
 }
 
 enum PaymentMethod {
@@ -238,6 +261,7 @@ model Customer {
   unit          Unit?
   transactions  Transaction[]
   serahTerimas  SerahTerima[]
+  unitAkads     UnitAkad[]
 
   @@unique([tenantId, customerCode])
   @@unique([tenantId, nik])
@@ -267,6 +291,7 @@ model Unit {
   serahTerimas   SerahTerima[]
   journalEntries JournalEntry[]
   cancellations  Cancellation[]
+  akadRecords    UnitAkad[]
 
   @@unique([tenantId, unitCode])
   @@index([tenantId, status])
@@ -302,6 +327,26 @@ model Cancellation {
   createdAt     DateTime @default(now())
 
   @@index([tenantId, unitId])
+}
+
+model UnitAkad {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  unitId      String
+  unit        Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tanggalAkad DateTime
+  namaBank    String
+  nomorAkad   String
+  nilaiKPR    Decimal
+  catatan     String?
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, unitId])
+  @@index([tenantId, customerId])
+  @@unique([tenantId, nomorAkad])
 }
 
 enum EventType {

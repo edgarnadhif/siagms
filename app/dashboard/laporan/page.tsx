@@ -1,9 +1,26 @@
 import { prisma } from "@/lib/db";
+import { requireAuth } from "@/lib/auth";
 import LaporanClient from "./LaporanClient";
+
+const PENDAPATAN_DIAKUI_CATEGORIES = [
+  "BOOKING_FEE",
+  "DOWN_PAYMENT",
+  "PENCAIRAN_KPR",
+  "PELUNASAN_CASH",
+] as const;
+
+const LABA_RUGI_BEBAN_CATEGORIES = [
+  "BIAYA_KONSTRUKSI",
+  "BIAYA_MARKETING",
+  "BIAYA_GAJI",
+  "BIAYA_OPERASIONAL",
+  "LAIN_LAIN",
+] as const;
 
 export default async function LaporanKeuanganPage(props: {
   searchParams?: Promise<{ from?: string; to?: string; project?: string; tab?: string }>;
 }) {
+  const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
   const searchParams = await props.searchParams;
   const fromDate = searchParams?.from || "";
   const toDate = searchParams?.to || "";
@@ -14,11 +31,19 @@ export default async function LaporanKeuanganPage(props: {
   if (fromDate) dateFilter.gte = new Date(fromDate);
   if (toDate) dateFilter.lte = new Date(toDate + "T23:59:59");
   const dateWhereStr = (fromDate || toDate) ? { date: dateFilter } : {};
-  const projectWhereStr = projectFilter ? { transaction: { projectId: projectFilter } } : {};
+  const projectWhereStr = projectFilter
+    ? {
+        OR: [
+          { unit: { is: { projectId: projectFilter } } },
+          { transaction: { is: { unit: { projectId: projectFilter } } } },
+          { transaction: { is: { projectId: projectFilter, unitId: null } } },
+        ],
+      }
+    : {};
 
   // 1. Get all journals for the period
   const entries = await prisma.journalEntry.findMany({
-    where: { ...dateWhereStr, ...projectWhereStr },
+    where: { tenantId: auth.tenantId, ...dateWhereStr, ...projectWhereStr },
     include: {
       account: { select: { code: true, name: true, type: true, normalBalance: true } },
     },
@@ -38,48 +63,59 @@ export default async function LaporanKeuanganPage(props: {
     balances.set(kode, (balances.get(kode) || 0) + net);
   }
 
+  const sumByPrefix = (prefix: string) =>
+    Array.from(balances.entries())
+      .filter(([code]) => code.startsWith(prefix))
+      .reduce((sum, [, amount]) => sum + amount, 0);
+
   // --- TAHAP 2: LABA RUGI ---
-  // Pendapatan Diakui
-  const stUnits = await prisma.unit.findMany({
+  const transactionLabaRugiWhere = {
+    tenantId: auth.tenantId,
+    ...(fromDate || toDate ? { date: dateFilter } : {}),
+    ...(projectFilter ? { projectId: projectFilter } : {}),
+  };
+
+  const pendapatanPenjualanAgg = await prisma.transaction.aggregate({
     where: {
-      status: "SERAH_TERIMA",
-      ...(projectFilter ? { projectId: projectFilter } : {})
+      ...transactionLabaRugiWhere,
+      category: {
+        in: [...PENDAPATAN_DIAKUI_CATEGORIES],
+      },
+      unit: {
+        is: {
+          tenantId: auth.tenantId,
+          status: { in: ["LUNAS", "SERAH_TERIMA"] },
+          ...(projectFilter ? { projectId: projectFilter } : {}),
+        },
+      },
     },
-    include: {
-      transactions: {
-        where: {
-          category: { in: ["PENCAIRAN_KPR", "PELUNASAN_CASH"] }
-        }
-      }
-    }
+    _sum: { amount: true },
   });
 
-  let pendapatanPenjualan = 0;
-  for (const unit of stUnits) {
-    const totalTx = unit.transactions.reduce((sum, tx) => sum + Number(tx.amount), 0);
-    if (totalTx > 0) {
-      pendapatanPenjualan += totalTx;
-    } else {
-      // fallback to 4100 if no transactions are found but it's ST
-      pendapatanPenjualan += Number(unit.price); // Simple fallback, or could get from 4100.
-    }
-  }
+  const bebanAgg = await prisma.transaction.groupBy({
+    by: ["category"],
+    where: {
+      ...transactionLabaRugiWhere,
+      category: {
+        in: [...LABA_RUGI_BEBAN_CATEGORIES],
+      },
+    },
+    _sum: { amount: true },
+  });
 
-  // Override pendapatanPenjualan if we don't have unit tx, use 4100 directly. 
-  // Let's use 4100 from journals if the unit calculation yields 0, just to be safe.
-  if (pendapatanPenjualan === 0) {
-    pendapatanPenjualan = balances.get("4100") || 0;
-  }
-  
-  const hpp = balances.get("5100") || 0;
+  const getBeban = (category: string) =>
+    Number(bebanAgg.find((item) => item.category === category)?._sum.amount || 0);
+
+  const pendapatanPenjualan = Number(pendapatanPenjualanAgg._sum.amount || 0);
+  const hpp = 0;
   const labaKotor = pendapatanPenjualan - hpp;
-  
-  const bebanKonstruksi = balances.get("5200") || 0;
-  const bebanMarketing = balances.get("5300") || 0;
-  const bebanGaji = balances.get("5400") || 0;
-  const bebanOperasional = balances.get("5500") || 0;
-  const bebanLainLain = balances.get("5600") || 0;
-  const pendapatanLainLain = balances.get("4200") || 0; // For completion
+
+  const bebanKonstruksi = getBeban("BIAYA_KONSTRUKSI");
+  const bebanMarketing = getBeban("BIAYA_MARKETING");
+  const bebanGaji = getBeban("BIAYA_GAJI");
+  const bebanOperasional = getBeban("BIAYA_OPERASIONAL");
+  const bebanLainLain = getBeban("LAIN_LAIN");
+  const pendapatanLainLain = 0;
 
   const totalPendapatanLR = pendapatanPenjualan + pendapatanLainLain;
   const totalBebanOperasional = bebanKonstruksi + bebanMarketing + bebanGaji + bebanOperasional + bebanLainLain;
@@ -105,57 +141,44 @@ export default async function LaporanKeuanganPage(props: {
   const kas = balances.get("1100") || 0;
   const bank = balances.get("1200") || 0;
   const piutangPembeli = balances.get("1300") || 0;
-  
-  const akadUnits = await prisma.unit.findMany({
-    where: {
-      status: "AKAD",
-      customer: { paymentMethod: "KPR" },
-      ...(projectFilter ? { projectId: projectFilter } : {})
-    },
-    include: { transactions: true }
-  });
-  
-  let piutangKPR = 0;
-  for (const u of akadUnits) {
-    const paid = u.transactions.reduce((acc, t) => acc + Number(t.amount), 0);
-    piutangKPR += (Number(u.price) - paid);
-  }
-  // Fallback to journal if zero
-  if (piutangKPR === 0) piutangKPR = balances.get("1400") || 0;
-
-  const tersediaUnits = await prisma.unit.aggregate({
-    where: {
-      status: "TERSEDIA",
-      ...(projectFilter ? { projectId: projectFilter } : {})
-    },
-    _sum: { price: true }
-  });
-  const persediaanUnit = Number(tersediaUnits._sum.price || 0);
+  const piutangKPR = balances.get("1400") || 0;
+  const persediaanUnit = balances.get("1500") || 0;
 
   const bdk = balances.get("1600") || 0;
   const tanah = balances.get("1700") || 0;
-  const totalAset = kas + bank + piutangPembeli + piutangKPR + persediaanUnit + bdk + tanah;
+  const totalAset = sumByPrefix("1");
 
   const pendDiterimaDiMuka = balances.get("2100") || 0;
   const hutangKontraktor = balances.get("2200") || 0;
   const hutangUsaha = balances.get("2300") || 0;
   const hutangBank = balances.get("2400") || 0;
-  const totalKewajiban = pendDiterimaDiMuka + hutangKontraktor + hutangUsaha + hutangBank;
+  const totalKewajiban = sumByPrefix("2");
+
+  console.log(
+    "[Laporan Neraca Debug] Kewajiban raw:",
+    JSON.stringify(
+      Array.from(balances.entries())
+        .filter(([code]) => code.startsWith("2"))
+        .map(([code, saldo]) => ({ code, saldo }))
+    )
+  );
 
   const modalDisetor = balances.get("3100") || 0;
   const labaDitahan = balances.get("3200") || 0;
-  const totalEkuitas = modalDisetor + labaDitahan + labaBersih;
+  const labaBerjalan = sumByPrefix("4") - sumByPrefix("5");
+  const totalEkuitas = modalDisetor + labaDitahan + labaBerjalan;
 
   const neracaData = {
     kas, bank, piutangPembeli, piutangKPR, persediaanUnit, bdk, tanah, totalAset,
     pendDiterimaDiMuka, hutangKontraktor, hutangUsaha, hutangBank, totalKewajiban,
-    modalDisetor, labaDitahan, labaBersih, totalEkuitas
+    modalDisetor, labaDitahan, labaBersih: labaBerjalan, totalEkuitas
   };
 
 
   // --- TAHAP 4: ARUS KAS ---
   // Aggregate transactions mapping logic
   const txFilter = {
+    tenantId: auth.tenantId,
     ...(fromDate || toDate ? { date: dateFilter } : {}),
     ...(projectFilter ? { projectId: projectFilter } : {})
   };
@@ -194,10 +217,11 @@ export default async function LaporanKeuanganPage(props: {
 
 
   const projects = await prisma.project.findMany({
+    where: { tenantId: auth.tenantId },
     select: { id: true, code: true, name: true },
     orderBy: { name: "asc" },
   });
-  const company = await prisma.companyProfile.findFirst();
+  const company = await prisma.companyProfile.findFirst({ where: { tenantId: auth.tenantId } });
 
   return (
     <LaporanClient

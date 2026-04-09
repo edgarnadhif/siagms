@@ -1,13 +1,28 @@
 "use client";
-
-import { Project } from "@prisma/client";
+import { differenceInDays } from "date-fns";
 import { useState } from "react";
-import { deleteProject, markProjectTerjual } from "@/app/actions";
+import { deleteProject } from "@/app/actions";
 import { useRouter } from "next/navigation";
 import EditProjectModal from "./EditProjectModal";
 
 interface ProjectCardProps {
-  project: Project;
+  project: ProjectCardProject;
+  transactionCount?: number;
+  totalIncome?: number;
+  totalExpense?: number;
+}
+
+export interface ProjectCardProject {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  location: string | null;
+  startDate: Date | string | null;
+  endDate: Date | string | null;
+  status: string;
+  budget: number | { toString(): string } | null;
+  units?: Array<{ id: string; unitCode: string; status: string }>;
   transactionCount?: number;
   totalIncome?: number;
   totalExpense?: number;
@@ -23,25 +38,22 @@ export default function ProjectCard({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isHandover, setIsHandover] = useState(false);
   const router = useRouter();
 
   const profit = totalIncome - totalExpense;
+  const units = project.units || [];
+  const totalUnits = units.length;
+  const soldUnits = units.filter((unit) => unit.status !== "TERSEDIA").length;
+  const progressPct = totalUnits > 0 ? Math.round((soldUnits / totalUnits) * 100) : 0;
 
-  const getStatusStyle = (status: string) => {
-    switch (status) {
-      case "AKTIF":
-        return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
-      case "SELESAI":
-        return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
-      case "BATAL":
-        return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
-      case "TERJUAL":
-        return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
-      default:
-        return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
-    }
-  };
+  const budget = Number(project.budget || 0);
+  const usedBudget = totalExpense;
+  const remainingBudget = Math.max(0, budget - usedBudget);
+  const budgetUsedPct = budget > 0 ? Math.min(100, Number(((usedBudget / budget) * 100).toFixed(1))) : 0;
+  const isBudgetWarning = budget > 0 && remainingBudget < budget * 0.1;
+
+  const targetDate = project.endDate ? new Date(project.endDate) : null;
+  const remainingDays = targetDate ? differenceInDays(targetDate, new Date()) : null;
 
   const getStatusLabel = (status: string) => {
     switch (status) {
@@ -52,24 +64,45 @@ export default function ProjectCard({
       case "BATAL":
         return "Batal";
       case "TERJUAL":
-        return "Terjual / Diserahterimakan";
+        return "Terjual";
       default:
         return status;
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case "AKTIF":
+        return "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300";
+      case "SELESAI":
+        return "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300";
+      case "BATAL":
+        return "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300";
+      default:
+        return "bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300";
+    }
+  };
+
+  const getBudgetBarColor = () => {
+    if (budgetUsedPct > 90) return "from-red-500 to-red-600";
+    if (budgetUsedPct >= 70) return "from-amber-400 to-amber-500";
+    return "from-emerald-400 to-emerald-500";
+  };
+
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
     }).format(amount);
-  };
 
-  const formatDate = (date: Date | null) => {
+  const formatDate = (date: Date | string | null) => {
     if (!date) return "-";
     const d = new Date(date);
-    return `${d.getDate().toString().padStart(2, "0")}-${(d.getMonth() + 1).toString().padStart(2, "0")}-${d.getFullYear().toString().slice(-2)}`;
+    return `${d.getDate().toString().padStart(2, "0")}-${(d.getMonth() + 1).toString().padStart(2, "0")}-${d
+      .getFullYear()
+      .toString()
+      .slice(-2)}`;
   };
 
   const handleDelete = async () => {
@@ -90,152 +123,111 @@ export default function ProjectCard({
     }
   };
 
-  const handleSerahTerima = async () => {
-    if (!confirm("Tandai proyek/unit ini telah diserahterimakan? Ini akan mengakui seluruh pembayaran sebagai Pendapatan di Jurnal dan Laba Rugi.")) return;
-    setIsHandover(true);
-    try {
-      const result = await markProjectTerjual(project.id);
-      if (result?.error) {
-        alert(result.error);
-      } else {
-        router.refresh();
-      }
-    } catch {
-      alert("Terjadi kesalahan sistem");
-    } finally {
-      setIsHandover(false);
-    }
-  };
-
   return (
     <>
-      <div className="bg-white dark:bg-slate-800 border-[0.5px] border-[#F3F4F6] dark:border-slate-700/50 rounded-2xl p-5 shadow-sm flex flex-col relative overflow-hidden transition-all duration-150 ease-in-out hover:shadow-lg hover:border-[1.5px] hover:border-[#EA6C00] group">
-        {/* Header */}
-        <div className="flex justify-between items-start mb-5">
+      <div className="bg-white dark:bg-slate-800 border border-[#F3F4F6] dark:border-slate-700/50 rounded-2xl p-5 shadow-sm flex flex-col relative overflow-hidden transition-all duration-150 hover:shadow-lg hover:border-[#EA6C00] group h-full">
+        <div className="flex items-start justify-between gap-4 mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#FFF0E6] dark:bg-[#431407] flex items-center justify-center shrink-0 border border-orange-100 dark:border-orange-900/20">
-              <svg
-                className="w-4 h-4 text-[#EA6C00] dark:text-[#F97316]"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-                />
+            <div className="w-10 h-10 rounded-xl bg-[#FFF0E6] dark:bg-[#431407] flex items-center justify-center border border-orange-100 dark:border-orange-900/30">
+              <svg className="w-5 h-5 text-[#EA6C00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
               </svg>
             </div>
-            <h2 className="font-bold text-gray-900 dark:text-white tracking-tight">
-              {project.code}
-            </h2>
+            <div>
+              <p className="text-sm font-black text-gray-900 dark:text-white">{project.code}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Kode Proyek</p>
+            </div>
           </div>
-          <span
-            className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-              project.status === 'AKTIF' ? 'bg-[#DCFCE7] text-[#16A34A]' :
-              project.status === 'TERJUAL' ? 'bg-emerald-100 text-emerald-700' :
-              'bg-[#F3F4F6] text-[#6B7280]'
-            }`}
-          >
+          <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(project.status)}`}>
             {getStatusLabel(project.status)}
           </span>
         </div>
 
-        {/* Title & Desc */}
-        <div className="mb-1.5">
-          <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 leading-tight">
-            {project.name}
-          </h3>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 line-clamp-1">
-            {project.description || "Deskripsi Proyek"}
-          </p>
+        <div className="mb-4">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{project.name}</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{project.description || "Deskripsi proyek belum ditambahkan."}</p>
         </div>
 
-        {/* Location & Date - RESTORED */}
-        <div className="flex items-center justify-between text-[11px] text-gray-400 dark:text-gray-500 mb-3 px-1">
-          <div className="flex items-center gap-1.5">
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <span className="truncate max-w-[120px]">{project.location || "Lokasi"}</span>
+        <div className="grid grid-cols-2 gap-3 text-xs text-gray-500 dark:text-gray-400 mb-4">
+          <div className="flex items-center gap-2">
+            <span>📍</span>
+            <span className="truncate">{project.location || "Lokasi"}</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
+          <div className="flex items-center gap-2 justify-start md:justify-end">
+            <span>📅</span>
             <span>{formatDate(project.startDate)}</span>
           </div>
-        </div>
-
-        {/* Financial Summary Stat Row */}
-        <div className="bg-[#F9FAFB] dark:bg-white/[0.05] rounded-[10px] p-[10px_16px] flex justify-between items-center text-center mb-3 border border-[#F3F4F6] dark:border-white/5">
-          <div className="flex-1 px-1">
-            <p className="text-[10px] uppercase font-semibold text-gray-400 dark:text-gray-500 mb-1 tracking-widest">
-              Pendapatan
-            </p>
-            <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
-              {formatCurrency(totalIncome).split(',')[0]}
-            </p>
+          <div className="flex items-center gap-2">
+            <span>🏁</span>
+            <span>{formatDate(project.endDate)}</span>
           </div>
-          <div className="flex-1 px-1 border-x border-gray-100 dark:border-white/5">
-            <p className="text-[10px] uppercase font-semibold text-gray-400 dark:text-gray-500 mb-1 tracking-widest">
-              Pengeluaran
-            </p>
-            <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
-              {formatCurrency(totalExpense).split(',')[0]}
-            </p>
-          </div>
-          <div className="flex-1 px-1">
-            <p className="text-[10px] uppercase font-semibold text-gray-400 dark:text-gray-500 mb-1 tracking-widest">
-              Profit
-            </p>
-            <p className="text-sm font-bold text-[#EA6C00]">
-              {formatCurrency(profit).split(',')[0]}
-            </p>
+          <div className={`flex items-center gap-2 ${remainingDays !== null && remainingDays < 30 ? "text-red-500 dark:text-red-400 font-bold" : ""}`}>
+            <span>🗓</span>
+            <span>{remainingDays === null ? "Tanpa target" : `Sisa ${remainingDays} hari`}</span>
           </div>
         </div>
 
-        {/* Transaksi & Budget Footer */}
-        <div className="flex justify-between items-center text-[11px] text-gray-400 mb-3 px-1 font-medium">
-          <span>Transaksi : <span className="text-gray-600 dark:text-gray-400">{transactionCount}</span></span>
-          <span>
-            Budget : <span className="text-gray-600 dark:text-gray-400">{formatCurrency(Number(project.budget)).split(',')[0]}</span>
-          </span>
+        <div className="bg-[#F9FAFB] dark:bg-white/[0.04] rounded-xl border border-[#F3F4F6] dark:border-white/5 p-4 mb-4">
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Pendapatan</p>
+              <p className="text-sm font-black text-emerald-600 mt-1">{formatCurrency(totalIncome)}</p>
+            </div>
+            <div className="border-x border-gray-100 dark:border-white/10">
+              <p className="text-[10px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Pengeluaran</p>
+              <p className="text-sm font-black text-red-500 mt-1">{formatCurrency(totalExpense)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Profit</p>
+              <p className={`text-sm font-black mt-1 ${profit >= 0 ? "text-[#EA6C00]" : "text-red-500"}`}>{formatCurrency(profit)}</p>
+            </div>
+          </div>
         </div>
 
-        {/* Divider - Made more subtle */}
-        <div className="h-px bg-gray-50 dark:bg-slate-700/50 -mx-5 mb-4"></div>
+        <div className="mb-4 rounded-xl border border-[#F3F4F6] dark:border-slate-700/60 p-4 bg-white dark:bg-slate-900/30">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-bold text-gray-800 dark:text-gray-100">Budget</p>
+            {isBudgetWarning && (
+              <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-300">
+                Budget Hampir Habis
+              </span>
+            )}
+          </div>
+          <div className="space-y-1.5 text-xs text-gray-500 dark:text-gray-400 mb-3">
+            <div className="flex justify-between"><span>Budget</span><span className="font-bold text-gray-800 dark:text-gray-100">{formatCurrency(budget)}</span></div>
+            <div className="flex justify-between"><span>Terpakai</span><span className="font-bold text-gray-800 dark:text-gray-100">{formatCurrency(usedBudget)}</span></div>
+            <div className="flex justify-between"><span>Sisa Budget</span><span className="font-bold text-gray-800 dark:text-gray-100">{formatCurrency(remainingBudget)}</span></div>
+          </div>
+          <div className="h-2 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
+            <div className={`h-full bg-gradient-to-r ${getBudgetBarColor()} rounded-full`} style={{ width: `${budgetUsedPct}%` }} />
+          </div>
+          <p className="text-[11px] text-right mt-2 font-bold text-gray-500 dark:text-gray-400">{budgetUsedPct}% terpakai</p>
+        </div>
 
-        {/* Actions - No background, text + icon only */}
-        <div className="flex justify-end gap-5 px-1 mt-auto">
-          {project.status !== 'TERJUAL' && (
-            <button
-              onClick={handleSerahTerima}
-              disabled={isHandover}
-              className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors disabled:opacity-50"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-              </svg>
-              {isHandover ? "Memproses..." : "Serah Terima"}
-            </button>
-          )}
-          <button
-            onClick={() => setShowEditModal(true)}
-            className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#EA6C00] transition-colors"
-          >
+        <div className="mb-4">
+          <div className="flex justify-between text-[11px] text-gray-500 dark:text-gray-400 mb-1.5">
+            <span className="font-semibold">Unit Terjual</span>
+            <span className="font-black text-gray-700 dark:text-gray-300">
+              {soldUnits} <span className="font-normal text-gray-400">/ {totalUnits} unit</span>
+            </span>
+          </div>
+          <div className="h-2 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-orange-400 to-orange-600 rounded-full" style={{ width: `${progressPct}%` }} />
+          </div>
+          <div className="mt-2 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+            <span>Transaksi: <span className="font-bold text-gray-700 dark:text-gray-300">{transactionCount}</span></span>
+            <span>{progressPct}%</span>
+          </div>
+        </div>
+
+        <div className="mt-auto pt-4 border-t border-gray-100 dark:border-slate-700/50 flex justify-end gap-5">
+          <button onClick={() => setShowEditModal(true)} className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#EA6C00] transition-colors">
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
             Edit
           </button>
-          <button
-            onClick={() => setShowDeleteConfirm(true)}
-            className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-red-500 transition-colors"
-          >
+          <button onClick={() => setShowDeleteConfirm(true)} className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-red-500 transition-colors">
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
@@ -244,52 +236,23 @@ export default function ProjectCard({
         </div>
       </div>
 
-      {/* Edit Modal */}
-      {showEditModal && (
-        <EditProjectModal
-          project={project}
-          onClose={() => setShowEditModal(false)}
-        />
-      )}
+      {showEditModal && <EditProjectModal project={project} onClose={() => setShowEditModal(false)} />}
 
-      {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm shadow-xl p-6 border border-gray-200 dark:border-slate-700">
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 mx-auto mb-4">
-              <svg
-                className="w-6 h-6 text-red-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
-                />
+              <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
-            <h3 className="text-lg font-bold text-center text-gray-900 dark:text-white mb-2">
-              Hapus Proyek?
-            </h3>
+            <h3 className="text-lg font-bold text-center text-gray-900 dark:text-white mb-2">Hapus Proyek?</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-1">
-              Proyek{" "}
-              <span className="font-semibold text-gray-700 dark:text-gray-200">
-                {project.name}
-              </span>{" "}
-              akan dihapus permanen.
+              Proyek <span className="font-semibold text-gray-700 dark:text-gray-200">{project.name}</span> akan dihapus permanen.
             </p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 text-center mb-5">
-              Pastikan tidak ada transaksi terkait sebelum menghapus.
-            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 text-center mb-5">Pastikan tidak ada transaksi terkait sebelum menghapus.</p>
 
-            {deleteError && (
-              <div className="text-red-500 text-xs font-medium p-2.5 bg-red-50 dark:bg-red-900/30 rounded-lg border border-red-100 dark:border-red-800 mb-4">
-                {deleteError}
-              </div>
-            )}
+            {deleteError && <div className="text-red-500 text-xs font-medium p-2.5 bg-red-50 dark:bg-red-900/30 rounded-lg border border-red-100 dark:border-red-800 mb-4">{deleteError}</div>}
 
             <div className="flex gap-3">
               <button

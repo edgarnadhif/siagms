@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Reorder, motion, AnimatePresence } from "framer-motion";
-import ProjectCard from "./ProjectCard";
+import { Reorder, AnimatePresence } from "framer-motion";
+import ProjectCard, { type ProjectCardProject } from "./ProjectCard";
 
 interface ProjectGridProps {
-  initialProjects: any[];
+  initialProjects: ProjectCardProject[];
 }
 
 export default function ProjectGrid({ initialProjects }: ProjectGridProps) {
@@ -20,16 +20,6 @@ export default function ProjectGrid({ initialProjects }: ProjectGridProps) {
     >
       <AnimatePresence mode="popLayout">
         {projects.map((project) => {
-          // Compute stats from transactions
-          const transactions = project.transactions || [];
-          const income = transactions
-            .filter((t: any) => t.category === "BOOKING_FEE" || t.category === "DOWN_PAYMENT")
-            .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
-          
-          const expense = transactions
-            .filter((t: any) => t.category === "BIAYA_PROYEK" || t.category === "BIAYA_OPERASIONAL")
-            .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
-
           return (
             <Reorder.Item
               key={project.id}
@@ -48,9 +38,9 @@ export default function ProjectGrid({ initialProjects }: ProjectGridProps) {
             >
               <ProjectCard 
                 project={project} 
-                transactionCount={transactions.length}
-                totalIncome={income}
-                totalExpense={expense}
+                transactionCount={project.transactionCount}
+                totalIncome={project.totalIncome}
+                totalExpense={project.totalExpense}
               />
             </Reorder.Item>
           );

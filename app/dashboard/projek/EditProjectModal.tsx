@@ -3,10 +3,10 @@
 import { useActionState, useEffect, useState, useRef } from "react";
 import { updateProject } from "@/app/actions";
 import { useRouter } from "next/navigation";
-import { Project } from "@prisma/client";
+import type { ProjectCardProject } from "./ProjectCard";
 
 interface EditProjectModalProps {
-  project: Project;
+  project: ProjectCardProject;
   onClose: () => void;
 }
 
@@ -44,7 +44,7 @@ export default function EditProjectModal({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const formatDateForInput = (date: Date | null) => {
+  const formatDateForInput = (date: Date | string | null) => {
     if (!date) return "";
     const d = new Date(date);
     return d.toISOString().split("T")[0];
@@ -110,7 +110,7 @@ export default function EditProjectModal({
                         key={option.value}
                         type="button"
                         onClick={() => {
-                          setSelectedStatus(option.value as any);
+                          setSelectedStatus(option.value as typeof project.status);
                           setIsOpen(false);
                         }}
                         className={`w-full text-left px-3 py-2 text-sm font-semibold rounded-lg transition-colors flex items-center gap-3 ${
@@ -155,13 +155,15 @@ export default function EditProjectModal({
 
             <div>
               <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
-                Lokasi
+                Lokasi *
               </label>
               <input
+                required
                 type="text"
                 name="location"
                 defaultValue={project.location || ""}
-                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all"
+                placeholder="Lokasi proyek"
+                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all placeholder-gray-400"
               />
             </div>
 
@@ -179,15 +181,29 @@ export default function EditProjectModal({
               </div>
               <div>
                 <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
-                  Budget (Rp)
+                  Target Selesai
                 </label>
                 <input
-                  type="number"
-                  name="budget"
-                  defaultValue={Number(project.budget) || ""}
+                  type="date"
+                  name="endDate"
+                  defaultValue={formatDateForInput(project.endDate)}
                   className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
+                Budget (Rp) *
+              </label>
+              <input
+                type="number"
+                name="budget"
+                min="1000000"
+                required
+                defaultValue={Number(project.budget) || ""}
+                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all"
+              />
             </div>
 
             {state?.error && (

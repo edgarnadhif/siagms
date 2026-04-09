@@ -8,11 +8,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (!session || !session.userId) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
-    const userId = parseInt(session.userId);
+    const userId = session.userId;
+    const tenantId = session.tenantId;
     const { id } = await params;
 
-    const event = await prisma.calendarEvent.findUnique({
-      where: { id },
+    const event = await prisma.calendarEvent.findFirst({
+      where: { id, tenantId },
     });
 
     if (!event || event.createdBy !== userId) {
@@ -50,11 +51,12 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     if (!session || !session.userId) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
-    const userId = parseInt(session.userId);
+    const userId = session.userId;
+    const tenantId = session.tenantId;
     const { id } = await params;
 
-    const event = await prisma.calendarEvent.findUnique({
-      where: { id },
+    const event = await prisma.calendarEvent.findFirst({
+      where: { id, tenantId },
     });
 
     if (!event || event.createdBy !== userId) {

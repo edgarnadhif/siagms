@@ -17,5 +17,7 @@ export default async function PelangganPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  return <PelangganClient initialData={customers} />;
+  const transactions = JSON.parse(JSON.stringify(customers));
+
+  return <PelangganClient initialData={transactions} />;
 }

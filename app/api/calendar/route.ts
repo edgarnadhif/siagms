@@ -8,7 +8,8 @@ export async function GET(req: Request) {
     if (!session || !session.userId) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
-    const userId = parseInt(session.userId);
+    const userId = session.userId;
+    const tenantId = session.tenantId;
 
     const { searchParams } = new URL(req.url);
     const monthStr = searchParams.get("month"); // 1-12
@@ -37,6 +38,7 @@ export async function GET(req: Request) {
     if (isUpcoming) {
       userEvents = await prisma.calendarEvent.findMany({
         where: {
+          tenantId,
           createdBy: userId,
           date: {
             gte: new Date(),
@@ -50,6 +52,7 @@ export async function GET(req: Request) {
     } else {
       userEvents = await prisma.calendarEvent.findMany({
         where: {
+          tenantId,
           createdBy: userId,
           date: {
             gte: startDate,
@@ -75,7 +78,8 @@ export async function POST(req: Request) {
     if (!session || !session.userId) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
-    const userId = parseInt(session.userId);
+    const userId = session.userId;
+    const tenantId = session.tenantId;
 
     const body = await req.json();
     const { title, description, date, endDate, type } = body;
@@ -90,6 +94,7 @@ export async function POST(req: Request) {
 
     const newEvent = await prisma.calendarEvent.create({
       data: {
+        tenantId,
         title,
         description,
         date: new Date(date),

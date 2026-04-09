@@ -80,8 +80,14 @@ export default function UnitClient({
 
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
+  const [itemsPerPageOpen, setItemsPerPageOpen] = useState(false);
   const statusRef = useRef<HTMLDivElement>(null);
   const projectRef = useRef<HTMLDivElement>(null);
+  const itemsPerPageRef = useRef<HTMLDivElement>(null);
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const [formData, setFormData] = useState({
     blockName: "", unitNumber: "", type: "", landArea: "", buildingArea: "", price: "", projectId: "",
@@ -109,6 +115,7 @@ export default function UnitClient({
     const handleClickOutside = (event: MouseEvent) => {
       if (statusRef.current && !statusRef.current.contains(event.target as Node)) setStatusDropdownOpen(false);
       if (projectRef.current && !projectRef.current.contains(event.target as Node)) setProjectDropdownOpen(false);
+      if (itemsPerPageRef.current && !itemsPerPageRef.current.contains(event.target as Node)) setItemsPerPageOpen(false);
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -124,6 +131,31 @@ export default function UnitClient({
     const matchesActive = showInactive ? true : u.isActive !== false;
     return matchesSearch && matchesStatus && matchesProject && matchesActive;
   });
+
+  // Reset to page 1 on filter
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, projectFilter, showInactive]);
+
+  const totalPages = Math.ceil(filteredUnits.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedUnits = filteredUnits.slice(startIndex, startIndex + itemsPerPage);
+
+  const getPageNumbers = () => {
+    const pages = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 3) {
+        pages.push(1, 2, 3, 4, "...", totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1, "...", totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages);
+      }
+    }
+    return pages;
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -390,7 +422,7 @@ export default function UnitClient({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-slate-700/50">
-                  {filteredUnits.length === 0 ? (
+                  {paginatedUnits.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="px-6 py-12 text-center text-slate-500 font-medium">
                         <div className="flex flex-col items-center gap-2">
@@ -402,7 +434,7 @@ export default function UnitClient({
                       </td>
                     </tr>
                   ) : (
-                    filteredUnits.map((u) => (
+                    paginatedUnits.map((u) => (
                       <tr key={u.id} className={`hover:bg-gray-50/80 dark:hover:bg-slate-700/30 transition-all group ${u.isActive === false ? "opacity-50" : ""}`}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="font-bold text-[#EA6C00]">{u.unitCode}</span>
@@ -503,6 +535,98 @@ export default function UnitClient({
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination UI */}
+            {filteredUnits.length > 0 && (
+              <div className="px-5 py-4 bg-white dark:bg-slate-800 border-t border-[#F3F4F6] dark:border-slate-700/50 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="text-sm text-gray-500 dark:text-gray-400 order-2 md:order-1">
+                  Total Unit: <span className="font-bold text-gray-900 dark:text-white">{filteredUnits.length}</span>
+                </div>
+                
+                <div className="flex items-center gap-1 order-1 md:order-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 text-gray-400 hover:text-[#EA6C00] disabled:opacity-30 disabled:hover:text-gray-400 transition-all"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                    </svg>
+                  </button>
+                  
+                  {getPageNumbers().map((page, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => typeof page === "number" && setCurrentPage(page)}
+                      disabled={page === "..."}
+                      className={`min-w-[32px] h-8 flex items-center justify-center rounded-lg text-sm font-bold transition-all ${
+                        currentPage === page 
+                          ? "bg-[#FFF0E6] text-[#EA6C00]" 
+                          : page === "..." 
+                            ? "text-gray-400 cursor-default" 
+                            : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="p-2 text-gray-400 hover:text-[#EA6C00] disabled:opacity-30 disabled:hover:text-gray-400 transition-all"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-3 order-3">
+                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Show per Page:</span>
+                  <div className="relative" ref={itemsPerPageRef}>
+                    <button
+                      type="button"
+                      onClick={() => setItemsPerPageOpen(!itemsPerPageOpen)}
+                      className="flex items-center gap-2 px-3 py-1.5 min-w-[60px] justify-between border border-[#EA6C00] rounded-lg text-sm font-bold text-[#EA6C00] bg-white dark:bg-slate-800 transition-all hover:bg-orange-50 dark:hover:bg-orange-950/20 active:scale-95"
+                    >
+                      <span>{itemsPerPage}</span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className={`w-3.5 h-3.5 transition-transform duration-200 ${itemsPerPageOpen ? "rotate-180" : ""}`}
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+
+                    {itemsPerPageOpen && (
+                      <div className="absolute z-50 bottom-full left-0 mb-2 w-[70px] bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-[10px] shadow-[0_4px_12px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col p-1 animate-in slide-in-from-bottom-2 duration-200">
+                        {[5, 10, 20, 50].map((val) => (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => {
+                              setItemsPerPage(val);
+                              setCurrentPage(1);
+                              setItemsPerPageOpen(false);
+                            }}
+                            className={`text-center py-2 text-sm font-bold rounded-md transition-all ${
+                              itemsPerPage === val
+                                ? "bg-[#EA6C00] text-white"
+                                : "text-[#374151] dark:text-gray-300 hover:bg-[#FFF0E6] dark:hover:bg-orange-900/30 hover:text-[#EA6C00]"
+                            }`}
+                          >
+                            {val}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

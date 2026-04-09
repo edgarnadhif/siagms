@@ -3,12 +3,29 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useActionState } from "react";
 import { createTransaction } from "@/app/actions";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface Project {
   id: string;
   code: string;
   name: string;
+}
+
+interface CustomerOption {
+  id: string;
+  name: string;
+  customerCode?: string;
+  paymentMethod?: string;
+}
+
+interface UnitOption {
+  id: string;
+  unitCode: string;
+  blockName: string;
+  unitNumber: string;
+  status: string;
+  projectId: string;
+  customer?: CustomerOption | null;
 }
 
 const CATEGORIES = [
@@ -30,30 +47,41 @@ export default function AddTransaksiModal({
   customers 
 }: { 
   projects: Project[], 
-  units: any[], 
-  customers: any[] 
+  units: UnitOption[], 
+  customers: CustomerOption[] 
 }) {
   const [state, formAction, isPending] = useActionState(createTransaction, null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialCategory = searchParams.get("category") || "";
+  const initialUnit = units.find((item) => item.id === searchParams.get("unitId")) || null;
+  const initialCustomer = (initialUnit?.customer as CustomerOption | null) || customers.find((item) => item.id === searchParams.get("customerId")) || null;
+  const initialProjectId = initialUnit?.projectId || searchParams.get("projectId") || "";
 
   // Dropdown States
   const [catOpen, setCatOpen] = useState(false);
-  const [selectedCat, setSelectedCat] = useState("");
+  const [selectedCat, setSelectedCat] = useState(initialCategory && CATEGORIES.some((item) => item.id === initialCategory) ? initialCategory : "");
   const catRef = useRef<HTMLDivElement>(null);
 
   const [projOpen, setProjOpen] = useState(false);
-  const [selectedProj, setSelectedProj] = useState("");
+  const [selectedProj, setSelectedProj] = useState(initialProjectId && projects.some((project) => project.id === initialProjectId) ? initialProjectId : "");
   const projRef = useRef<HTMLDivElement>(null);
 
   const [unitOpen, setUnitOpen] = useState(false);
-  const [selectedUnit, setSelectedUnit] = useState("");
+  const [selectedUnit, setSelectedUnit] = useState(initialUnit?.id || "");
   const unitRef = useRef<HTMLDivElement>(null);
 
   const [custOpen, setCustOpen] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState(initialCustomer?.id || "");
   const custRef = useRef<HTMLDivElement>(null);
   
-  const [customerInfo, setCustomerInfo] = useState<{ id: string, name: string, method?: string } | null>(null);
+  const [customerInfo, setCustomerInfo] = useState<{ id: string, name: string, method?: string } | null>(
+    initialCustomer
+      ? { id: initialCustomer.id, name: initialCustomer.name, method: initialCustomer.paymentMethod }
+      : null
+  );
+  const isExpenseCategory = ["BIAYA_KONSTRUKSI", "BIAYA_MARKETING", "BIAYA_OPERASIONAL", "BIAYA_GAJI", "LAIN_LAIN"].includes(selectedCat);
+  const isIncomeCategory = ["BOOKING_FEE", "DOWN_PAYMENT", "PENCAIRAN_KPR", "PELUNASAN_CASH"].includes(selectedCat);
 
   useEffect(() => {
     if (state?.success) {
@@ -81,6 +109,9 @@ export default function AddTransaksiModal({
     setSelectedUnit(unitId);
     setUnitOpen(false);
     const u = units?.find(x => x.id === unitId);
+    if (u) {
+      setSelectedProj(u.projectId || "");
+    }
     if (u && u.customer) {
       setSelectedCustomer(u.customer.id);
       setCustomerInfo({
@@ -95,6 +126,9 @@ export default function AddTransaksiModal({
     } else {
       setSelectedCustomer("");
       setCustomerInfo(null);
+      if (!u) {
+        setSelectedProj("");
+      }
     }
   };
 
@@ -129,11 +163,6 @@ export default function AddTransaksiModal({
     : "Tanpa proyek";
   
   const unitObj = units?.find(u => u.id === selectedUnit);
-  const currentUnitLabel = unitObj 
-    ? `${unitObj.unitCode} - Blok ${unitObj.blockName} No.${unitObj.unitNumber} - ${unitObj.customer?.name || "Tanpa Pelanggan"}`
-    : "Pilih Unit (Opsional)";
-  
-  const currentCustLabel = customerInfo?.name || "Pilih Pelanggan";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
@@ -154,7 +183,7 @@ export default function AddTransaksiModal({
         {/* Form */}
         <form action={formAction} className="overflow-y-auto">
           <div className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
                   No. Referensi <span className="text-[#EA6C00]">*</span>
@@ -163,6 +192,8 @@ export default function AddTransaksiModal({
                   type="text"
                   name="reference"
                   required
+                  pattern="[a-zA-Z0-9\-/]{3,}"
+                  title="Minimal 3 karakter, Alphanumeric"
                   placeholder="TRX-001"
                   className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all placeholder-gray-400"
                 />
@@ -189,9 +220,19 @@ export default function AddTransaksiModal({
                 type="text"
                 name="description"
                 required
+                minLength={5}
+                onChange={(e) => {
+                  const val = e.target.value.toLowerCase();
+                  const isTest = ["test", "asd", "xxx", "tedasd"].some(skip => val.includes(skip));
+                  const warnBox = document.getElementById("test-warning");
+                  if (warnBox) warnBox.style.display = isTest ? "block" : "none";
+                }}
                 placeholder="Deskripsi transaksi"
                 className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all placeholder-gray-400"
               />
+              <p id="test-warning" className="hidden mt-1 text-[10px] font-bold text-orange-500 uppercase">
+                Perhatian: hindari menggunakan kata &quot;test/asd&quot; untuk data asli.
+              </p>
             </div>
 
             <div>
@@ -262,7 +303,7 @@ export default function AddTransaksiModal({
 
             <div className="relative" ref={projRef}>
               <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
-                Proyek (Opsional)
+                Proyek {isExpenseCategory && <span className="text-red-500">*</span>}
               </label>
               <input type="hidden" name="projectId" value={selectedProj} />
               <button
@@ -279,6 +320,9 @@ export default function AddTransaksiModal({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
+              <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
+                {isExpenseCategory ? "Pilih proyek tujuan pengeluaran" : isIncomeCategory ? "Terisi otomatis dari unit yang dipilih" : "Opsional untuk kategori ini"}
+              </p>
               {projOpen && (
                 <div className="absolute z-[60] left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-[10px] shadow-xl py-1">
                   <button
@@ -312,7 +356,7 @@ export default function AddTransaksiModal({
 
             <div className="relative" ref={unitRef}>
               <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
-                Unit (Opsional)
+                Unit {isIncomeCategory && <span className="text-red-500">*</span>}
               </label>
               <input type="hidden" name="unitId" value={selectedUnit} />
               <button
@@ -338,6 +382,9 @@ export default function AddTransaksiModal({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
+              <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
+                {isIncomeCategory ? "Pilih unit terkait pembayaran" : "Opsional untuk kategori ini"}
+              </p>
               {unitOpen && (
                 <div className="absolute z-[60] left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-[10px] shadow-xl py-2">
                   <button
@@ -375,9 +422,9 @@ export default function AddTransaksiModal({
 
             <div className="relative" ref={custRef}>
               <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
-                Pelanggan <span className="text-[#EA6C00]">*</span>
+                Pelanggan {isIncomeCategory && <span className="text-red-500">*</span>}
               </label>
-              <input type="hidden" name="customerId" value={selectedCustomer} required />
+              <input type="hidden" name="customerId" value={selectedCustomer} required={isIncomeCategory} />
               <button
                 type="button"
                 onClick={() => setCustOpen(!custOpen)}
@@ -404,6 +451,9 @@ export default function AddTransaksiModal({
                   </svg>
                 )}
               </button>
+              <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
+                {isIncomeCategory ? "Pelanggan akan terisi dari unit, atau pilih manual bila perlu" : "Opsional untuk kategori ini"}
+              </p>
               {custOpen && !selectedUnit && (
                 <div className="absolute z-[60] left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-[10px] shadow-xl py-2">
                    <div className="px-4 py-1 mb-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-slate-700/30">Daftar Semua Pelanggan</div>

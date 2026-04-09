@@ -28,6 +28,8 @@ export default async function TransaksiPage(props: {
     },
     include: {
       project: { select: { code: true, name: true } },
+      unit: { select: { id: true, unitCode: true, blockName: true, unitNumber: true } },
+      customer: { select: { id: true, name: true, paymentMethod: true } },
       journalEntries: { select: { id: true } },
     },
     orderBy: { date: "desc" },
@@ -62,6 +64,11 @@ export default async function TransaksiPage(props: {
     projectCode: t.project?.code || "-",
     projectName: t.project?.name || null,
     projectId: t.projectId,
+    unitId: t.unitId,
+    unitCode: t.unit?.unitCode || null,
+    customerId: t.customerId,
+    customerName: t.customer?.name || null,
+    paymentMethod: t.customer?.paymentMethod || null,
     hasJournal: (t as any).journalEntries?.length > 0,
   }));
 
@@ -69,8 +76,8 @@ export default async function TransaksiPage(props: {
     <TransaksiClient
       transactions={serialized}
       projects={projects}
-      units={units}
-      customers={customers}
+      units={JSON.parse(JSON.stringify(units))}
+      customers={JSON.parse(JSON.stringify(customers))}
       search={search}
       category={category}
       projectFilter={projectFilter}

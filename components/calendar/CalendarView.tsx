@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Calendar, dateFnsLocalizer, View, Views } from "react-big-calendar";
+import { Calendar, dateFnsLocalizer, Views } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { id } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
@@ -34,7 +34,7 @@ export interface ICalendarEvent {
 
 export default function CalendarView() {
   const [events, setEvents] = useState<ICalendarEvent[]>([]);
-  const [view, setView] = useState<View>(Views.MONTH);
+  const [view, setView] = useState<string>(Views.MONTH);
   const [date, setDate] = useState<Date>(new Date());
   
   // Modals state
@@ -84,7 +84,7 @@ export default function CalendarView() {
   }, [date, fetchEvents]);
 
   const onNavigate = (newDate: Date) => setDate(newDate);
-  const onView = (newView: View) => setView(newView);
+  const onView = (newView: string) => setView(newView);
 
   const handleSelectSlot = ({ start }: { start: Date; end: Date }) => {
     setModalMode("ADD");

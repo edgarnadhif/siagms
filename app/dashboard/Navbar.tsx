@@ -2,7 +2,7 @@
 
 export default function Navbar({ user }: { user?: { email: string; role: string } | null }) {
   return (
-    <header className="flex items-center justify-end h-20 px-8 bg-gray-100 dark:bg-[#0f172a] shadow-sm z-10 transition-colors duration-300  my-3 mr-3 rounded-2xl border border-gray-200 dark:border-gray-800">
+    <header suppressHydrationWarning className="flex items-center justify-end h-20 px-8 bg-gray-100 dark:bg-[#0f172a] shadow-sm z-10 transition-colors duration-300  my-3 mr-3 rounded-2xl border border-gray-200 dark:border-gray-800">
       <div className="flex items-center gap-3">
         {/* Avatar Circle */}
         <div className="w-12 h-12 rounded-full bg-[#FFF0E6] dark:bg-[#431407] text-[#EA6C00] dark:text-[#F97316] font-bold flex items-center justify-center border-2 border-white dark:border-gray-600 shadow-sm uppercase">

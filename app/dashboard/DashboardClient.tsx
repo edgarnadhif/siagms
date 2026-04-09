@@ -4,7 +4,7 @@ import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from "recharts";
-import { Calendar as BigCalendar, dateFnsLocalizer, ToolbarProps, Views } from "react-big-calendar";
+import { Calendar as BigCalendar, dateFnsLocalizer, Views } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
@@ -43,15 +43,25 @@ function cn(...classes: (string | boolean | undefined)[]) {
 const CATEGORY_LABELS: Record<string, string> = {
   BOOKING_FEE: "Booking Fee",
   DOWN_PAYMENT: "Down Payment",
-  BIAYA_PROYEK: "Biaya Proyek",
+  PENCAIRAN_KPR: "Pencairan KPR",
+  PELUNASAN_CASH: "Pelunasan Cash",
+  BIAYA_KONSTRUKSI: "Biaya Konstruksi",
+  BIAYA_MARKETING: "Biaya Marketing",
   BIAYA_OPERASIONAL: "Biaya Operasional",
+  BIAYA_GAJI: "Biaya Gaji",
+  LAIN_LAIN: "Lain-lain",
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
   BOOKING_FEE: "text-blue-700 bg-blue-100 border-blue-200 dark:text-blue-400 dark:bg-blue-900/30 dark:border-blue-800",
   DOWN_PAYMENT: "text-emerald-700 bg-emerald-100 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-900/30 dark:border-emerald-800",
-  BIAYA_PROYEK: "text-orange-700 bg-orange-100 border-orange-200 dark:text-orange-400 dark:bg-orange-900/30 dark:border-orange-800",
+  PENCAIRAN_KPR: "text-indigo-700 bg-indigo-100 border-indigo-200 dark:text-indigo-400 dark:bg-indigo-900/30 dark:border-indigo-800",
+  PELUNASAN_CASH: "text-purple-700 bg-purple-100 border-purple-200 dark:text-purple-400 dark:bg-purple-900/30 dark:border-purple-800",
+  BIAYA_KONSTRUKSI: "text-orange-700 bg-orange-100 border-orange-200 dark:text-orange-400 dark:bg-orange-900/30 dark:border-orange-800",
+  BIAYA_MARKETING: "text-pink-700 bg-pink-100 border-pink-200 dark:text-pink-400 dark:bg-pink-900/30 dark:border-pink-800",
   BIAYA_OPERASIONAL: "text-red-700 bg-red-100 border-red-200 dark:text-red-400 dark:bg-red-900/30 dark:border-red-800",
+  BIAYA_GAJI: "text-amber-700 bg-amber-100 border-amber-200 dark:text-amber-400 dark:bg-amber-900/30 dark:border-amber-800",
+  LAIN_LAIN: "text-slate-700 bg-slate-100 border-slate-200 dark:text-slate-300 dark:bg-slate-900/30 dark:border-slate-700",
 };
 
 // ─── Chart Components ─────────────────────────────────────
@@ -224,7 +234,7 @@ function Card({ children, className = "", title, action }: { children: React.Rea
 }
 
 // ─── Mini Calendar Toolbar ────────────────────────────────────────
-function MiniToolbar({ label, onNavigate }: ToolbarProps) {
+function MiniToolbar({ label, onNavigate }: { label: string; onNavigate: (action: string) => void }) {
   const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
   return (
     <div className="flex items-center justify-between mb-2">
