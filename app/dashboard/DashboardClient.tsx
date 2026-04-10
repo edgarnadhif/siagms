@@ -40,6 +40,9 @@ function cn(...classes: (string | boolean | undefined)[]) {
   return classes.filter(Boolean).join(" ");
 }
 
+const dashboardActionClass =
+  "text-xs font-semibold text-[#EA6C00] hover:text-[#C25500] dark:text-[#F97316] dark:hover:text-[#FFF0E6] transition-colors border border-[#EA6C00] dark:border-[#F97316] px-3 py-1.5 rounded-md hover:bg-[#FFF0E6] dark:hover:bg-[#431407]";
+
 const CATEGORY_LABELS: Record<string, string> = {
   BOOKING_FEE: "Booking Fee",
   DOWN_PAYMENT: "Down Payment",
@@ -68,9 +71,11 @@ const CATEGORY_COLORS: Record<string, string> = {
 function DonutChart({
   data,
   size = 160,
+  valueFormatter = (value) => formatRupiah(Number(Array.isArray(value) ? value[0] : value)),
 }: {
   data: { label: string; value: number; color: string }[];
   size?: number;
+  valueFormatter?: (value: number | string | readonly (string | number)[] | undefined) => string;
 }) {
   const total = data.reduce((s, d) => s + d.value, 0);
   const chartData = total > 0 ? data : [{ label: 'Belum Ada', value: 1, color: '#FFF0E6' }];
@@ -95,8 +100,24 @@ function DonutChart({
           </Pie>
           {total > 0 && (
             <Tooltip 
-              formatter={(value: any) => formatRupiah(Number(value))}
-              contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
+              content={({ active, payload }) => {
+                if (!active || !payload?.length) return null;
+                const rawValue = payload[0]?.value;
+                return (
+                  <div
+                    style={{
+                      borderRadius: '12px',
+                      border: '1px solid #e2e8f0',
+                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                      fontSize: '12px',
+                      backgroundColor: '#fff',
+                      padding: '10px 12px',
+                    }}
+                  >
+                    {valueFormatter(rawValue)}
+                  </div>
+                );
+              }}
             />
           )}
         </PieChart>
@@ -500,7 +521,7 @@ export default function DashboardClient({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-3 mb-4 lg:mb-3">
-        <Card title="Ringkasan Laba Rugi" action={<Link href="/dashboard/laporan" className="text-xs text-[#EA6C00] font-bold hover:underline">Lihat Lengkap</Link>}>
+        <Card title="Ringkasan Laba Rugi" action={<Link href="/dashboard/laporan" className={dashboardActionClass}>Lihat Lengkap</Link>}>
           <div className="flex flex-col gap-3 py-2">
             <div className="flex justify-between items-center text-sm">
               <span className="text-slate-500 font-medium">Pendapatan Diakui</span>
@@ -517,7 +538,7 @@ export default function DashboardClient({
           </div>
         </Card>
 
-        <Card title="Neraca Singkat" action={<Link href="/dashboard/laporan?tab=neraca" className="text-xs text-[#EA6C00] font-bold hover:underline">Lihat Detail</Link>}>
+        <Card title="Neraca Singkat" action={<Link href="/dashboard/laporan?tab=neraca" className={dashboardActionClass}>Lihat Detail</Link>}>
           <div className="flex flex-col gap-3 py-2">
             <div className="flex justify-between items-center text-sm">
               <span className="text-slate-500 font-medium">Total Aset</span>
@@ -541,7 +562,7 @@ export default function DashboardClient({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-3 mb-4 lg:mb-3">
-        <Card title="Proporsi Pengeluaran" action={<button className="text-xs text-[#EA6C00] font-bold hover:underline">Detail Biaya</button>}>
+        <Card title="Proporsi Pengeluaran" action={<button className={dashboardActionClass}>Detail Biaya</button>}>
           <div className="flex flex-col md:flex-row items-center gap-6 py-2">
             <DonutChart data={breakdownData} />
             <div className="flex-1 w-full space-y-2.5">
@@ -558,7 +579,7 @@ export default function DashboardClient({
           </div>
         </Card>
 
-        <Card title="Status Stok Unit" action={<Link href="/dashboard/unit" className="text-xs text-[#EA6C00] font-bold hover:underline">Master Unit</Link>}>
+        <Card title="Status Stok Unit" action={<Link href="/dashboard/unit" className={dashboardActionClass}>Master Unit</Link>}>
           <div className="flex flex-col md:flex-row items-center gap-6 py-2">
             <DonutChart data={[
               { label: "Tersedia", value: unitStats.TERSEDIA, color: "#10b981" },
@@ -566,7 +587,7 @@ export default function DashboardClient({
               { label: "Proses Akad", value: unitStats.AKAD, color: "#f59e0b" },
               { label: "Lunas", value: unitStats.LUNAS, color: "#a855f7" },
               { label: "Serah Terima", value: unitStats.SERAH_TERIMA, color: "#64748b" },
-            ]} />
+            ]} valueFormatter={(value) => `${value} Unit`} />
             <div className="flex-1 w-full space-y-2.5">
               {[
                 { label: "Tersedia", value: unitStats.TERSEDIA, color: "#10b981" },
@@ -587,7 +608,7 @@ export default function DashboardClient({
           </div>
         </Card>
 
-        <Card title="Agenda Proyek" action={<Link href="/dashboard/calendar" className="text-xs text-[#EA6C00] font-bold hover:underline">Full Agenda</Link>}>
+        <Card title="Agenda Proyek" action={<Link href="/dashboard/calendar" className={dashboardActionClass}>Full Agenda</Link>}>
           <div className="py-2">
              <MiniCalendar 
                events={calendarEvents} 
@@ -662,7 +683,7 @@ export default function DashboardClient({
       <div className="grid grid-cols-1 gap-4 lg:gap-3">
         <div>
           <Card title="Transaksi Terbaru" action={
-            <Link href="/dashboard/transaksi" className="text-xs font-semibold text-[#EA6C00] hover:text-[#C25500] dark:text-[#F97316] dark:hover:text-[#FFF0E6] transition-colors border border-[#EA6C00] dark:border-[#F97316] px-3 py-1.5 rounded-md hover:bg-[#FFF0E6] dark:hover:bg-[#431407]">
+            <Link href="/dashboard/transaksi" className={dashboardActionClass}>
               Lihat Semua Transaksi
             </Link>
           }>
@@ -670,29 +691,64 @@ export default function DashboardClient({
               <div className="text-center text-sm text-gray-500 py-10 italic">Belum ada transaksi dicatat.</div>
             ) : (
               <div className="overflow-x-auto -mx-5 px-5 mt-2">
-                <table className="w-full min-w-[700px]">
-                  <thead className="bg-[#F9FAFB] dark:bg-slate-800/60 border-y border-[#F3F4F6] dark:border-slate-700">
+                <table className="w-full min-w-[900px] border-collapse">
+                  <thead className="bg-[#F9FAFB] dark:bg-slate-700/40">
                     <tr>
-                      <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">Tanggal</th>
-                      <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">Referensi</th>
-                      <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">Keterangan</th>
-                      <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-widest text-gray-400">Kategori</th>
-                      <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-widest text-gray-400">Jumlah</th>
+                      <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-widest text-gray-400 w-[120px]">TANGGAL</th>
+                      <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-widest text-gray-400 w-[150px]">NO. REFERENSI</th>
+                      <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-widest text-gray-400">KETERANGAN</th>
+                      <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-widest text-gray-400 w-[120px]">PROYEK</th>
+                      <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-widest text-gray-400 w-[160px]">KATEGORI</th>
+                      <th className="px-5 py-4 text-right text-xs font-bold uppercase tracking-widest text-gray-400 w-[160px]">JUMLAH (RP)</th>
+                      <th className="px-5 py-4 text-center text-xs font-bold uppercase tracking-widest text-gray-400 w-[100px]">AKSI</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#F3F4F6] dark:divide-slate-700/50">
+                  <tbody className="divide-y divide-[#F3F4F6] dark:divide-white/[0.05]">
                     {paginatedTransactions.map((trx) => (
-                      <tr key={trx.id} className="hover:bg-[#FFF0E6] dark:hover:bg-[#431407] transition-all duration-150 group">
-                        <td className="px-5 py-4 whitespace-nowrap text-xs font-medium text-slate-600 dark:text-slate-400">{formatDate(trx.date)}</td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm font-bold text-slate-800 dark:text-slate-200">{trx.reference}</td>
-                        <td className="px-5 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{trx.description}</td>
+                      <tr key={trx.id} className="hover:bg-[#FFF0E6] dark:hover:bg-orange-500/10 transition-all duration-150 group">
+                        <td className="px-5 py-4 whitespace-nowrap text-xs font-medium text-gray-500 dark:text-gray-400">
+                          {formatDate(trx.date)}
+                        </td>
                         <td className="px-5 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${CATEGORY_COLORS[trx.category] || "bg-gray-100 text-gray-700"}`}>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{trx.reference}</span>
+                            {trx.hasJournal && (
+                              <div title="Jurnal Otomatis Terbuat" className="text-green-500 bg-green-50 dark:bg-green-900/30 p-1 rounded-full cursor-help">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-3.5 h-3.5">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold text-gray-800 dark:text-gray-200">{trx.description}</span>
+                            {trx.note && <span className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 italic">{trx.note}</span>}
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-600 dark:text-gray-400">
+                          {trx.projectCode || "-"}
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-[6px] text-[10px] font-bold border uppercase tracking-widest ${CATEGORY_COLORS[trx.category] || "bg-gray-100 text-gray-700"}`}>
                             {CATEGORY_LABELS[trx.category] || trx.category}
                           </span>
                         </td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-[#EA6C00] dark:text-[#F97316] text-right">
+                        <td className="px-5 py-4 whitespace-nowrap text-sm font-bold text-[#EA6C00] dark:text-[#F97316] text-right">
                           {formatRupiah(trx.amount)}
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap text-center text-gray-400">
+                          <Link
+                            href={`/dashboard/transaksi?search=${encodeURIComponent(trx.reference)}`}
+                            className="inline-flex items-center justify-center p-1.5 hover:text-[#EA6C00] transition-colors rounded-lg hover:bg-white dark:hover:bg-slate-800"
+                            title="Lihat di halaman transaksi"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75 21 3m0 0h-3.75M21 3v3.75M21 3 10.5 13.5" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5v4.125A1.875 1.875 0 0 1 17.625 19.5H6.375A1.875 1.875 0 0 1 4.5 17.625V6.375A1.875 1.875 0 0 1 6.375 4.5H10.5" />
+                            </svg>
+                          </Link>
                         </td>
                       </tr>
                     ))}

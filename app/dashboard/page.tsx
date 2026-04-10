@@ -197,7 +197,10 @@ export default async function DashboardPage(props: {
       ...(projectFilter ? { projectId: projectFilter } : {}),
     },
     orderBy: { date: "desc" },
-    include: { project: { select: { code: true } } },
+    include: {
+      project: { select: { code: true } },
+      journalEntries: { select: { id: true } },
+    },
     take: 50,
   });
 
@@ -326,8 +329,11 @@ export default async function DashboardPage(props: {
     date: trx.date.toISOString(),
     reference: trx.reference,
     description: trx.description,
+    note: trx.note,
     category: trx.category,
     amount: Number(trx.amount),
+    projectCode: trx.project?.code || "-",
+    hasJournal: trx.journalEntries.length > 0,
   }));
 
   return (
