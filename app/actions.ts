@@ -1038,9 +1038,9 @@ async function createAutoJournal(db: DbClient, trans: any) {
       break;
     }
     case 'PELUNASAN_CASH': {
-      const pend = await ensureAccount(db, tenantId, 'pendapatan');
+      const pMuka = await ensureAccount(db, tenantId, 'pendapatanMuka');
       entries.push({ accountId: bank.id, debit: amount, credit: 0 });
-      entries.push({ accountId: pend.id, debit: 0, credit: amount });
+      entries.push({ accountId: pMuka.id, debit: 0, credit: amount });
       break;
     }
     case 'BIAYA_KONSTRUKSI': {
