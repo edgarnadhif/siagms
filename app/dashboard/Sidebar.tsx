@@ -125,18 +125,13 @@ export default function Sidebar({ role, user }: { role: AppRole; user?: { email:
         {isExpanded && (
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800">
-              {companyProfile.logoUrl ? (
-                <Image
-                  src={companyProfile.logoUrl}
-                  alt="Logo"
-                  width={32}
-                  height={32}
-                  className="w-8 h-8 rounded-lg object-cover"
-                />
-              ) : (
-                /* Logo box placeholder or default logo */
-                <span className="text-xs">Logo</span>
-              )}
+              <Image
+                src="/logo.svg"
+                alt="Logo"
+                width={32}
+                height={32}
+                className="w-8 h-8 rounded-lg object-contain p-0.5"
+              />
             </div>
             <div>
               <h1 className="text-sm font-bold text-gray-800 dark:text-white leading-tight">
@@ -188,7 +183,7 @@ export default function Sidebar({ role, user }: { role: AppRole; user?: { email:
         {menuGroups.map((group) => (
           <div key={group.title} className="mb-4">
             {isExpanded && group.title && (
-              <h3 className="px-3 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+              <h3 className="px-3 sidebar-section mb-2">
                 {group.title}
               </h3>
             )}
@@ -203,8 +198,8 @@ export default function Sidebar({ role, user }: { role: AppRole; user?: { email:
                       href={item.href}
                         className={`flex items-center px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                         isActive
-                          ? "bg-white dark:bg-slate-800 shadow-sm text-gray-900 dark:text-white font-semibold"
-                          : "text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-slate-800/50 hover:text-gray-800 dark:hover:text-gray-200"
+                          ? "bg-white dark:bg-slate-800 shadow-sm sidebar-menu-active"
+                          : "sidebar-menu hover:bg-white/50 dark:hover:bg-slate-800/50"
                       } ${!isExpanded ? "justify-center" : ""}`}
                       title={!isExpanded ? item.title : ""}
                     >
@@ -228,7 +223,7 @@ export default function Sidebar({ role, user }: { role: AppRole; user?: { email:
                         )}
                       </span>
                       {isExpanded && (
-                        <span className="ml-3 truncate text-sm">
+                        <span className="ml-3 truncate">
                           {item.title}
                         </span>
                       )}

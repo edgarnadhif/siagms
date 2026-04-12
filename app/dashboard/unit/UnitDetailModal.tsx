@@ -4,6 +4,9 @@ import React, { useEffect, useState, useCallback } from "react";
 import { serahTerimaUnit } from "@/app/actions";
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
+import CategoryBadge from "@/components/ui/CategoryBadge";
+import StatusBadge from "@/components/ui/StatusBadge";
+import { TransactionCategory } from "@prisma/client";
 
 interface UnitDetailModalProps {
   unitId: string;
@@ -604,9 +607,9 @@ export default function UnitDetailModal({ unitId, onClose, onCancelSuccess }: Un
                     style={{ width: `${payPercent}%` }}
                   />
                 </div>
-                <div className="flex justify-between text-[11px] font-bold text-slate-500">
+                <div className="flex justify-between items-center text-[11px] font-bold text-slate-500">
                   <span>{payPercent}% TERBAYAR</span>
-                  <span>{unit.status}</span>
+                  <StatusBadge status={unit.status} variant="UNIT" size="sm" />
                 </div>
               </div>
 
@@ -708,9 +711,13 @@ export default function UnitDetailModal({ unitId, onClose, onCancelSuccess }: Un
                       <div key={t.id} className="p-4 flex justify-between items-center hover:bg-white dark:hover:bg-slate-800 transition-colors">
                         <div>
                           <p className="text-sm font-bold text-slate-800 dark:text-white">{t.description}</p>
-                          <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider mt-1">
-                            {new Date(t.date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })} • {t.category}
-                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
+                              {new Date(t.date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                            </span>
+                            <span className="text-slate-300 dark:text-slate-600">•</span>
+                            <CategoryBadge category={t.category as TransactionCategory} size="sm" />
+                          </div>
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-black text-emerald-600">+ Rp {new Intl.NumberFormat("id-ID").format(Number(t.amount))}</p>

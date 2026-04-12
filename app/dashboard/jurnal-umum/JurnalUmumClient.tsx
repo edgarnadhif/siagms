@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { deleteJournalEntriesByReference } from "@/app/actions";
 import AddJurnalModal from "./AddJurnalModal";
+import StatusBadge from "@/components/ui/StatusBadge";
 
 interface JournalGroup {
   reference: string;
@@ -156,11 +157,7 @@ export default function JurnalUmumClient({
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-medium text-slate-500 dark:text-slate-400">{journal.reference}</span>
                       <span className="text-sm text-slate-400 dark:text-slate-500">{formatDate(journal.date)}</span>
-                      {journal.isAuto && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800 uppercase tracking-wider">
-                          AUTO
-                        </span>
-                      )}
+                      <StatusBadge status={journal.isAuto ? "AUTO" : "MANUAL"} variant="JOURNAL" size="sm" />
                     </div>
                     <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{journal.description || "-"}</p>
                   </div>

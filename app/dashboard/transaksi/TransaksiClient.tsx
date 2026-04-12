@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { deleteTransaction, deleteTransactions } from "@/app/actions";
 import AddTransaksiModal from "./AddTransaksiModal";
 import EditTransaksiModal from "./EditTransaksiModal";
+import CategoryBadge from "@/components/ui/CategoryBadge";
+import { TransactionCategory } from "@prisma/client";
 
 interface Transaction {
   id: string;
@@ -27,31 +29,7 @@ interface Project {
   name: string;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  BOOKING_FEE: "Booking Fee",
-  DOWN_PAYMENT: "Down Payment",
-  ANGSURAN_KPR: "Angsuran KPR",
-  PELUNASAN_CASH: "Pelunasan Cash",
-  PENCAIRAN_KPR: "Pencairan KPR",
-  BIAYA_KONSTRUKSI: "Biaya Konstruksi",
-  BIAYA_MARKETING: "Biaya Marketing",
-  BIAYA_OPERASIONAL: "Biaya Operasional",
-  BIAYA_GAJI: "Biaya Gaji",
-  LAIN_LAIN: "Lain-lain",
-};
 
-const CATEGORY_COLORS: Record<string, string> = {
-  BOOKING_FEE: "text-[#185FA5] bg-[#E6F1FB] border-[#BEE1FF] dark:text-blue-300 dark:bg-blue-900/40 dark:border-blue-700",
-  DOWN_PAYMENT: "text-[#15803D] bg-[#DCFCE7] border-[#BBF7D0] dark:text-emerald-300 dark:bg-emerald-900/40 dark:border-emerald-700",
-  ANGSURAN_KPR: "text-sky-700 bg-sky-100 border-sky-200 dark:text-sky-300 dark:bg-sky-900/40 dark:border-sky-700",
-  PELUNASAN_CASH: "text-[#6B21A8] bg-[#F3E8FF] border-[#E9D5FF] dark:text-purple-300 dark:bg-purple-900/40 dark:border-purple-700",
-  PENCAIRAN_KPR: "text-indigo-700 bg-indigo-100 border-indigo-200 dark:text-indigo-300 dark:bg-indigo-900/40 dark:border-indigo-700",
-  BIAYA_KONSTRUKSI: "text-[#D45D00] bg-[#FFF0E6] border-[#FFD8B1] dark:text-orange-300 dark:bg-orange-900/40 dark:border-orange-700",
-  BIAYA_MARKETING: "text-pink-700 bg-pink-100 border-pink-200 dark:text-pink-300 dark:bg-pink-900/40 dark:border-pink-700",
-  BIAYA_OPERASIONAL: "text-[#B91C1C] bg-[#FEE2E2] border-[#FECACA] dark:text-red-300 dark:bg-red-900/40 dark:border-red-700",
-  BIAYA_GAJI: "text-amber-700 bg-amber-100 border-amber-200 dark:text-amber-300 dark:bg-amber-900/40 dark:border-amber-700",
-  LAIN_LAIN: "text-slate-700 bg-slate-100 border-slate-200 dark:text-slate-300 dark:bg-slate-900/40 dark:border-slate-700",
-};
 
 function formatRupiah(num: number) {
   return "Rp " + num.toLocaleString("id-ID");
@@ -294,7 +272,7 @@ export default function TransaksiClient({
                 onClick={() => setCatDropdownOpen(!catDropdownOpen)}
                 className="flex items-center justify-between md:justify-start gap-2 w-full md:w-auto px-4 py-2 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors whitespace-nowrap"
               >
-                <span>{category ? CATEGORY_LABELS[category] : "Semua Kategori"}</span>
+                <span>{category ? category.replace(/_/g, " ") : "Semua Kategori"}</span>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${catDropdownOpen ? "rotate-180" : ""}`}
@@ -314,14 +292,14 @@ export default function TransaksiClient({
                   >
                     Semua Kategori
                   </button>
-                  {Object.keys(CATEGORY_LABELS).map((cat) => (
+                  {["BOOKING_FEE", "DOWN_PAYMENT", "PELUNASAN_CASH", "PENCAIRAN_KPR", "BIAYA_KONSTRUKSI", "BIAYA_MARKETING", "BIAYA_GAJI", "BIAYA_OPERASIONAL", "LAIN_LAIN"].map((cat) => (
                     <button
                       type="button"
                       key={cat}
                       onClick={() => { setCategory(cat); setCatDropdownOpen(false); }}
                       className={`text-left px-3 py-2 text-sm font-semibold rounded-md transition-colors ${category === cat ? "bg-[#EA6C00] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 hover:text-[#EA6C00]"}`}
                     >
-                      {CATEGORY_LABELS[cat]}
+                      {cat.replace(/_/g, " ")}
                     </button>
                   ))}
                 </div>
@@ -492,9 +470,7 @@ export default function TransaksiClient({
                         {trx.projectCode}
                       </td>
                       <td className="px-5 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-[6px] text-[10px] font-bold border uppercase tracking-widest ${CATEGORY_COLORS[trx.category] || ""}`}>
-                          {CATEGORY_LABELS[trx.category] || trx.category}
-                        </span>
+                        <CategoryBadge category={trx.category as TransactionCategory} />
                       </td>
                       <td className="px-5 py-4 whitespace-nowrap text-sm font-bold text-[#EA6C00] text-right">
                         {formatRupiah(trx.amount)}

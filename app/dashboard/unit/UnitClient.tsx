@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import UnitDetailModal from "./UnitDetailModal";
+import StatusBadge from "@/components/ui/StatusBadge";
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 type ToastType = "success" | "error";
@@ -157,17 +158,7 @@ export default function UnitClient({
     return pages;
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "TERSEDIA": return "bg-emerald-50 text-emerald-700 ring-emerald-700/10 dark:bg-emerald-900/30 dark:text-emerald-400";
-      case "BOOKING": return "bg-blue-50 text-blue-700 ring-blue-700/10 dark:bg-blue-900/30 dark:text-blue-400";
-      case "INDENT": return "bg-yellow-50 text-yellow-700 ring-yellow-700/10 dark:bg-yellow-900/30 dark:text-yellow-400";
-      case "AKAD": return "bg-orange-50 text-orange-700 ring-orange-700/10 dark:bg-orange-900/30 dark:text-orange-400";
-      case "LUNAS": return "bg-purple-50 text-purple-700 ring-purple-700/10 dark:bg-purple-900/30 dark:text-purple-400";
-      case "SERAH_TERIMA": return "bg-slate-100 text-slate-700 ring-slate-700/10 dark:bg-slate-800 dark:text-slate-400";
-      default: return "bg-gray-100 text-gray-700 ring-gray-700/10";
-    }
-  };
+
 
   // ─── Add Unit ─────────────────────────────────────────────────────────────
   const handleAddUnit = async (e: React.FormEvent) => {
@@ -448,9 +439,7 @@ export default function UnitClient({
                           Rp {new Intl.NumberFormat("id-ID").format(u.price)}
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ring-1 ring-inset ${getStatusBadge(u.status)}`}>
-                            {u.status}
-                          </span>
+                          <StatusBadge status={u.status} variant="UNIT" size="sm" />
                         </td>
                         <td className="px-6 py-4">
                           {u.customer ? (
@@ -715,7 +704,7 @@ export default function UnitClient({
                     <div>
                       <label className={labelCls}>Status</label>
                       <div className="h-11 flex items-center">
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ring-1 ring-inset ${getStatusBadge(editUnit.status)}`}>{editUnit.status}</span>
+                        <StatusBadge status={editUnit.status} variant="UNIT" size="sm" />
                       </div>
                     </div>
                     <div>

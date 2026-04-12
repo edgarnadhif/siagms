@@ -11,7 +11,7 @@ const sora = Sora({
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-jakarta",
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -29,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${jakarta.variable} ${sora.variable} font-sans antialiased`}
+        className={`${jakarta.variable} ${sora.variable} font-jakarta antialiased`}
         suppressHydrationWarning
       >
         <Providers>{children}</Providers>

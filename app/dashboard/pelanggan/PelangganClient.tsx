@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import StatusBadge from "@/components/ui/StatusBadge";
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 type ToastType = "success" | "error";
@@ -386,13 +387,7 @@ export default function PelangganClient({ initialData }: { initialData: any[] })
                         </td>
                         <td className="px-6 py-4 text-gray-600 dark:text-gray-400 font-medium">{c.nik}</td>
                         <td className="px-6 py-4">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ring-1 ring-inset ${
-                            c.paymentMethod === "KPR"
-                              ? "bg-blue-50 text-blue-700 ring-blue-700/10 dark:bg-blue-900/30 dark:text-blue-400"
-                              : "bg-emerald-50 text-emerald-700 ring-emerald-700/10 dark:bg-emerald-900/30 dark:text-emerald-400"
-                          }`}>
-                            {c.paymentMethod}
-                          </span>
+                          <StatusBadge status={c.paymentMethod} variant="METODE_PEMBAYARAN" size="sm" />
                         </td>
                         <td className="px-6 py-4">
                           {c.unit ? (
@@ -649,11 +644,7 @@ export default function PelangganClient({ initialData }: { initialData: any[] })
                     <div>
                       <label className={labelCls}>Metode Pembayaran</label>
                       <div className="h-11 flex items-center gap-2">
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ring-1 ring-inset ${
-                          editCustomer.paymentMethod === "KPR"
-                            ? "bg-blue-50 text-blue-700 ring-blue-700/10"
-                            : "bg-emerald-50 text-emerald-700 ring-emerald-700/10"
-                        }`}>{editCustomer.paymentMethod}</span>
+                        <StatusBadge status={editCustomer.paymentMethod} variant="METODE_PEMBAYARAN" size="sm" />
                       </div>
                       <p className="text-[10px] text-gray-400">Metode pembayaran tidak dapat diubah setelah transaksi berjalan.</p>
                     </div>

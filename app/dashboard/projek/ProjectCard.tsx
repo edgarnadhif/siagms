@@ -4,6 +4,7 @@ import { useState } from "react";
 import { deleteProject } from "@/app/actions";
 import { useRouter } from "next/navigation";
 import EditProjectModal from "./EditProjectModal";
+import StatusBadge from "@/components/ui/StatusBadge";
 
 interface ProjectCardProps {
   project: ProjectCardProject;
@@ -55,33 +56,7 @@ export default function ProjectCard({
   const targetDate = project.endDate ? new Date(project.endDate) : null;
   const remainingDays = targetDate ? differenceInDays(targetDate, new Date()) : null;
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "AKTIF":
-        return "Aktif";
-      case "SELESAI":
-        return "Selesai";
-      case "BATAL":
-        return "Batal";
-      case "TERJUAL":
-        return "Terjual";
-      default:
-        return status;
-    }
-  };
 
-  const getStatusStyle = (status: string) => {
-    switch (status) {
-      case "AKTIF":
-        return "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300";
-      case "SELESAI":
-        return "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300";
-      case "BATAL":
-        return "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300";
-      default:
-        return "bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300";
-    }
-  };
 
   const getBudgetBarColor = () => {
     if (budgetUsedPct > 90) return "from-red-500 to-red-600";
@@ -138,9 +113,7 @@ export default function ProjectCard({
               <p className="text-xs text-gray-400 dark:text-gray-500">Kode Proyek</p>
             </div>
           </div>
-          <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(project.status)}`}>
-            {getStatusLabel(project.status)}
-          </span>
+          <StatusBadge status={project.status} variant="PROJECT" size="sm" />
         </div>
 
         <div className="mb-4">

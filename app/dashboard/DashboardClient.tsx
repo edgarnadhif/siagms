@@ -8,6 +8,8 @@ import { Calendar as BigCalendar, dateFnsLocalizer, Views } from "react-big-cale
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
+import CategoryBadge from "@/components/ui/CategoryBadge";
+import { TransactionCategory } from "@prisma/client";
 
 const rbcLocalizer = dateFnsLocalizer({
   format,
@@ -43,29 +45,7 @@ function cn(...classes: (string | boolean | undefined)[]) {
 const dashboardActionClass =
   "text-xs font-semibold text-[#EA6C00] hover:text-[#C25500] dark:text-[#F97316] dark:hover:text-[#FFF0E6] transition-colors border border-[#EA6C00] dark:border-[#F97316] px-3 py-1.5 rounded-md hover:bg-[#FFF0E6] dark:hover:bg-[#431407]";
 
-const CATEGORY_LABELS: Record<string, string> = {
-  BOOKING_FEE: "Booking Fee",
-  DOWN_PAYMENT: "Down Payment",
-  PENCAIRAN_KPR: "Pencairan KPR",
-  PELUNASAN_CASH: "Pelunasan Cash",
-  BIAYA_KONSTRUKSI: "Biaya Konstruksi",
-  BIAYA_MARKETING: "Biaya Marketing",
-  BIAYA_OPERASIONAL: "Biaya Operasional",
-  BIAYA_GAJI: "Biaya Gaji",
-  LAIN_LAIN: "Lain-lain",
-};
 
-const CATEGORY_COLORS: Record<string, string> = {
-  BOOKING_FEE: "text-blue-700 bg-blue-100 border-blue-200 dark:text-blue-400 dark:bg-blue-900/30 dark:border-blue-800",
-  DOWN_PAYMENT: "text-emerald-700 bg-emerald-100 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-900/30 dark:border-emerald-800",
-  PENCAIRAN_KPR: "text-indigo-700 bg-indigo-100 border-indigo-200 dark:text-indigo-400 dark:bg-indigo-900/30 dark:border-indigo-800",
-  PELUNASAN_CASH: "text-purple-700 bg-purple-100 border-purple-200 dark:text-purple-400 dark:bg-purple-900/30 dark:border-purple-800",
-  BIAYA_KONSTRUKSI: "text-orange-700 bg-orange-100 border-orange-200 dark:text-orange-400 dark:bg-orange-900/30 dark:border-orange-800",
-  BIAYA_MARKETING: "text-pink-700 bg-pink-100 border-pink-200 dark:text-pink-400 dark:bg-pink-900/30 dark:border-pink-800",
-  BIAYA_OPERASIONAL: "text-red-700 bg-red-100 border-red-200 dark:text-red-400 dark:bg-red-900/30 dark:border-red-800",
-  BIAYA_GAJI: "text-amber-700 bg-amber-100 border-amber-200 dark:text-amber-400 dark:bg-amber-900/30 dark:border-amber-800",
-  LAIN_LAIN: "text-slate-700 bg-slate-100 border-slate-200 dark:text-slate-300 dark:bg-slate-900/30 dark:border-slate-700",
-};
 
 // ─── Chart Components ─────────────────────────────────────
 function DonutChart({
@@ -225,7 +205,7 @@ function SummaryCard({
         : "bg-white dark:bg-slate-800 border-[0.5px] border-[#E5E7EB] dark:border-slate-700 text-gray-900 dark:text-gray-100"
     )}>
       <div className="flex items-center justify-between mb-3">
-        <span className={cn("text-xs font-semibold uppercase tracking-widest", accent ? "text-slate-100" : "text-gray-500 dark:text-gray-400")}>
+        <span className={cn("card-label", accent ? "text-slate-100" : "text-gray-500 dark:text-gray-400")}>
           {title}
         </span>
         <div className={cn("w-8 h-8 rounded-full flex items-center justify-center", accent ? "bg-[#273549] text-[#EA6C00] dark:text-[#F97316]" : "bg-[#FFF0E6] dark:bg-[#431407] text-[#EA6C00] dark:text-[#F97316]")}>
@@ -233,8 +213,8 @@ function SummaryCard({
         </div>
       </div>
       <div>
-        <p className={cn("text-2xl font-bold leading-tight", accent ? "text-white" : "text-gray-900 dark:text-gray-100")}>{value}</p>
-        <p className={cn("text-xs mt-1 line-clamp-1 opacity-50 ", accent ? "text-slate-300" : "text-gray-400 dark:text-gray-500")}>{subtitle}</p>
+        <p className={cn("card-value", accent ? "text-white" : "text-gray-900 dark:text-gray-100")}>{value}</p>
+        <p className={cn("card-subtitle mt-1 line-clamp-1 opacity-50 ", accent ? "text-slate-300" : "text-gray-400 dark:text-gray-500")}>{subtitle}</p>
       </div>
     </div>
   );
@@ -245,7 +225,7 @@ function Card({ children, className = "", title, action }: { children: React.Rea
     <div className={cn("bg-white dark:bg-slate-800 rounded-[14px] border-[0.5px] border-[#E5E7EB] dark:border-slate-700 p-5 shadow-sm", className)}>
       {(title || action) && (
         <div className="flex items-center justify-between mb-4 border-b border-gray-100 dark:border-slate-700 pb-3">
-          {title && <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">{title}</h3>}
+          {title && <h3 className="section-title dark:text-gray-100">{title}</h3>}
           {action}
         </div>
       )}
@@ -490,8 +470,8 @@ export default function DashboardClient({
     <div className="text-gray-600 dark:text-gray-300 w-full h-full">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
-          <p className="text-sm text-gray-400 dark:text-gray-400 mt-3">Ringkasan kinerja keuangan dan monitoring proyek</p>
+          <h1 className="page-title dark:text-gray-100">Dashboard</h1>
+          <p className="card-subtitle text-gray-400 dark:text-gray-400 mt-3">Ringkasan kinerja keuangan dan monitoring proyek</p>
         </div>
         <ProjectFilterDropdown 
           projects={projects}
@@ -731,9 +711,7 @@ export default function DashboardClient({
                           {trx.projectCode || "-"}
                         </td>
                         <td className="px-5 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-[6px] text-[10px] font-bold border uppercase tracking-widest ${CATEGORY_COLORS[trx.category] || "bg-gray-100 text-gray-700"}`}>
-                            {CATEGORY_LABELS[trx.category] || trx.category}
-                          </span>
+                          <CategoryBadge category={trx.category as TransactionCategory} size="sm" />
                         </td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm font-bold text-[#EA6C00] dark:text-[#F97316] text-right">
                           {formatRupiah(trx.amount)}

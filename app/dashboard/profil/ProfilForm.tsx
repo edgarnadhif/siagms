@@ -2,8 +2,6 @@
 
 import { useActionState } from "react";
 import { updateCompanyProfile } from "@/app/actions";
-import { useState, useRef } from "react";
-import Image from "next/image";
 
 interface ProfilFormProps {
   initialData: {
@@ -20,64 +18,10 @@ export default function ProfilForm({ initialData }: ProfilFormProps) {
     updateCompanyProfile,
     null,
   );
-  const [logoPreview, setLogoPreview] = useState<string | null>(
-    initialData.logoUrl,
-  );
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleLogoClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   return (
     <form action={formAction} className="space-y-6">
-      {/* Logo Upload Section */}
-      <div className="flex items-center gap-6 mb-8">
-        <div
-          onClick={handleLogoClick}
-          className="relative w-24 h-24 rounded-2xl border-2 border-dashed border-gray-200 dark:border-slate-700 flex items-center justify-center cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 transition-colors group overflow-hidden bg-gray-50 dark:bg-slate-900"
-        >
-          {/* <input type="hidden" name="logoUrl" value={logoPreview || ""} /> */}
 
-          <input
-            type="file"
-            ref={fileInputRef}
-            className="hidden"
-            accept="image/*"
-            onChange={handleFileChange}
-            name="logoFile"
-          />
-          {logoPreview ? (
-            <Image
-              src={logoPreview}
-              alt="Logo Preview"
-              fill
-              className="object-cover"
-            />
-          ) : (
-            <div className="text-center p-2">
-              <span className="text-gray-400 dark:text-gray-500 text-xs group-hover:text-blue-500 dark:group-hover:text-blue-400">
-                Upload Logo
-              </span>
-            </div>
-          )}
-        </div>
-        <div>
-          <h3 className="font-medium text-gray-900 dark:text-gray-100">Logo Perusahaan</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Format: PNG, JPG (Max. 2MB)</p>
-        </div>
-      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="col-span-2 md:col-span-1">
@@ -88,7 +32,7 @@ export default function ProfilForm({ initialData }: ProfilFormProps) {
             type="text"
             name="name"
             defaultValue={initialData.name}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-transparent dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none transition-all"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-transparent dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-2 focus:ring-[#EA6C00]/20 dark:focus:ring-[#EA6C00]/20 outline-none transition-all"
             placeholder="Masukkan nama perusahaan"
           />
         </div>
@@ -101,7 +45,7 @@ export default function ProfilForm({ initialData }: ProfilFormProps) {
             type="email"
             name="email"
             defaultValue={initialData.email || ""}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-transparent dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none transition-all"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-transparent dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-2 focus:ring-[#EA6C00]/20 dark:focus:ring-[#EA6C00]/20 outline-none transition-all"
             placeholder="email@perusahaan.com"
           />
         </div>
@@ -114,7 +58,7 @@ export default function ProfilForm({ initialData }: ProfilFormProps) {
             name="address"
             rows={3}
             defaultValue={initialData.address || ""}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-transparent dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none transition-all resize-none"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-transparent dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-2 focus:ring-[#EA6C00]/20 dark:focus:ring-[#EA6C00]/20 outline-none transition-all resize-none"
             placeholder="Masukkan alamat lengkap perusahaan"
           />
         </div>
@@ -127,7 +71,7 @@ export default function ProfilForm({ initialData }: ProfilFormProps) {
             type="tel"
             name="phone"
             defaultValue={initialData.phone || ""}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-transparent dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none transition-all"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-transparent dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-2 focus:ring-[#EA6C00]/20 dark:focus:ring-[#EA6C00]/20 outline-none transition-all"
             placeholder="+62 xxx xxxx xxxx"
           />
         </div>
@@ -137,7 +81,7 @@ export default function ProfilForm({ initialData }: ProfilFormProps) {
         <button
           type="submit"
           disabled={isPending}
-          className="px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-6 py-3 bg-[#EA6C00] text-white font-medium rounded-xl hover:bg-[#C25500] focus:ring-4 focus:ring-[#EA6C00]/20 dark:focus:ring-[#EA6C00]/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isPending ? "Menyimpan..." : "Simpan Perubahan"}
         </button>

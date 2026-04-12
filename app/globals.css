@@ -31,7 +31,221 @@ h4,
 h5,
 h6,
 .font-heading {
-  font-family: var(--font-sora), Arial, Helvetica, sans-serif;
+  font-family: var(--font-jakarta), Arial, Helvetica, sans-serif;
+}
+
+/* =================================================================
+   SISTEM TIPOGRAFI
+   ================================================================= */
+
+/* PAGE TITLE (Judul halaman: Dashboard, Transaksi, dll) */
+.page-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.2;
+}
+
+/* SECTION TITLE (Judul section: Ringkasan Laba Rugi, dll) */
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* CARD VALUE (Angka besar di card KPI dashboard) */
+.card-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.5px;
+}
+
+/* CARD LABEL (Label kecil di atas angka: KAS DITERIMA) */
+.card-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6B7280;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+/* CARD SUBTITLE (Teks kecil di bawah angka) */
+.card-subtitle {
+  font-size: 12px;
+  font-weight: 400;
+  color: #9CA3AF;
+}
+
+/* TABLE HEADER */
+.table-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6B7280;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+/* TABLE BODY - Data utama */
+.table-body-primary {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+}
+
+/* TABLE BODY - Data sekunder/keterangan */
+.table-body-secondary {
+  font-size: 13px;
+  font-weight: 400;
+  color: #6B7280;
+}
+
+/* TABLE BODY - Angka/jumlah */
+.table-amount {
+  font-size: 14px;
+  font-weight: 600;
+  color: #F97316;
+  font-variant-numeric: tabular-nums;
+}
+
+/* BUTTON PRIMARY */
+.btn-primary {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+/* BUTTON SECONDARY/GHOST */
+.btn-secondary {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* FORM LABEL */
+.form-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+/* FORM INPUT */
+.form-input {
+  font-size: 14px;
+  font-weight: 400;
+  color: #111827;
+}
+
+/* FORM PLACEHOLDER */
+.form-placeholder {
+  font-size: 14px;
+  color: #9CA3AF;
+}
+
+/* BADGE/STATUS */
+.badge {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+
+/* SIDEBAR MENU ITEM */
+.sidebar-menu {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* SIDEBAR MENU ACTIVE */
+.sidebar-menu-active {
+  font-size: 13px;
+  font-weight: 600;
+  color: #F97316;
+}
+
+/* SIDEBAR SECTION LABEL */
+.sidebar-section {
+  font-size: 10px;
+  font-weight: 700;
+  color: #9CA3AF;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* LAPORAN KEUANGAN - Judul laporan */
+.report-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  text-align: center;
+}
+
+/* LAPORAN KEUANGAN - Sub judul */
+.report-subtitle {
+  font-size: 13px;
+  font-weight: 400;
+  color: #6B7280;
+  text-align: center;
+}
+
+/* LAPORAN KEUANGAN - Section header */
+.report-section {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* LAPORAN KEUANGAN - Item */
+.report-item {
+  font-size: 14px;
+  font-weight: 400;
+  color: #374151;
+}
+
+/* LAPORAN KEUANGAN - Total */
+.report-total {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* LAPORAN KEUANGAN - Laba/Rugi bersih */
+.report-net {
+  font-size: 16px;
+  font-weight: 700;
+  color: #16A34A;
+}
+.report-net-loss {
+  font-size: 16px;
+  font-weight: 700;
+  color: #DC2626;
+}
+
+/* Dark mode generic overrides */
+.dark .page-title,
+.dark .section-title,
+.dark .card-value,
+.dark .table-body-primary,
+.dark .form-input,
+.dark .report-title,
+.dark .report-section,
+.dark .report-total {
+  color: #F9FAFB; /* gray-50 */
+}
+
+.dark .card-label,
+.dark .card-subtitle,
+.dark .table-header,
+.dark .table-body-secondary,
+.dark .form-label,
+.dark .sidebar-menu,
+.dark .sidebar-section,
+.dark .report-item,
+.dark .report-subtitle {
+  color: #9CA3AF; /* gray-400 */
 }
 
 /* Custom Scrollbar */
