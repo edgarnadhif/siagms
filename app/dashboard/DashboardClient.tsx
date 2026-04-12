@@ -685,7 +685,7 @@ export default function DashboardClient({
                   </thead>
                   <tbody className="divide-y divide-[#F3F4F6] dark:divide-white/[0.05]">
                     {paginatedTransactions.map((trx) => (
-                      <tr key={trx.id} className="hover:bg-[#FFF0E6] dark:hover:bg-orange-500/10 transition-all duration-150 group">
+                      <tr key={trx.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors group">
                         <td className="px-5 py-4 whitespace-nowrap text-xs font-medium text-gray-500 dark:text-gray-400">
                           {formatDate(trx.date)}
                         </td>

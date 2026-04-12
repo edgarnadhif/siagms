@@ -435,7 +435,7 @@ export default function TransaksiClient({
                   {paginatedTransactions.map((trx, idx) => (
                     <tr 
                         key={trx.id} 
-                        className={`hover:bg-[#FFF0E6] dark:hover:bg-orange-500/10 ${selectedIds.includes(trx.id) ? "bg-[#FFF0E6] dark:bg-orange-500/10" : ""} ${idx === paginatedTransactions.length - 1 ? "border-b-0" : "border-b border-[#F3F4F6] dark:border-slate-700/50"}`}
+                        className={`hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors ${selectedIds.includes(trx.id) ? "bg-slate-50/50 dark:bg-slate-700/20" : ""} ${idx === paginatedTransactions.length - 1 ? "border-b-0" : "border-b border-[#F3F4F6] dark:border-slate-700/50"}`}
                     >
                       <td className="px-5 py-4 whitespace-nowrap text-center">
                         <input 
