@@ -117,7 +117,7 @@ export default async function ProjectPage({
       </div>
 
       {/* Action Bar (Search) */}
-      <div className="sticky top-0 z-30 pt-2 pb-4 bg-gray-100 dark:bg-[#0f172a] -mx-4 md:-mx-0 px-4 md:px-0">
+      <div className="sticky -top-6 z-30 pt-8 pb-4 bg-white dark:bg-[#111827] -mx-6 px-6">
         <div className="flex flex-col md:flex-row items-stretch gap-3">
           <div className="flex-1 w-full">
             <ProjectFilters initialSearch={search} initialStatus={status} />

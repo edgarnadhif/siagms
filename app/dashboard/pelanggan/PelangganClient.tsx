@@ -282,7 +282,7 @@ export default function PelangganClient({ initialData }: { initialData: any[] })
 
         <div className="px-4 md:px-0 pb-10">
           {/* Filter bar */}
-          <div className="sticky top-0 z-30 pt-2 pb-4 bg-gray-100 dark:bg-[#0f172a] -mx-4 md:-mx-0 px-4 md:px-0">
+          <div className="sticky -top-6 z-30 pt-8 pb-4 bg-white dark:bg-[#111827] -mx-6 px-6">
             <div className="flex flex-col md:flex-row items-center bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-[12px] shadow-sm p-1.5 min-h-[56px] md:h-14">
               <div className="flex flex-1 items-center px-3 gap-3 w-full h-full min-h-[44px]">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-gray-400 flex-shrink-0">

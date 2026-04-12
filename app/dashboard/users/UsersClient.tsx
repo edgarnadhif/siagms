@@ -111,7 +111,7 @@ export default function UsersClient({
         </div>
       </div>
 
-      <div className="sticky top-0 z-30 pt-2 pb-4 bg-gray-100 dark:bg-[#0f172a] -mx-4 md:-mx-0 px-4 md:px-0">
+      <div className="sticky -top-6 z-30 pt-8 pb-4 bg-white dark:bg-[#111827] -mx-6 px-6">
         <form
           onSubmit={(event) => {
             event.preventDefault();
