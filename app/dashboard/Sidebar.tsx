@@ -120,17 +120,17 @@ export default function Sidebar({ role, user }: { role: AppRole; user?: { email:
       }`}
     >
       <div
-        className={`flex items-center ${isExpanded ? "justify-between" : "justify-center"} px-4 pb-4 border-b border-gray-200 dark:border-gray-800  dark:bg-[#0f172a]`}
+        className={`flex items-center ${isExpanded ? "justify-between" : "justify-center"} px-4 pb-4 dark:bg-[#0f172a]`}
       >
         {isExpanded && (
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-transparent">
               <Image
                 src="/logo.svg"
                 alt="Logo"
                 width={32}
                 height={32}
-                className="w-8 h-8 rounded-lg object-contain p-0.5"
+                className="w-8 h-8 rounded-lg object-contain"
               />
             </div>
             <div>
@@ -198,7 +198,7 @@ export default function Sidebar({ role, user }: { role: AppRole; user?: { email:
                       href={item.href}
                         className={`flex items-center px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                         isActive
-                          ? "bg-white dark:bg-slate-800 shadow-sm sidebar-menu-active"
+                          ? "bg-slate-100 dark:bg-slate-800 shadow-sm sidebar-menu-active"
                           : "sidebar-menu hover:bg-white/50 dark:hover:bg-slate-800/50"
                       } ${!isExpanded ? "justify-center" : ""}`}
                       title={!isExpanded ? item.title : ""}
@@ -206,7 +206,7 @@ export default function Sidebar({ role, user }: { role: AppRole; user?: { email:
                       <span
                         className={`transition-colors flex-shrink-0 ${
                           isActive
-                            ? "text-gray-900 dark:text-gray-100"
+                            ? "text-slate-900 dark:text-white"
                             : "text-gray-400 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300"
                         }`}
                       >

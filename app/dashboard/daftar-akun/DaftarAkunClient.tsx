@@ -101,7 +101,7 @@ export default function DaftarAkunClient({
           className="flex items-center gap-2 px-5 h-11 bg-[#EA6C00] hover:bg-[#C25500] text-white text-sm font-bold rounded-[10px] shadow-lg shadow-orange-500/20 transition-all active:scale-95 ml-auto w-full md:w-auto justify-center md:justify-start"
         >
           Tambah Akun
-          <span className="text-xl leading-none font-light">+</span>
+          <img src="/add.svg" alt="Add" className="w-5 h-5 invert dark:invert-0" />
         </Link>
       </div>
 
@@ -218,7 +218,7 @@ export default function DaftarAkunClient({
       )}
 
       {/* Account Groups */}
-      <div className="space-y-6 px-4 md:px-0 mb-10">
+      <div className="space-y-4 px-4 md:px-0 mb-10">
         {typeOrder.map((typeKey) => {
           const accounts = grouped[typeKey];
           if (!accounts || accounts.length === 0) return null;
@@ -240,32 +240,32 @@ export default function DaftarAkunClient({
                 <table className="w-full min-w-[800px]">
                   <thead className="bg-[#F9FAFB] dark:bg-slate-800/80 border-b border-gray-100 dark:border-slate-700">
                     <tr>
-                      <th className="px-6 py-4 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-[0.15em] w-[120px]">KODE</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-[0.15em] w-[200px]">NAMA AKUN</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-[0.15em] w-[140px]">SALDO NORMAL</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-[0.15em]">KETERANGAN</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-[0.15em] w-[100px]">STATUS</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-[0.15em] w-[100px]">AKSI</th>
+                      <th className="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider w-[120px]">KODE</th>
+                      <th className="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider w-[200px]">NAMA AKUN</th>
+                      <th className="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider w-[140px]">SALDO NORMAL</th>
+                      <th className="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">KETERANGAN</th>
+                      <th className="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider w-[100px]">STATUS</th>
+                      <th className="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider w-[100px]">AKSI</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50 dark:divide-slate-700/50">
                     {accounts.map((akun) => (
-                      <tr key={akun.id} className="hover:bg-[#FFF0E6]/30 dark:hover:bg-slate-700/40 transition-all duration-150 group">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-800 dark:text-slate-200">
+                      <tr key={akun.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-all duration-150 group">
+                        <td className="px-5 py-3 whitespace-nowrap text-sm font-bold text-slate-800 dark:text-slate-200">
                           {akun.code}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-900 dark:text-gray-100">
+                        <td className="px-5 py-3 whitespace-nowrap text-sm font-semibold text-slate-900 dark:text-gray-100">
                           {akun.name}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-5 py-3 whitespace-nowrap">
                           <span className={`text-[11px] font-bold px-2.5 py-1 rounded-md inline-flex items-center tracking-wide ${BALANCE_COLORS[akun.normalBalance]}`}>
                             {akun.normalBalance === "DEBIT" ? "DEBIT" : "KREDIT"}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        <td className="px-5 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                           {akun.description || "-"}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <td className="px-5 py-3 whitespace-nowrap text-sm">
                           {akun.isActive ? (
                             <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold text-[13px]">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
@@ -278,8 +278,8 @@ export default function DaftarAkunClient({
                             </div>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <td className="px-5 py-3 whitespace-nowrap text-sm">
+                          <div className="flex items-center gap-3">
                             <button
                               onClick={() => setEditingAccount(akun)}
                               className="text-gray-400 hover:text-[#EA6C00] transition-colors"

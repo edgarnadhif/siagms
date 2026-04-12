@@ -21,7 +21,7 @@ const rbcLocalizer = dateFnsLocalizer({
 
 // ─── Helpers ────────────────────────────────────────────────────
 function formatRupiah(num: number | undefined | null) {
-  return "Rp " + (num || 0).toLocaleString("id-ID");
+  return "Rp. " + (num || 0).toLocaleString("id-ID");
 }
 
 function formatCompact(num: number) {
@@ -205,7 +205,7 @@ function SummaryCard({
         : "bg-white dark:bg-slate-800 border-[0.5px] border-[#E5E7EB] dark:border-slate-700 text-gray-900 dark:text-gray-100"
     )}>
       <div className="flex items-center justify-between mb-3">
-        <span className={cn("card-label", accent ? "text-slate-100" : "text-gray-500 dark:text-gray-400")}>
+        <span className={cn("card-label", accent ? "!text-slate-100" : "text-gray-500 dark:text-gray-400")}>
           {title}
         </span>
         <div className={cn("w-8 h-8 rounded-full flex items-center justify-center", accent ? "bg-[#273549] text-[#EA6C00] dark:text-[#F97316]" : "bg-[#FFF0E6] dark:bg-[#431407] text-[#EA6C00] dark:text-[#F97316]")}>
@@ -213,8 +213,8 @@ function SummaryCard({
         </div>
       </div>
       <div>
-        <p className={cn("card-value", accent ? "text-white" : "text-gray-900 dark:text-gray-100")}>{value}</p>
-        <p className={cn("card-subtitle mt-1 line-clamp-1 opacity-50 ", accent ? "text-slate-300" : "text-gray-400 dark:text-gray-500")}>{subtitle}</p>
+        <p className={cn("card-value", accent ? "!text-white" : "text-gray-900 dark:text-gray-100")}>{value}</p>
+        <p className={cn("card-subtitle mt-1 line-clamp-1 opacity-50 ", accent ? "!text-slate-300" : "text-gray-400 dark:text-gray-500")}>{subtitle}</p>
       </div>
     </div>
   );
@@ -518,25 +518,29 @@ export default function DashboardClient({
           </div>
         </Card>
 
-        <Card title="Neraca Singkat" action={<Link href="/dashboard/laporan?tab=neraca" className={dashboardActionClass}>Lihat Detail</Link>}>
-          <div className="flex flex-col gap-3 py-2">
-            <div className="flex justify-between items-center text-sm">
+        <Card title="Neraca Singkat" action={<Link href="/dashboard/laporan?tab=neraca" className={dashboardActionClass}>Lihat detail</Link>}>
+          <div className="flex flex-col gap-4 py-2">
+            <div className="flex justify-between items-center text-[13px]">
               <span className="text-slate-500 font-medium">Total Aset</span>
-              <span className="font-bold text-blue-600 dark:text-blue-500">{formatRupiah(totalAset || 0)}</span>
+              <span className="font-semibold text-slate-800 dark:text-slate-200">{formatRupiah(totalAset || 0)}</span>
             </div>
-            <div className="flex justify-between items-center text-sm">
+            <div className="flex justify-between items-center text-[13px]">
               <span className="text-slate-500 font-medium">Total Kewajiban</span>
-              <span className="font-bold text-orange-600 dark:text-orange-500">{formatRupiah(totalKewajiban || 0)}</span>
+              <span className="font-semibold text-slate-800 dark:text-slate-200">{formatRupiah(totalKewajiban || 0)}</span>
             </div>
-            <div className="flex justify-between items-center text-sm">
+            <div className="flex justify-between items-center text-[13px]">
               <span className="text-slate-500 font-medium">Total Ekuitas</span>
-              <span className="font-bold text-purple-600 dark:text-purple-500">{formatRupiah(totalEkuitas || 0)}</span>
+              <span className="font-semibold text-slate-800 dark:text-slate-200">{formatRupiah(totalEkuitas || 0)}</span>
             </div>
-            {((totalAset || 0) === ((totalKewajiban || 0) + (totalEkuitas || 0))) ? (
-              <div className="mt-2 text-[11px] font-bold bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded uppercase tracking-wider inline-flex w-fit">Balanced</div>
-            ) : (
-              <div className="mt-2 text-[11px] font-bold bg-red-50 text-red-600 px-3 py-1.5 rounded uppercase tracking-wider inline-flex w-fit">Tidak Balanced</div>
-            )}
+            
+            <div className="pt-4 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
+              <span className="text-[13px] font-medium text-slate-500">Status</span>
+              {((totalAset || 0) === ((totalKewajiban || 0) + (totalEkuitas || 0))) ? (
+                <span className="px-3 py-1 bg-[#F8FAFC] dark:bg-slate-800 text-[#475569] dark:text-slate-300 text-[10px] font-bold rounded-lg border border-[#E2E8F0] dark:border-slate-700 uppercase tracking-wider">Balance</span>
+              ) : (
+                <span className="px-3 py-1 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-bold rounded-lg border border-red-100 dark:border-red-900/30 uppercase tracking-wider">Tidak Balance</span>
+              )}
+            </div>
           </div>
         </Card>
       </div>

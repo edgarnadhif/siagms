@@ -92,7 +92,7 @@ export default function UsersClient({
           className="flex items-center gap-2 px-5 h-11 bg-[#EA6C00] hover:bg-[#C25500] text-white text-sm font-bold rounded-[10px] shadow-lg shadow-orange-500/20 transition-all active:scale-95 ml-auto w-full md:w-auto justify-center md:justify-start"
         >
           Tambah User
-          <span className="text-xl leading-none font-light">+</span>
+          <img src="/add.svg" alt="Add" className="w-5 h-5 invert dark:invert-0" />
         </Link>
       </div>
 

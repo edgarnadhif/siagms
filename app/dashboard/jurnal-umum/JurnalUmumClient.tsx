@@ -105,9 +105,7 @@ export default function JurnalUmumClient({
           href="?add=true"
           className="flex items-center gap-2 px-5 h-10 bg-[#EA6C00] hover:bg-[#C25500] text-white text-sm font-bold rounded-[10px] shadow-lg shadow-orange-500/20 transition-all active:scale-95 ml-auto w-full md:w-auto justify-center md:justify-start"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
+          <img src="/add.svg" alt="Add" className="w-5 h-5 invert dark:invert-0" />
           Tambah Jurnal
         </Link>
       </div>
@@ -157,14 +155,7 @@ export default function JurnalUmumClient({
         </form>
       </div>
 
-      {/* List Container */}
       <div className="bg-white dark:bg-slate-800 rounded-[14px] border-[0.5px] border-[#E5E7EB] dark:border-slate-700/50 shadow-sm overflow-hidden mb-10 mx-4 md:mx-0">
-        <div className="px-5 py-4 border-b border-gray-100 dark:border-slate-700/80">
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            <span className="text-[#EA6C00] font-semibold">{journals.length}</span> entri jurnal
-          </p>
-        </div>
-
         {journals.length === 0 ? (
           <div className="py-20 flex flex-col items-center justify-center text-center px-6">
             <div className="w-16 h-16 bg-[#FFF0E6] dark:bg-orange-900/20 rounded-full flex items-center justify-center mb-4 border border-orange-100 dark:border-orange-900/30">
@@ -184,7 +175,7 @@ export default function JurnalUmumClient({
         ) : (
           <div className="divide-y divide-gray-100 dark:divide-slate-700/80">
             {paginatedJournals.map((journal) => (
-              <div key={journal.reference} className="p-5 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
+              <div key={journal.reference} className="p-5 pb-9 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
                 {/* Journal Header */}
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
                   <div className="flex flex-col gap-1">

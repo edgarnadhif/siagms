@@ -262,26 +262,70 @@ export default function BukuBesarClient({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const firstRenderRef = useRef(true);
 
   const [selectedAccount, setSelectedAccount] = useState(accountFilter);
   const [selectedProject, setSelectedProject] = useState(projectFilter);
   const [selectedFromDate, setSelectedFromDate] = useState(fromDate);
   const [selectedToDate, setSelectedToDate] = useState(toDate);
   const [collapsedAccounts, setCollapsedAccounts] = useState<Record<string, boolean>>({});
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (firstRenderRef.current) {
-      firstRenderRef.current = false;
-      return;
-    }
+    const handleClickOutside = (event: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
+        setExportMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [projectMenuOpen, setProjectMenuOpen] = useState(false);
+  const accountRef = useRef<HTMLDivElement>(null);
+  const projectRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (accountRef.current && !accountRef.current.contains(event.target as Node)) setAccountMenuOpen(false);
+      if (projectRef.current && !projectRef.current.contains(event.target as Node)) setProjectMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
-    if (selectedAccount) params.set("account", selectedAccount); else params.delete("account");
-    if (selectedProject) params.set("project", selectedProject); else params.delete("project");
-    if (selectedFromDate) params.set("from", selectedFromDate); else params.delete("from");
-    if (selectedToDate) params.set("to", selectedToDate); else params.delete("to");
-    router.replace(`${pathname}?${params.toString()}`);
-  }, [pathname, router, searchParams, selectedAccount, selectedProject, selectedFromDate, selectedToDate]);
+    const currAcc = params.get("account") || "";
+    const currProj = params.get("project") || "";
+    const currFrom = params.get("from") || "";
+    const currTo = params.get("to") || "";
+
+    if (
+      selectedAccount !== currAcc ||
+      selectedProject !== currProj ||
+      selectedFromDate !== currFrom ||
+      selectedToDate !== currTo
+    ) {
+      if (selectedAccount) params.set("account", selectedAccount); else params.delete("account");
+      if (selectedProject) params.set("project", selectedProject); else params.delete("project");
+      if (selectedFromDate) params.set("from", selectedFromDate); else params.delete("from");
+      if (selectedToDate) params.set("to", selectedToDate); else params.delete("to");
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    }
+  }, [selectedAccount, selectedProject, selectedFromDate, selectedToDate, pathname, router, searchParams]);
+
+  const hideNativeDateIcon = (
+    <style>{`
+      input[type="date"]::-webkit-calendar-picker-indicator {
+        display: none;
+        -webkit-appearance: none;
+      }
+    `}</style>
+  );
+
+
 
   const handleFilterSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -357,66 +401,189 @@ export default function BukuBesarClient({
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Posting otomatis dari jurnal umum dan transaksi proyek</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 no-print">
-          <button onClick={handleExportPDF} className="px-4 h-11 bg-red-600 hover:bg-red-700 text-white rounded-[10px] text-sm font-bold shadow-lg shadow-red-500/10 transition-all">
-            Export PDF
-          </button>
-          <button onClick={handleExportExcel} className="px-4 h-11 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[10px] text-sm font-bold shadow-lg shadow-emerald-500/10 transition-all">
-            Export Excel
-          </button>
-          <button onClick={handlePrint} className="px-4 h-11 bg-slate-800 hover:bg-slate-700 text-white rounded-[10px] text-sm font-bold shadow-lg shadow-black/10 transition-all">
-            Cetak
-          </button>
+          <div className="relative" ref={exportMenuRef}>
+            <button
+              onClick={() => setExportMenuOpen(!exportMenuOpen)}
+              className="px-5 h-10 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-xl text-xs font-bold shadow-sm transition-all hover:bg-gray-50 flex items-center gap-2 active:scale-95"
+            >
+              Export
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                viewBox="0 0 20 20" 
+                fill="currentColor" 
+                className={`w-4 h-4 transition-transform duration-200 ${exportMenuOpen ? "rotate-180" : ""}`}
+              >
+                <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+              </svg>
+            </button>
+            
+            {exportMenuOpen && (
+              <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl z-50 p-1.5 space-y-0.5 animate-in fade-in zoom-in duration-150">
+                <button
+                  onClick={() => { handleExportPDF(); setExportMenuOpen(false); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-red-600 transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.75 12 3 3m0 0 3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                  </svg>
+                  Export PDF
+                </button>
+                <button
+                  onClick={() => { handleExportExcel(); setExportMenuOpen(false); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-emerald-600 transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 0 1-1.125-1.125V5.625c0-.621.504-1.125 1.125-1.125h17.25c.621 0 1.125.504 1.125 1.125v12.75c0 .621-.504 1.125-1.125 1.125m-17.25 0V5.625m17.25 13.875V5.625M12 8.25v2.25m0 0 2.25 2.25M12 10.5l-2.25 2.25m0-4.5 4.5 4.5" />
+                  </svg>
+                  Export Excel
+                </button>
+                <div className="border-t border-gray-100 dark:border-slate-700 my-1" />
+                <button
+                  onClick={() => { handlePrint(); setExportMenuOpen(false); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-gray-200 transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.89l-4.72-4.72M19.5 7.125l-3.375-3.375m0 0l-3.375 3.375m3.375-3.375V14.25m-15 0a3 3 0 013-3h1.5A1.125 1.125 0 016.375 12.375v1.5a3 3 0 01-3 3h-1.5a3 3 0 01-3-3v-1.5z" />
+                  </svg>
+                  Cetak Halaman
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="px-4 md:px-0">
         {/* ── Filter form ── */}
-        <form onSubmit={handleFilterSubmit} className="bg-white dark:bg-slate-800 rounded-[14px] border-[0.5px] border-[#E5E7EB] dark:border-slate-700/50 p-5 mb-6 shadow-sm no-print">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
-            <div>
-              <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 mb-2 uppercase tracking-[0.15em]">Akun</label>
-              <select value={selectedAccount} onChange={(e) => setSelectedAccount(e.target.value)} className="w-full h-11 px-4 border border-[#E5E7EB] dark:border-slate-700 rounded-[10px] text-sm bg-white dark:bg-slate-900 font-semibold">
-                <option value="">Semua Akun</option>
-                {allAccounts.map((acc) => (
-                  <option key={acc.id} value={acc.id}>{acc.code} - {acc.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 mb-2 uppercase tracking-[0.15em]">Proyek</label>
-              <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} className="w-full h-11 px-4 border border-[#E5E7EB] dark:border-slate-700 rounded-[10px] text-sm bg-white dark:bg-slate-900 font-semibold">
-                <option value="">Semua Proyek</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>{project.code} - {project.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 mb-2 uppercase tracking-[0.15em]">Dari Tanggal</label>
-              <input type="date" value={selectedFromDate} onChange={(e) => setSelectedFromDate(e.target.value)} className="w-full h-11 px-4 border border-[#E5E7EB] dark:border-slate-700 rounded-[10px] text-sm bg-white dark:bg-slate-900 font-semibold" />
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 mb-2 uppercase tracking-[0.15em]">Sampai Tanggal</label>
-              <input type="date" value={selectedToDate} onChange={(e) => setSelectedToDate(e.target.value)} className="w-full h-11 px-4 border border-[#E5E7EB] dark:border-slate-700 rounded-[10px] text-sm bg-white dark:bg-slate-900 font-semibold" />
-            </div>
-            <div className="flex items-end">
-              <button type="submit" className="w-full px-8 h-11 bg-[#EA6C00] hover:bg-[#C25500] text-white text-sm font-bold rounded-[10px] transition-all shadow-lg shadow-orange-500/20">
-                Filter
+        <form onSubmit={handleFilterSubmit} className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 p-2.5 mb-8 shadow-sm no-print relative">
+          {hideNativeDateIcon}
+          <div className="flex flex-col md:flex-row items-center gap-2">
+            {/* Custom Account Dropdown */}
+            <div className="flex-1 w-full relative" ref={accountRef}>
+              <button
+                type="button"
+                onClick={() => setAccountMenuOpen(!accountMenuOpen)}
+                className="w-full h-12 flex items-center justify-between px-4 bg-transparent rounded-2xl hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <img src="/book_5.svg" alt="" className="w-5 h-5 opacity-50" />
+                  <span className="text-sm font-bold text-gray-700 dark:text-gray-200 truncate">
+                    {selectedAccount ? allAccounts.find(a => a.id === selectedAccount)?.name : "Semua Akun"}
+                  </span>
+                </div>
+                <svg className={`w-4 h-4 text-gray-400 transition-transform ${accountMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
               </button>
+              
+              {accountMenuOpen && (
+                <div className="absolute left-0 top-full mt-2 w-full max-h-60 overflow-y-auto bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 p-1.5">
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedAccount(""); setAccountMenuOpen(false); }}
+                    className={`w-full text-left px-4 py-2.5 text-sm font-bold rounded-xl transition-colors ${!selectedAccount ? 'bg-[#EA6C00] text-white' : 'hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200'}`}
+                  >
+                    Semua Akun
+                  </button>
+                  {allAccounts.map((acc) => (
+                    <button
+                      key={acc.id}
+                      type="button"
+                      onClick={() => { setSelectedAccount(acc.id); setAccountMenuOpen(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-sm font-bold rounded-xl transition-colors mt-0.5 ${selectedAccount === acc.id ? 'bg-[#EA6C00] text-white' : 'hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200'}`}
+                    >
+                      {acc.code} - {acc.name}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
+
+            <div className="hidden md:block w-px h-8 bg-gray-100 dark:bg-slate-700" />
+
+            {/* Custom Project Dropdown */}
+            <div className="flex-1 w-full relative" ref={projectRef}>
+              <button
+                type="button"
+                onClick={() => setProjectMenuOpen(!projectMenuOpen)}
+                className="w-full h-12 flex items-center justify-between px-4 bg-transparent rounded-2xl hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <img src="/house.svg" alt="" className="w-5 h-5 opacity-50" />
+                  <span className="text-sm font-bold text-gray-700 dark:text-gray-200 truncate">
+                    {selectedProject ? projects.find(p => p.id === selectedProject)?.name : "Semua Proyek"}
+                  </span>
+                </div>
+                <svg className={`w-4 h-4 text-gray-400 transition-transform ${projectMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+              </button>
+
+              {projectMenuOpen && (
+                <div className="absolute left-0 top-full mt-2 w-full max-h-60 overflow-y-auto bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 p-1.5">
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedProject(""); setProjectMenuOpen(false); }}
+                    className={`w-full text-left px-4 py-2.5 text-sm font-bold rounded-xl transition-colors ${!selectedProject ? 'bg-[#EA6C00] text-white' : 'hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200'}`}
+                  >
+                    Semua Proyek
+                  </button>
+                  {projects.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => { setSelectedProject(p.id); setProjectMenuOpen(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-sm font-bold rounded-xl transition-colors mt-0.5 ${selectedProject === p.id ? 'bg-[#EA6C00] text-white' : 'hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200'}`}
+                    >
+                      {p.code} - {p.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="hidden md:block w-px h-8 bg-gray-100 dark:bg-slate-700" />
+
+            {/* Date Inputs */}
+            <div className="flex-[0.8] w-full relative group">
+              <input
+                type="date"
+                value={selectedFromDate}
+                onChange={(e) => setSelectedFromDate(e.target.value)}
+                onClick={(e) => e.currentTarget.showPicker()}
+                className="w-full h-12 pl-10 pr-2 border-0 bg-transparent text-[11px] font-bold text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer"
+              />
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                <img src="/calendar_month.svg" alt="" className="w-4.5 h-4.5 opacity-30 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </div>
+
+            <div className="hidden md:block w-px h-8 bg-gray-100 dark:bg-slate-700" />
+
+            <div className="flex-[0.8] w-full relative group">
+              <input
+                type="date"
+                value={selectedToDate}
+                onChange={(e) => setSelectedToDate(e.target.value)}
+                onClick={(e) => e.currentTarget.showPicker()}
+                className="w-full h-12 pl-10 pr-2 border-0 bg-transparent text-[11px] font-bold text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer"
+              />
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                <img src="/calendar_month.svg" alt="" className="w-4.5 h-4.5 opacity-30 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </div>
+
+            {/* Search Button */}
+            <button
+              type="submit"
+              className="w-11 h-11 bg-[#EA6C00] text-white rounded-full shadow-lg shadow-orange-500/30 flex items-center justify-center shrink-0 hover:bg-[#C25500] hover:scale-110 active:scale-90 transition-all ml-1"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+              </svg>
+            </button>
           </div>
         </form>
 
         {/* ── Report area ── */}
         <div>
           {/* Summary header */}
-          <div className="bg-white dark:bg-slate-800 rounded-[14px] border border-[#E5E7EB] dark:border-slate-700/50 p-5 mb-6 shadow-sm">
-            <h2 className="text-xl font-black text-gray-900 dark:text-white">
-              Buku Besar{selectedProjectName ? ` — Proyek: ${selectedProjectName}` : ""}
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Periode: {periodLabel}</p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{companyName}</p>
-          </div>
 
           {/* Totals */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -431,44 +598,6 @@ export default function BukuBesarClient({
           </div>
 
           {/* Project summary table */}
-          {!projectFilter && projectSummary.length > 0 && (
-            <div className="bg-white dark:bg-slate-800 rounded-[14px] border border-[#E5E7EB] dark:border-slate-700/50 shadow-sm overflow-hidden mb-6">
-              <div className="px-6 py-5 border-b border-[#F1F5F9] dark:border-slate-700 bg-[#F9FAFB]/50 dark:bg-slate-700/20">
-                <h3 className="text-base font-bold text-gray-900 dark:text-white">Ringkasan per Proyek</h3>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px]">
-                  <thead className="bg-[#F9FAFB] dark:bg-slate-700/40 border-b border-[#F1F5F9] dark:border-slate-700">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em]">Proyek</th>
-                      <th className="px-6 py-4 text-right text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em]">Total Debit</th>
-                      <th className="px-6 py-4 text-right text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em]">Total Kredit</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#F8FAFC] dark:divide-slate-700/50">
-                    {projectSummary.map((item) => (
-                      <tr key={item.projectId} className="hover:bg-[#FFF0E6]/30 dark:hover:bg-orange-500/5 transition-colors">
-                        <td className="px-6 py-4">
-                          <button onClick={() => handleProjectSummaryClick(item.projectId)} className="text-sm font-bold text-[#EA6C00] hover:underline text-left">
-                            {item.projectName}
-                          </button>
-                        </td>
-                        <td className="px-6 py-4 text-right text-sm font-bold text-gray-900 dark:text-white">{formatRupiah(item.totalDebit)}</td>
-                        <td className="px-6 py-4 text-right text-sm font-bold text-gray-900 dark:text-white">{formatRupiah(item.totalCredit)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot className="bg-[#F9FAFB] dark:bg-slate-900/80 border-t border-[#F1F5F9] dark:border-slate-700">
-                    <tr>
-                      <td className="px-6 py-4 text-sm font-black text-gray-900 dark:text-white">TOTAL</td>
-                      <td className="px-6 py-4 text-right text-sm font-black text-gray-900 dark:text-white">{formatRupiah(totalDebit)}</td>
-                      <td className="px-6 py-4 text-right text-sm font-black text-gray-900 dark:text-white">{formatRupiah(totalCredit)}</td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            </div>
-          )}
 
           {/* Ledger accounts */}
           {ledgerAccounts.length === 0 ? (
@@ -485,30 +614,31 @@ export default function BukuBesarClient({
                   (account.normalBalance === "KREDIT" && account.endingBalance < 0);
 
                 return (
-                  <div key={account.id} className="bg-white dark:bg-slate-800 rounded-[14px] border border-[#E5E7EB] dark:border-slate-700/50 shadow-sm overflow-hidden">
+                  <div key={account.id} className="bg-white dark:bg-slate-900 rounded-[20px] border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden no-print">
                     {/* ── Account header ── */}
                     <button
                       onClick={() => toggleAccount(account.id)}
-                      className="w-full flex flex-col md:flex-row justify-between items-start md:items-center text-left"
-                      style={{ background: "#FFF7ED", borderLeft: "3px solid #F97316", padding: "14px 20px" }}
+                      className="w-full px-6 py-5 flex flex-col md:flex-row justify-between items-start md:items-center bg-gray-50/50 dark:bg-slate-800/50 hover:bg-gray-100/50 transition-colors text-left"
                     >
-                      <div className="flex items-start gap-3">
-                        <span className="mt-0.5 text-[#EA6C00] text-lg font-black">{isCollapsed ? "▼" : "▲"}</span>
-                        <div className="flex flex-col gap-0.5">
-                          <h3 className="text-[15px] font-bold text-gray-800 dark:text-slate-100">
-                            <span className="font-bold text-[#EA6C00]">{account.code}</span>
-                            <span className="font-medium text-gray-800 dark:text-gray-200"> — {account.name}</span>
-                          </h3>
-                          <span className="text-[12px] text-gray-500">
-                            {TYPE_MAP[account.type] || account.type} &nbsp;·&nbsp; {account.transactionCount} transaksi &nbsp;·&nbsp; Saldo Akhir: {formatRupiah(account.endingBalance)}
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-3">
+                          <span className="px-3 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-black rounded-full">
+                            {account.code}
                           </span>
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            {account.name}
+                            <svg className={`w-4 h-4 text-gray-300 transition-transform ${isCollapsed ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
+                          </h3>
                         </div>
+                        <p className="text-[11px] text-gray-400 font-medium ml-1">
+                          Total : {account.transactionCount} Transaksi
+                        </p>
                       </div>
-                      <div className="mt-4 md:mt-0 flex flex-col md:items-end">
-                        <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-1">Saldo Akhir</span>
-                        <span className={`text-lg font-bold ${isAbnormal ? "text-[#DC2626]" : balanceColor(account.endingBalance)}`}>
+                      <div className="mt-4 md:mt-0 text-right">
+                        <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-0.5">Saldo Akhir</p>
+                        <p className={`text-xl font-black ${isAbnormal ? "text-red-600" : "text-emerald-600 dark:text-emerald-400"}`}>
                           {formatRupiah(account.endingBalance)}
-                        </span>
+                        </p>
                       </div>
                     </button>
 
@@ -532,72 +662,70 @@ export default function BukuBesarClient({
                             {/* SALDO 144px */}
                             <col style={{ width: 144 }} />
                           </colgroup>
-                          <thead className="bg-[#F9FAFB] dark:bg-slate-700/40 border-b border-[#F1F5F9] dark:border-slate-700">
+                          <thead className="bg-white dark:bg-slate-900">
                             <tr>
-                              <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em]">Tanggal</th>
-                              <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em]">Referensi</th>
-                              <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em]">Keterangan</th>
-                              <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em]">Proyek</th>
-                              <th className="px-4 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em]">Debit</th>
-                              <th className="px-4 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em]">Kredit</th>
-                              <th className="px-4 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em]">Saldo</th>
+                              <th className="px-6 py-4 text-left text-[11px] font-bold text-gray-400 tracking-wide">Tanggal</th>
+                              <th className="px-6 py-4 text-left text-[11px] font-bold text-gray-400 tracking-wide">No Ref</th>
+                              <th className="px-6 py-4 text-left text-[11px] font-bold text-gray-400 tracking-wide">Keterangan</th>
+                              <th className="px-6 py-4 text-left text-[11px] font-bold text-gray-400 tracking-wide">Proyek</th>
+                              <th className="px-6 py-4 text-right text-[11px] font-bold text-gray-400 tracking-wide">Debit</th>
+                              <th className="px-6 py-4 text-right text-[11px] font-bold text-gray-400 tracking-wide">Kredit</th>
+                              <th className="px-6 py-4 text-right text-[11px] font-bold text-gray-400 tracking-wide">Saldo</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-[#F8FAFC] dark:divide-slate-700/50">
+                          <tbody className="divide-y divide-gray-50 dark:divide-slate-800/50">
                             {/* Opening balance row */}
-                            <tr className="bg-gray-50 dark:bg-slate-900/30">
-                              <td className="px-4 py-3 text-xs italic text-gray-400">-</td>
-                              <td className="px-4 py-3 text-xs italic text-gray-400">-</td>
-                              <td className="px-4 py-3 text-xs italic text-gray-400">Saldo Awal</td>
-                              <td className="px-4 py-3 text-xs italic text-gray-400">-</td>
-                              <td className="px-4 py-3 text-right text-xs italic text-gray-400">-</td>
-                              <td className="px-4 py-3 text-right text-xs italic text-gray-400">-</td>
-                              <td className={`px-4 py-3 text-right text-xs italic font-semibold ${balanceColor(account.openingBalance)}`}>
+                            <tr className="bg-gray-50/20 dark:bg-slate-900/20">
+                              <td className="px-6 py-4 text-[11px] font-black text-gray-900 dark:text-white uppercase">-</td>
+                              <td className="px-6 py-4 text-[11px] text-gray-400">-</td>
+                              <td className="px-6 py-4 text-[11px] font-medium text-gray-400 italic">Saldo Awal</td>
+                              <td className="px-6 py-4 text-[11px] text-gray-400">-</td>
+                              <td className="px-6 py-4 text-right text-[11px] text-gray-400">-</td>
+                              <td className="px-6 py-4 text-right text-[11px] text-gray-400">-</td>
+                              <td className={`px-6 py-4 text-right text-[11px] font-black ${balanceColor(account.openingBalance)}`}>
                                 {formatRupiah(account.openingBalance)}
                               </td>
                             </tr>
 
                             {/* Transaction rows */}
                             {account.transactions.map((trx) => (
-                              <tr key={trx.id} className="hover:bg-[#FFF0E6]/30 dark:hover:bg-orange-500/5 transition-colors">
-                                <td className="px-4 py-3 whitespace-nowrap text-xs font-medium text-gray-500 dark:text-gray-400">
+                              <tr key={trx.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                                <td className="px-6 py-4 whitespace-nowrap text-[11px] font-black text-gray-900 dark:text-white uppercase">
                                   {formatDate(trx.date)}
                                 </td>
-                                <td className="px-4 py-3 whitespace-nowrap text-xs font-bold text-gray-900 dark:text-gray-200">
+                                <td className="px-6 py-4 whitespace-nowrap text-[11px] font-medium text-gray-400 dark:text-gray-500">
                                   {trx.reference}
                                 </td>
-                                <td className="px-4 py-3 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                <td className="px-6 py-4 text-[11px] font-medium text-gray-400 dark:text-gray-500 max-w-xs truncate">
                                   {trx.description || "-"}
                                 </td>
-                                <td className="px-4 py-3">
-                                  {/* Badge with max-width + truncate + tooltip */}
+                                <td className="px-6 py-4">
                                   <span
-                                    className={`inline-flex items-center border rounded-full font-bold ${getProjectBadgeClass(trx.projectId)}`}
-                                    style={{ fontSize: 11, padding: "2px 8px", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "inline-block" }}
+                                    className="inline-flex items-center px-2 py-0.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold rounded-md"
                                     title={trx.projectName}
                                   >
-                                    {trx.projectName}
+                                    {trx.projectName === "Tidak ada proyek" ? "-" : trx.projectName.split(" ")[0].toLowerCase()}
                                   </span>
                                 </td>
-                                <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-gray-100 text-right">
+                                <td className="px-6 py-4 whitespace-nowrap text-[11px] font-bold text-gray-900 dark:text-gray-100 text-right">
                                   {trx.debit > 0 ? formatRupiah(trx.debit) : "-"}
                                 </td>
-                                <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-gray-100 text-right">
+                                <td className="px-6 py-4 whitespace-nowrap text-[11px] font-bold text-gray-900 dark:text-gray-100 text-right">
                                   {trx.credit > 0 ? formatRupiah(trx.credit) : "-"}
                                 </td>
-                                <td className={`px-4 py-3 whitespace-nowrap text-sm font-bold text-right ${balanceColor(trx.balance)}`}>
+                                <td className={`px-6 py-4 whitespace-nowrap text-[11px] font-bold text-right ${balanceColor(trx.balance)}`}>
                                   {formatRupiah(trx.balance)}
                                 </td>
                               </tr>
                             ))}
 
                             {/* Total row */}
-                            <tr className="bg-gray-100 dark:bg-slate-900/60 border-t-2 border-gray-300 dark:border-slate-600">
-                              <td className="px-4 py-3 text-xs font-black text-gray-900 dark:text-white" colSpan={4}>TOTAL</td>
-                              <td className="px-4 py-3 text-right text-sm font-black text-gray-900 dark:text-white">{formatRupiah(account.totalDebit)}</td>
-                              <td className="px-4 py-3 text-right text-sm font-black text-gray-900 dark:text-white">{formatRupiah(account.totalCredit)}</td>
-                              <td className={`px-4 py-3 text-right text-sm font-black ${isAbnormal ? "text-[#DC2626]" : balanceColor(account.endingBalance)}`}>
-                                {formatRupiah(account.endingBalance)}
+                            <tr className="bg-white dark:bg-slate-900/40">
+                              <td className="px-6 py-5 text-[11px] font-black text-gray-400 dark:text-white uppercase" colSpan={4}>Total (Rp)</td>
+                              <td className="px-6 py-5 text-right text-[11px] font-black text-gray-900 dark:text-white">{formatRupiah(account.totalDebit)}</td>
+                              <td className="px-6 py-5 text-right text-[11px] font-black text-gray-900 dark:text-white">{formatRupiah(account.totalCredit)}</td>
+                              <td className={`px-6 py-5 text-right text-[11px] font-black ${isAbnormal ? "text-red-600" : "text-gray-400"}`}>
+                                {isAbnormal ? formatRupiah(account.endingBalance) : "-"}
                               </td>
                             </tr>
                           </tbody>

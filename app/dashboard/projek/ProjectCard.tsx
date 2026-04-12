@@ -100,113 +100,122 @@ export default function ProjectCard({
 
   return (
     <>
-      <div className="bg-white dark:bg-slate-800 border border-[#F3F4F6] dark:border-slate-700/50 rounded-2xl p-5 shadow-sm flex flex-col relative overflow-hidden transition-all duration-150 hover:shadow-lg hover:border-[#EA6C00] group h-full">
-        <div className="flex items-start justify-between gap-4 mb-4">
+      <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col relative overflow-hidden transition-all duration-150 hover:shadow-md h-full">
+        <div className="flex items-start justify-between gap-4 mb-2">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#FFF0E6] dark:bg-[#431407] flex items-center justify-center border border-orange-100 dark:border-orange-900/30">
-              <svg className="w-5 h-5 text-[#EA6C00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-              </svg>
+            <div className="w-12 h-12 rounded-lg bg-gray-50 dark:bg-slate-700 flex items-center justify-center border border-gray-100 dark:border-slate-600">
+              <img 
+                src="/house.svg" 
+                alt="Project" 
+                className="w-7 h-7 object-contain"
+                style={{ filter: 'invert(48%) sepia(96%) saturate(2059%) hue-rotate(1deg) brightness(101%) contrast(105%)' }}
+              />
             </div>
-            <div>
-              <p className="text-sm font-black text-gray-900 dark:text-white">{project.code}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500">Kode Proyek</p>
+            <div className="text-[14px] font-black text-black dark:text-white tracking-[0.05em] uppercase">
+              {project.code}
             </div>
           </div>
-          <StatusBadge status={project.status} variant="PROJECT" size="sm" />
+          <div className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase border ${
+            project.status === 'AKTIF' 
+              ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20' 
+              : project.status === 'SELESAI'
+              ? 'bg-orange-50 text-orange-600 border-orange-100 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20'
+              : project.status === 'BATAL'
+              ? 'bg-red-50 text-red-600 border-red-100 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20'
+              : 'bg-gray-50 text-gray-900 border-gray-100 dark:bg-slate-700 dark:text-gray-100 dark:border-slate-600'
+          }`}>
+            {project.status}
+          </div>
         </div>
 
         <div className="mb-4">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{project.name}</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{project.description || "Deskripsi proyek belum ditambahkan."}</p>
+          <h3 className="text-xl font-bold text-black dark:text-white leading-tight">{project.name}</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2 leading-relaxed">{project.description || "Deskripsi proyek."}</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 text-xs text-gray-500 dark:text-gray-400 mb-4">
-          <div className="flex items-center gap-2">
-            <span>📍</span>
-            <span className="truncate">{project.location || "Lokasi"}</span>
+        <div className="grid grid-cols-[1.4fr_1fr] gap-x-2 gap-y-3 text-[13px] text-gray-700 dark:text-gray-400 mb-6 font-medium">
+          <div className="flex items-center gap-2.5">
+            <img src="/location_on.svg" alt="Location" className="w-5 h-5 flex-shrink-0" />
+            <span className="truncate">{project.location || "-"}</span>
           </div>
-          <div className="flex items-center gap-2 justify-start md:justify-end">
-            <span>📅</span>
-            <span>{formatDate(project.startDate)}</span>
+          <div className="flex items-center gap-2.5">
+            <img src="/calendar_month.svg" alt="Start" className="w-5 h-5 flex-shrink-0" />
+            <span>Mulai : {formatDate(project.startDate)}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span>🏁</span>
-            <span>{formatDate(project.endDate)}</span>
+          <div className="flex items-center gap-2.5">
+            <img src="/calendar_clock.svg" alt="Done" className="w-5 h-5 flex-shrink-0" />
+            <span>Selesai : {formatDate(project.endDate)}</span>
           </div>
-          <div className={`flex items-center gap-2 ${remainingDays !== null && remainingDays < 30 ? "text-red-500 dark:text-red-400 font-bold" : ""}`}>
-            <span>🗓</span>
-            <span>{remainingDays === null ? "Tanpa target" : `Sisa ${remainingDays} hari`}</span>
+          <div className="flex items-center gap-2.5">
+            <img src="/target.svg" alt="Target" className="w-5 h-5 flex-shrink-0" />
+            <span>{remainingDays === null ? "Tanpa target" : `Sisa : ${remainingDays} Hari`}</span>
           </div>
         </div>
 
-        <div className="bg-[#F9FAFB] dark:bg-white/[0.04] rounded-xl border border-[#F3F4F6] dark:border-white/5 p-4 mb-4">
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div>
-              <p className="text-[10px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Pendapatan</p>
-              <p className="text-sm font-black text-emerald-600 mt-1">{formatCurrency(totalIncome)}</p>
+        <div className="bg-gray-50/50 dark:bg-white/[0.02] rounded-3xl border border-gray-100 dark:border-white/5 p-4 mb-3">
+          <div className="grid grid-cols-3 gap-2">
+            <div className="text-center">
+              <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Pendapatan</p>
+              <p className="text-sm font-black text-black dark:text-white mt-2 uppercase">{formatCurrency(totalIncome)}</p>
             </div>
-            <div className="border-x border-gray-100 dark:border-white/10">
-              <p className="text-[10px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Pengeluaran</p>
-              <p className="text-sm font-black text-red-500 mt-1">{formatCurrency(totalExpense)}</p>
+            <div className="text-center">
+              <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Pengeluaran</p>
+              <p className="text-sm font-black text-black dark:text-white mt-2 uppercase">{formatCurrency(totalExpense)}</p>
             </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Profit</p>
-              <p className={`text-sm font-black mt-1 ${profit >= 0 ? "text-[#EA6C00]" : "text-red-500"}`}>{formatCurrency(profit)}</p>
+            <div className="text-center">
+              <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Profit</p>
+              <p className="text-sm font-black text-black dark:text-white mt-2 uppercase">{formatCurrency(profit)}</p>
             </div>
           </div>
         </div>
-
-        <div className="mb-4 rounded-xl border border-[#F3F4F6] dark:border-slate-700/60 p-4 bg-white dark:bg-slate-900/30">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-bold text-gray-800 dark:text-gray-100">Budget</p>
-            {isBudgetWarning && (
-              <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-300">
-                Budget Hampir Habis
-              </span>
-            )}
+        <div className="mb-3 rounded-[20px] border border-gray-100 dark:border-slate-700/60 p-4 bg-white dark:bg-slate-900/30">
+          <p className="text-sm font-bold text-black dark:text-white mb-4">Budget</p>
+          <div className="space-y-3 text-[13px] text-gray-600 dark:text-gray-400 mb-5 font-medium">
+            <div className="flex justify-between"><span>Budget</span><span className="text-black dark:text-white font-semibold">{formatCurrency(budget)}</span></div>
+            <div className="flex justify-between"><span>Terpakai</span><span className="text-black dark:text-white font-semibold">{formatCurrency(usedBudget)}</span></div>
+            <div className="flex justify-between"><span>Sisa Budget</span><span className="text-black dark:text-white font-semibold">{formatCurrency(remainingBudget)}</span></div>
           </div>
-          <div className="space-y-1.5 text-xs text-gray-500 dark:text-gray-400 mb-3">
-            <div className="flex justify-between"><span>Budget</span><span className="font-bold text-gray-800 dark:text-gray-100">{formatCurrency(budget)}</span></div>
-            <div className="flex justify-between"><span>Terpakai</span><span className="font-bold text-gray-800 dark:text-gray-100">{formatCurrency(usedBudget)}</span></div>
-            <div className="flex justify-between"><span>Sisa Budget</span><span className="font-bold text-gray-800 dark:text-gray-100">{formatCurrency(remainingBudget)}</span></div>
+          <div className="h-2.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
+            <div className="h-full bg-[#EA6C00] dark:bg-[#F97316] rounded-full transition-all duration-500" style={{ width: `${budgetUsedPct}%` }} />
           </div>
-          <div className="h-2 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
-            <div className={`h-full bg-gradient-to-r ${getBudgetBarColor()} rounded-full`} style={{ width: `${budgetUsedPct}%` }} />
-          </div>
-          <p className="text-[11px] text-right mt-2 font-bold text-gray-500 dark:text-gray-400">{budgetUsedPct}% terpakai</p>
+          <p className="text-[11px] text-right mt-3 font-bold text-gray-800 dark:text-gray-300">{budgetUsedPct}% Terpakai</p>
         </div>
 
-        <div className="mb-4">
-          <div className="flex justify-between text-[11px] text-gray-500 dark:text-gray-400 mb-1.5">
-            <span className="font-semibold">Unit Terjual</span>
-            <span className="font-black text-gray-700 dark:text-gray-300">
-              {soldUnits} <span className="font-normal text-gray-400">/ {totalUnits} unit</span>
+        <div className="mb-3 rounded-[20px] border border-gray-100 dark:border-slate-700/60 p-4 bg-white dark:bg-slate-900/30">
+          <div className="flex justify-between text-sm text-gray-700 dark:text-gray-300 mb-2 font-bold">
+            <span className="">Unit Terjual</span>
+            <span className="">
+              {soldUnits} / {totalUnits} Unit
             </span>
           </div>
-          <div className="h-2 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-orange-400 to-orange-600 rounded-full" style={{ width: `${progressPct}%` }} />
+          <div className="h-3 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden mb-3">
+            <div className="h-full bg-[#EA6C00] dark:bg-[#F97316] rounded-full transition-all duration-500" style={{ width: `${progressPct}%` }} />
           </div>
-          <div className="mt-2 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
-            <span>Transaksi: <span className="font-bold text-gray-700 dark:text-gray-300">{transactionCount}</span></span>
+          <div className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-400 font-bold">
+            <span>Transaksi : {transactionCount}</span>
             <span>{progressPct}%</span>
           </div>
         </div>
 
-        <div className="mt-auto pt-4 border-t border-gray-100 dark:border-slate-700/50 flex justify-end gap-5">
-          <button onClick={() => setShowEditModal(true)} className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#EA6C00] transition-colors">
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-            Edit
-          </button>
-          <button onClick={() => setShowDeleteConfirm(true)} className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-red-500 transition-colors">
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
+        <div className="mt-auto pt-4 flex justify-end gap-6">
+          <button onClick={() => setShowDeleteConfirm(true)} className="flex items-center gap-2.5 text-xs font-bold text-gray-600 hover:text-red-600 transition-colors">
+            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center">
+               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1v3M4 7h16" />
+               </svg>
+            </div>
             Hapus
           </button>
+          <button onClick={() => setShowEditModal(true)} className="flex items-center gap-2.5 text-xs font-bold text-gray-600 hover:text-black transition-colors">
+            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </div>
+            Edit
+          </button>
         </div>
+
       </div>
 
       {showEditModal && <EditProjectModal project={project} onClose={() => setShowEditModal(false)} />}

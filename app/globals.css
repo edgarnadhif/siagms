@@ -161,7 +161,6 @@ h6,
 .sidebar-menu-active {
   font-size: 13px;
   font-weight: 600;
-  color: #F97316;
 }
 
 /* SIDEBAR SECTION LABEL */
@@ -232,7 +231,8 @@ h6,
 .dark .form-input,
 .dark .report-title,
 .dark .report-section,
-.dark .report-total {
+.dark .report-total,
+.dark .sidebar-menu-active {
   color: #F9FAFB; /* gray-50 */
 }
 
