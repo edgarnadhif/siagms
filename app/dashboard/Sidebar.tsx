@@ -115,7 +115,7 @@ export default function Sidebar({ role, user }: { role: AppRole; user?: { email:
   return (
     <div
       suppressHydrationWarning
-      className={`relative z-50 bg-gray-100 dark:bg-[#0f172a] text-gray-600 dark:text-gray-300 h-[calc(100vh-24px)] transition-all duration-300 flex flex-col shadow-xl border-gray-200 dark:border-gray-800 p-3 pt-5 border-2 m-3 rounded-2xl ${
+      className={`relative z-50 bg-white dark:bg-[#0f172a] text-gray-600 dark:text-gray-300 h-[calc(100vh-24px)] transition-all duration-300 flex flex-col shadow-xl border-gray-200 dark:border-gray-800 p-3 pt-5 border-2 m-3 rounded-2xl ${
         isExpanded ? "w-64" : "w-20"
       }`}
     >

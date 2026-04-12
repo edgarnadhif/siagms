@@ -563,7 +563,7 @@ export default function DashboardClient({
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-3 mb-4 lg:mb-3">
         <Card title="Proporsi Pengeluaran" action={<button className={dashboardActionClass}>Detail Biaya</button>}>
-          <div className="flex flex-col md:flex-row items-center gap-6 py-2">
+          <div className="flex flex-col items-center gap-6 py-2">
             <DonutChart data={breakdownData} />
             <div className="flex-1 w-full space-y-2.5">
               {breakdownData.map((d, i) => (
@@ -580,7 +580,7 @@ export default function DashboardClient({
         </Card>
 
         <Card title="Status Stok Unit" action={<Link href="/dashboard/unit" className={dashboardActionClass}>Master Unit</Link>}>
-          <div className="flex flex-col md:flex-row items-center gap-6 py-2">
+          <div className="flex flex-col items-center gap-6 py-2">
             <DonutChart data={[
               { label: "Tersedia", value: unitStats.TERSEDIA, color: "#10b981" },
               { label: "Booking", value: unitStats.BOOKING, color: "#3b82f6" },
