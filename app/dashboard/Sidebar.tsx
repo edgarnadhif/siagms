@@ -8,11 +8,12 @@ import { useTheme } from "next-themes";
 import { logout, getCompanyProfile } from "@/app/actions";
 import type { AppRole } from "@/lib/session";
 
-export default function Sidebar({ role }: { role: AppRole }) {
+export default function Sidebar({ role, user }: { role: AppRole; user?: { email: string; role: string } | null }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const pathname = usePathname();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [companyProfile, setCompanyProfile] = useState<{
     name: string;
     logoUrl: string | null;
@@ -92,12 +93,6 @@ export default function Sidebar({ role }: { role: AppRole }) {
       items: [
         { title: "Pelanggan", href: "/dashboard/pelanggan", icon: "/group.svg", roles: ["SUPER_ADMIN", "AKUNTAN", "MARKETING"] },
         { title: "Master Unit", href: "/dashboard/unit", icon: "/folder.svg", roles: ["SUPER_ADMIN", "AKUNTAN", "MARKETING"] },
-        {
-          title: "Kuitansi",
-          href: "/dashboard/kuitansi",
-          icon: "/receipt.svg",
-          roles: ["SUPER_ADMIN", "AKUNTAN", "MARKETING"],
-        },
       ],
     },
     {
@@ -110,12 +105,6 @@ export default function Sidebar({ role }: { role: AppRole }) {
           icon: "/domain.svg",
           roles: ["SUPER_ADMIN"],
         },
-        {
-          title: "Panduan",
-          href: "/dashboard/panduan",
-          icon: "/developer_guide.svg",
-          roles: ["SUPER_ADMIN", "AKUNTAN", "MARKETING"],
-        },
       ],
     },
   ].map((group) => ({
@@ -126,7 +115,7 @@ export default function Sidebar({ role }: { role: AppRole }) {
   return (
     <div
       suppressHydrationWarning
-      className={`relative z-50 bg-gray-100 dark:bg-[#0f172a] text-gray-600 dark:text-gray-300 h-screen transition-all duration-300 flex flex-col shadow-xl border-r border-gray-200 dark:border-gray-800 p-3 pt-5 border-2 m-3 rounded-2xl ${
+      className={`relative z-50 bg-gray-100 dark:bg-[#0f172a] text-gray-600 dark:text-gray-300 h-[calc(100vh-24px)] transition-all duration-300 flex flex-col shadow-xl border-gray-200 dark:border-gray-800 p-3 pt-5 border-2 m-3 rounded-2xl ${
         isExpanded ? "w-64" : "w-20"
       }`}
     >
@@ -212,18 +201,19 @@ export default function Sidebar({ role }: { role: AppRole }) {
                   <li key={item.title}>
                     <Link
                       href={item.href}
-                        className={`flex  items-center  px-2 py-2 rounded-lg transition-all duration-200 group relative ${
+                        className={`flex items-center px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                         isActive
-                          ? "bg-[#FFF0E6] dark:bg-[#431407] text-[#EA6C00] dark:text-white font-medium"
-                          : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
+                          ? "bg-white dark:bg-slate-800 shadow-sm text-gray-900 dark:text-white font-semibold"
+                          : "text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-slate-800/50 hover:text-gray-800 dark:hover:text-gray-200"
                       } ${!isExpanded ? "justify-center" : ""}`}
                       title={!isExpanded ? item.title : ""}
                     >
-                      {isActive && isExpanded && (
-                        <div className="absolute left-0 w-1 h-8 bg-[#EA6C00] dark:bg-[#F97316] rounded-r-full -ml-3 opacity-0"></div>
-                      )}
                       <span
-                        className={`text-lg transition-colors ${isActive ? "text-[#EA6C00] dark:text-[#F97316]" : "text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-100"}`}
+                        className={`transition-colors flex-shrink-0 ${
+                          isActive
+                            ? "text-gray-900 dark:text-gray-100"
+                            : "text-gray-400 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300"
+                        }`}
                       >
                         {isStringIcon ? (
                           <Image
@@ -231,15 +221,7 @@ export default function Sidebar({ role }: { role: AppRole }) {
                             alt={item.title}
                             width={20}
                             height={20}
-                            className={`w-5 h-5 dark:invert ${isActive ? "" : "opacity-60"}`}
-                            style={
-                              isActive && resolvedTheme !== "dark"
-                                ? {
-                                    filter:
-                                      "invert(18%) sepia(88%) saturate(2759%) hue-rotate(346deg) brightness(96%) contrast(92%)",
-                                  }
-                                : undefined
-                            }
+                            className={`w-[18px] h-[18px] dark:invert ${isActive ? "opacity-100" : "opacity-40 group-hover:opacity-80"}`}
                           />
                         ) : (
                           item.icon
@@ -259,77 +241,133 @@ export default function Sidebar({ role }: { role: AppRole }) {
         ))}
       </nav>
 
-      <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-800 shrink-0">
-          <ul className="space-y-1">
-            <li className="relative">
+      <div className="mt-auto pt-3 border-t border-gray-200 dark:border-gray-800 shrink-0">
+        {isExpanded ? (
+          /* Expanded: full user card row */
+          <div className="relative">
+            <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-gray-200/50 dark:hover:bg-gray-800 transition-colors">
+              {/* Avatar */}
+              <div className="w-9 h-9 rounded-full bg-[#FFF0E6] dark:bg-[#431407] text-[#EA6C00] dark:text-[#F97316] font-bold text-sm flex items-center justify-center border-2 border-white dark:border-gray-700 shadow-sm uppercase shrink-0">
+                {user?.email ? user.email.substring(0, 2) : "US"}
+              </div>
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-gray-900 dark:text-white truncate leading-tight">
+                  {user?.email ? user.email.split("@")[0] : "User"}
+                </p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1 mt-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_4px_#10b981] shrink-0" />
+                  {user?.role || "STAFF"}
+                </p>
+              </div>
+              {/* ... menu button */}
               <button
-                onClick={() => setThemeDropdownOpen(!themeDropdownOpen)}
-                className={`flex items-center w-full px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-600 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors group mb-1 ${
-                  !isExpanded ? "justify-center" : ""
-                }`}
-                title={!isExpanded ? "Tema Aplikasi" : ""}
+                onClick={() => setUserMenuOpen((v) => !v)}
+                className="p-1.5 rounded-lg hover:bg-gray-300/50 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors shrink-0"
+                title="Opsi"
               >
-                <span className="text-lg transition-colors group-hover:text-blue-500 dark:group-hover:text-blue-400 text-gray-500 dark:text-gray-400 flex shrink-0">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.813-3.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
-                  </svg>
-                </span>
-                {isExpanded && (
-                  <span className="ml-3 truncate text-sm">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                  <circle cx="5" cy="12" r="2" />
+                  <circle cx="12" cy="12" r="2" />
+                  <circle cx="19" cy="12" r="2" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Popover */}
+            {userMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
+                <div className="absolute bottom-full left-0 mb-2 w-44 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl z-50 p-1.5 space-y-0.5">
+                  {/* Tema */}
+                  <button
+                    onClick={() => { setThemeDropdownOpen((v) => !v); }}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-gray-400">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.813-3.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
+                    </svg>
                     Tema Aplikasi
-                  </span>
-                )}
-              </button>
-              
-              {themeDropdownOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setThemeDropdownOpen(false)}></div>
-                  <div className={`absolute bottom-0 bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 shadow-xl rounded-xl p-1.5 w-40 z-50 ${isExpanded ? "left-full ml-3" : "left-14"}`}>
-                    <button onClick={() => { setTheme('light'); setThemeDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${theme === 'light' ? 'bg-blue-50 dark:bg-slate-700/80 text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
-                      </svg>
-                      Light Mode
-                    </button>
-                    <button onClick={() => { setTheme('dark'); setThemeDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${theme === 'dark' ? 'bg-blue-50 dark:bg-slate-700/80 text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
-                      </svg>
-                      Dark Mode
-                    </button>
-                    <button onClick={() => { setTheme('system'); setThemeDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${theme === 'system' ? 'bg-blue-50 dark:bg-slate-700/80 text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" />
-                      </svg>
-                      System
-                    </button>
-                  </div>
-                </>
-              )}
-            </li>
-            <li>
-              <button
-                onClick={() => logout()}
-                className={`flex items-center w-full px-2 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-gray-600 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors group ${
-                  !isExpanded ? "justify-center" : ""
-                }`}
-              >
-                <span className="text-lg text-gray-500 dark:text-gray-400 group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors">
-                  <Image
-                    src="/logout.svg"
-                    alt="Logout"
-                    width={20}
-                    height={20}
-                    className="w-5 h-5 dark:invert"
-                  />
-                </span>
-                {isExpanded && (
-                  <span className="ml-3 truncate text-sm">Logout</span>
-                )}
-              </button>
-            </li>
-          </ul>
-        </div>
+                  </button>
+
+                  {/* Sub-options for theme */}
+                  {themeDropdownOpen && (
+                    <div className="px-2 py-1 space-y-0.5">
+                      {[
+                        { key: "light",  label: "Light Mode",  icon: "M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" },
+                        { key: "dark",   label: "Dark Mode",   icon: "M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" },
+                        { key: "system", label: "System",      icon: "M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" },
+                      ].map((t) => (
+                        <button
+                          key={t.key}
+                          onClick={() => { setTheme(t.key); setThemeDropdownOpen(false); setUserMenuOpen(false); }}
+                          className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
+                            theme === t.key
+                              ? "bg-blue-50 dark:bg-slate-700 text-blue-600 dark:text-blue-400 font-bold"
+                              : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                          }`}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d={t.icon} />
+                          </svg>
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="border-t border-gray-100 dark:border-slate-700 my-1" />
+
+                  {/* Logout */}
+                  <button
+                    onClick={() => logout()}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-red-500 dark:text-red-400 transition-colors"
+                  >
+                    <Image src="/logout.svg" alt="Logout" width={16} height={16} className="w-4 h-4 dark:invert opacity-70" />
+                    Logout
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          /* Collapsed: just avatar button that opens user menu */
+          <div className="relative flex justify-center">
+            <button
+              onClick={() => setUserMenuOpen((v) => !v)}
+              className="w-10 h-10 rounded-full bg-[#FFF0E6] dark:bg-[#431407] text-[#EA6C00] dark:text-[#F97316] font-bold text-sm flex items-center justify-center border-2 border-white dark:border-gray-700 shadow-sm uppercase hover:ring-2 hover:ring-[#EA6C00]/40 transition-all"
+              title={user?.email || "User"}
+            >
+              {user?.email ? user.email.substring(0, 2) : "US"}
+            </button>
+
+            {userMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
+                <div className="absolute bottom-0 left-14 w-44 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl z-50 p-1.5 space-y-0.5">
+                  <button
+                    onClick={() => { setThemeDropdownOpen((v) => !v); }}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-gray-400">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.813-3.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
+                    </svg>
+                    Tema Aplikasi
+                  </button>
+                  <div className="border-t border-gray-100 dark:border-slate-700 my-1" />
+                  <button
+                    onClick={() => logout()}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-red-500 dark:text-red-400 transition-colors"
+                  >
+                    <Image src="/logout.svg" alt="Logout" width={16} height={16} className="w-4 h-4 dark:invert opacity-70" />
+                    Logout
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

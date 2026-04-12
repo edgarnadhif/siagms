@@ -46,21 +46,20 @@ export default function LoginPage() {
     <div className="flex min-h-screen bg-white">
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-16 ">
         <div className="w-full max-w-sm ">
-          <div className="flex justify-center mb-2 ">
-            <Image
-              src="/Icon.svg"
-              alt="Logo"
-              width={64}
-              height={64}
-              className="w-16 h-16"
-            />
-          </div>
-
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-900">Selamat datang</h1>
-            <p className="mt-2 text-sm text-gray-500">
-              Masukkan detail akun di bawah untuk masuk
-            </p>
+          <div className="mb-8 flex items-center justify-center gap-4">
+              <Image
+                src="/logo.svg"
+                alt="Logo"
+                width={72}
+                height={72}
+                className="h-14 w-14"
+              />
+            <div className="text-left">
+              <h1 className="text-4xl font-bold text-gray-900">Selamat datang</h1>
+              <p className="mt-2 text-sm text-gray-500">
+                Masukkan detail akun di bawah untuk masuk
+              </p>
+            </div>
           </div>
 
           <form action={formAction} onSubmit={handleSubmit} noValidate className="space-y-6">
@@ -157,7 +156,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isPending}
-                className="text-white w-full flex justify-center py-4 px-4 border border-transparent rounded-2xl shadow-sm text-sm font-medium  bg-[#E94B3C] hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 transition-colors"
+                className="text-white w-full flex justify-center py-4 px-4 border border-transparent rounded-2xl shadow-sm text-sm font-medium bg-[#FF3600] hover:bg-[#D92E00] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF3600] disabled:opacity-50 transition-colors"
               >
                 {isPending ? "Logging in..." : "Sign in"}
               </button>
@@ -167,13 +166,15 @@ export default function LoginPage() {
       </div>
 
       <div className="hidden lg:block w-1/2 bg-white p-4 ">
-        <div
-          className="w-full h-full rounded-2xl border border-gray-100 "
-          style={{
-            background:
-              "radial-gradient(125% 125% at 50% 10%, #fff 40%, #E94B3C 100%)",
-          }}
-        />
+        <div className="relative w-full h-full overflow-hidden rounded-2xl border border-gray-100">
+          <Image
+            src="/Colour%20Swatch.svg"
+            alt="Colour Swatch"
+            fill
+            priority
+            className="object-cover"
+          />
+        </div>
       </div>
     </div>
   );

@@ -1401,54 +1401,8 @@ export async function serahTerimaUnit(prevState: any, formData: FormData) {
   }
 }
 
-// ─── RECEIPT (Kuitansi) ACTIONS ────────────────────────────────
+// ─── STURCTURE CLEANUP (Kuitansi removed) ─────────────────────
 
-export async function generateKwitansiNo(transactionId: string) {
-  const auth = await requireAuth(['SUPER_ADMIN', 'AKUNTAN']);
-  
-  try {
-    const tx = await prisma.transaction.findFirst({
-      where: { id: transactionId, tenantId: auth.tenantId }
-    });
-    
-    if (!tx) return { error: 'Transaksi tidak ditemukan' };
-    if (tx.kwitansiNo) return { success: true, kwitansiNo: tx.kwitansiNo };
-
-    const year = new Date().getFullYear();
-    const prefix = `KWT-${year}-`;
-    
-    const lastTx = await prisma.transaction.findFirst({
-      where: { 
-        tenantId: auth.tenantId,
-        kwitansiNo: { startsWith: prefix } 
-      },
-      orderBy: { kwitansiNo: 'desc' }
-    });
-
-    let seq = 1;
-    if (lastTx?.kwitansiNo) {
-      const parts = lastTx.kwitansiNo.split('-');
-      const lastSeq = parseInt(parts[parts.length - 1]);
-      if (!isNaN(lastSeq)) seq = lastSeq + 1;
-    }
-
-    const newKwitansiNo = `${prefix}${seq.toString().padStart(3, '0')}`;
-
-    await prisma.transaction.update({
-      where: { id: transactionId, tenantId: auth.tenantId },
-      data: {
-        kwitansiNo: newKwitansiNo,
-        kwitansiDate: new Date()
-      }
-    });
-
-    revalidatePath('/dashboard/kuitansi');
-    revalidatePath('/dashboard/transaksi');
-    return { success: true, kwitansiNo: newKwitansiNo };
-  } catch (err: any) {
-    return { error: 'Gagal generate nomor kuitansi: ' + err.message };
-  }
-}
 
 // ─── CLEANUP ACTIONS ──────────────────────────────────────────
 

@@ -1,7 +1,6 @@
 import { requireAuth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Sidebar from "./Sidebar";
-import Navbar from "./Navbar";
 
 export default async function DashboardLayout({
   children,
@@ -18,11 +17,10 @@ export default async function DashboardLayout({
 
   return (
     <div suppressHydrationWarning className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
-      <Sidebar role={auth.role} />
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <Navbar user={{ email: auth.email, role: auth.role }} />
-        <main className="flex-1 overflow-y-auto relative">{children}</main>
-      </div>
+      <Sidebar role={auth.role} user={{ email: auth.email, role: auth.role }} />
+      <main className="flex-1 overflow-y-auto relative h-[calc(100vh-24px)] m-3 ml-0 rounded-2xl bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 shadow-sm px-10 py-6">
+        {children}
+      </main>
     </div>
   );
 }
