@@ -77,7 +77,7 @@ export default function UsersClient({
   }
 
   return (
-    <div className="border-2 shadow-xl border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-100 dark:bg-[#0f172a] text-gray-600 dark:text-gray-300 pt-4 md:p-5 md:pt-5 min-h-screen">
+    <div className="text-gray-600 dark:text-gray-300 w-full h-full">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 px-4 md:px-0">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
