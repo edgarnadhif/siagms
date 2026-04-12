@@ -277,7 +277,7 @@ export default function AddTransaksiModal({
                         className={`block w-full text-left px-4 py-2.5 text-sm transition-colors ${
                           selectedCat === cat.id 
                             ? "bg-[#EA6C00] text-white" 
-                            : "text-gray-600 dark:text-gray-300 hover:bg-[#FFF0E6] hover:text-[#EA6C00]"
+                            : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"
                         }`}
                       >
                         {cat.label}
@@ -331,7 +331,7 @@ export default function AddTransaksiModal({
                     className={`block w-full text-left px-4 py-2.5 text-sm transition-colors ${
                       selectedProj === "" 
                         ? "bg-[#EA6C00] text-white" 
-                        : "text-gray-600 dark:text-gray-300 hover:bg-[#FFF0E6] hover:text-[#EA6C00]"
+                        : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"
                     }`}
                   >
                     Tanpa proyek
@@ -344,7 +344,7 @@ export default function AddTransaksiModal({
                       className={`block w-full text-left px-4 py-2.5 text-sm transition-colors ${
                         selectedProj === p.id 
                           ? "bg-[#EA6C00] text-white" 
-                          : "text-gray-600 dark:text-gray-300 hover:bg-[#FFF0E6] hover:text-[#EA6C00]"
+                          : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"
                       }`}
                     >
                       {p.code} — {p.name}

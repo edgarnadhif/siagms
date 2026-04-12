@@ -21,67 +21,65 @@ export default function ProfilForm({ initialData }: ProfilFormProps) {
 
   return (
     <form action={formAction} className="space-y-6">
-
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="col-span-2 md:col-span-1">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
             Nama Perusahaan
           </label>
           <input
             type="text"
             name="name"
             defaultValue={initialData.name}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-transparent dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-2 focus:ring-[#EA6C00]/20 dark:focus:ring-[#EA6C00]/20 outline-none transition-all"
+            className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all"
             placeholder="Masukkan nama perusahaan"
           />
         </div>
 
         <div className="col-span-2 md:col-span-1">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
             Email Perusahaan
           </label>
           <input
             type="email"
             name="email"
             defaultValue={initialData.email || ""}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-transparent dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-2 focus:ring-[#EA6C00]/20 dark:focus:ring-[#EA6C00]/20 outline-none transition-all"
+            className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all"
             placeholder="email@perusahaan.com"
           />
         </div>
 
         <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
             Alamat Lengkap
           </label>
           <textarea
             name="address"
             rows={3}
             defaultValue={initialData.address || ""}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-transparent dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-2 focus:ring-[#EA6C00]/20 dark:focus:ring-[#EA6C00]/20 outline-none transition-all resize-none"
+            className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all resize-none"
             placeholder="Masukkan alamat lengkap perusahaan"
           />
         </div>
 
         <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
             Nomor Telepon
           </label>
           <input
             type="tel"
             name="phone"
             defaultValue={initialData.phone || ""}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-transparent dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-2 focus:ring-[#EA6C00]/20 dark:focus:ring-[#EA6C00]/20 outline-none transition-all"
+            className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all"
             placeholder="+62 xxx xxxx xxxx"
           />
         </div>
       </div>
 
-      <div className="pt-4 flex justify-end">
+      <div className="pt-2 flex justify-end">
         <button
           type="submit"
           disabled={isPending}
-          className="px-6 py-3 bg-[#EA6C00] text-white font-medium rounded-xl hover:bg-[#C25500] focus:ring-4 focus:ring-[#EA6C00]/20 dark:focus:ring-[#EA6C00]/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-6 py-2.5 bg-[#EA6C00] text-white text-sm font-bold rounded-[10px] hover:bg-[#C25500] focus:ring-4 focus:ring-[#EA6C00]/20 dark:focus:ring-[#EA6C00]/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-orange-500/20"
         >
           {isPending ? "Menyimpan..." : "Simpan Perubahan"}
         </button>

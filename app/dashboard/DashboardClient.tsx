@@ -166,7 +166,7 @@ function ProjectFilterDropdown({
             className={`text-left px-[14px] py-[10px] text-sm font-medium transition-colors ${
               selectedProject === "all"
                 ? "bg-[#EA6C00] text-white"
-                : "text-gray-700 dark:text-gray-200 hover:bg-[#FFF0E6] hover:text-[#EA6C00] dark:hover:bg-slate-700 dark:hover:text-gray-100"
+                : "text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/50 dark:hover:text-gray-100"
             }`}
           >
             Semua Proyek (Global)
@@ -181,7 +181,7 @@ function ProjectFilterDropdown({
               className={`text-left px-[14px] py-[10px] text-sm font-medium transition-colors ${
                 selectedProject === p.id
                   ? "bg-[#EA6C00] text-white"
-                  : "text-gray-700 dark:text-gray-200 hover:bg-[#FFF0E6] hover:text-[#EA6C00] dark:hover:bg-slate-700 dark:hover:text-gray-100"
+                  : "text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/50 dark:hover:text-gray-100"
               }`}
             >
               {p.code} — {p.name}
@@ -819,7 +819,7 @@ export default function DashboardClient({
                             className={`text-center py-1.5 text-xs font-bold rounded-md transition-all ${
                               itemsPerPage === val
                                 ? "bg-[#EA6C00] text-white"
-                                : "text-[#374151] dark:text-gray-300 hover:bg-[#FFF0E6] dark:hover:bg-orange-900/30 hover:text-[#EA6C00]"
+                                : "text-[#374151] dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"
                             }`}
                           >
                             {val}

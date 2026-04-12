@@ -437,6 +437,92 @@ export async function deactivateTenantUser(userId: number) {
   return { success: true }
 }
 
+export async function activateTenantUser(userId: number) {
+  const auth = await requireAuth(['SUPER_ADMIN'])
+
+  if (!userId) {
+    return { error: 'ID user tidak valid' }
+  }
+
+  const targetUser = await prisma.user.findFirst({
+    where: {
+      id: userId,
+      tenantId: auth.tenantId,
+      isActive: false,
+    },
+    select: {
+      id: true,
+    },
+  })
+
+  if (!targetUser) {
+    return { error: 'User tidak ditemukan atau sudah aktif' }
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { isActive: true },
+  })
+
+  revalidatePath('/dashboard/users')
+  return { success: true }
+}
+
+export async function permanentlyDeleteTenantUser(userId: number) {
+  const auth = await requireAuth(['SUPER_ADMIN'])
+
+  if (!userId) {
+    return { error: 'ID user tidak valid' }
+  }
+
+  const targetUser = await prisma.user.findFirst({
+    where: {
+      id: userId,
+      tenantId: auth.tenantId,
+    },
+    select: {
+      id: true,
+      role: true,
+      isActive: true,
+    },
+  })
+
+  if (!targetUser) {
+    return { error: 'User tidak ditemukan' }
+  }
+
+  if (targetUser.id === auth.id) {
+    return { error: 'Anda tidak dapat menghapus akun Anda sendiri' }
+  }
+
+  if (targetUser.isActive) {
+    return { error: 'Nonaktifkan user terlebih dahulu sebelum hapus permanen' }
+  }
+
+  if (targetUser.role === 'SUPER_ADMIN') {
+    const superAdminCount = await countActiveSuperAdmins(auth.tenantId)
+    if (superAdminCount <= 1) {
+      return { error: 'Tenant harus memiliki minimal satu SUPER_ADMIN aktif' }
+    }
+  }
+
+  try {
+    await prisma.user.delete({
+      where: { id: userId },
+    })
+  } catch (err: any) {
+    if (err?.code === 'P2003' || err?.code === 'P2014') {
+      return { error: 'User tidak bisa dihapus karena masih dipakai data lain' }
+    }
+
+    return { error: 'Gagal menghapus user secara permanen' }
+  }
+
+  revalidatePath('/dashboard/users')
+  revalidatePath('/dashboard')
+  return { success: true }
+}
+
 export async function createProject(prevState: any, formData: FormData) {
   const auth = await requireAuth(['SUPER_ADMIN', 'MARKETING'])
   const code = (formData.get('code') as string)?.trim()

@@ -28,6 +28,23 @@ export default function EditAkunModal({
   const [code, setCode] = React.useState(account.code);
   const [type, setType] = React.useState(account.type);
   const [normalBalance, setNormalBalance] = React.useState(account.normalBalance);
+  const [typeOpen, setTypeOpen] = React.useState(false);
+  const [balanceOpen, setBalanceOpen] = React.useState(false);
+  const typeRef = React.useRef<HTMLDivElement>(null);
+  const balanceRef = React.useRef<HTMLDivElement>(null);
+
+  const TYPE_OPTIONS = [
+    { value: "ASET", label: "Aset (1xxx)" },
+    { value: "KEWAJIBAN", label: "Kewajiban (2xxx)" },
+    { value: "EKUITAS", label: "Ekuitas (3xxx)" },
+    { value: "PENDAPATAN", label: "Pendapatan (4xxx)" },
+    { value: "BEBAN", label: "Beban (5xxx)" },
+  ];
+
+  const BALANCE_OPTIONS = [
+    { value: "DEBIT", label: "Debit" },
+    { value: "KREDIT", label: "Kredit" },
+  ];
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Hanya izinkan angka max 4 digit
@@ -58,13 +75,31 @@ export default function EditAkunModal({
     }
   }, [state, router, onClose]);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (typeRef.current && !typeRef.current.contains(event.target as Node)) {
+        setTypeOpen(false);
+      }
+
+      if (
+        balanceRef.current &&
+        !balanceRef.current.contains(event.target as Node)
+      ) {
+        setBalanceOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
         {/* Header */}
         <div className="flex justify-between items-center p-5 border-b border-gray-200 dark:border-slate-700">
           <h2 className="text-xl font-bold text-slate-800 dark:text-white">Edit Akun</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+          <button onClick={onClose} className="p-1.5 rounded-full text-slate-400 hover:text-[#EA6C00] hover:bg-orange-50 dark:hover:bg-slate-700 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -88,33 +123,60 @@ export default function EditAkunModal({
                   onChange={handleCodeChange}
                   pattern="^[1-5]\d{3}$"
                   title="Kode harus 4 digit angka (1100 - 5999)"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-[#EA6C00]/20 focus:border-[#EA6C00] outline-none transition-shadow"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Tipe Akun <span className="text-red-500">*</span>
                 </label>
-                <select
-                  name="type"
-                  required
-                  value={type}
-                  onChange={handleTypeChange}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none outline-none transition-shadow"
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E")`,
-                    backgroundSize: "16px 16px",
-                    backgroundPosition: "right 12px center",
-                    backgroundRepeat: "no-repeat",
-                    paddingRight: "40px",
-                  }}
-                >
-                  <option value="ASET">Aset (1xxx)</option>
-                  <option value="KEWAJIBAN">Kewajiban (2xxx)</option>
-                  <option value="EKUITAS">Ekuitas (3xxx)</option>
-                  <option value="PENDAPATAN">Pendapatan (4xxx)</option>
-                  <option value="BEBAN">Beban (5xxx)</option>
-                </select>
+                <input type="hidden" name="type" value={type} />
+                <div className="relative" ref={typeRef}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTypeOpen(!typeOpen);
+                      setBalanceOpen(false);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-[#EA6C00]/20 focus:border-[#EA6C00] outline-none transition-shadow flex items-center justify-between"
+                  >
+                    <span>
+                      {
+                        TYPE_OPTIONS.find((option) => option.value === type)
+                          ?.label
+                      }
+                    </span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className={`w-4 h-4 text-slate-400 transition-transform ${typeOpen ? "rotate-180" : ""}`} viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+
+                  {typeOpen && (
+                    <div className="absolute z-50 left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden p-1.5">
+                      {TYPE_OPTIONS.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => {
+                            setType(option.value);
+                            if (
+                              option.value === "ASET" ||
+                              option.value === "BEBAN"
+                            ) {
+                              setNormalBalance("DEBIT");
+                            } else {
+                              setNormalBalance("KREDIT");
+                            }
+                            setTypeOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${type === option.value ? "bg-[#EA6C00] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"}`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -127,7 +189,7 @@ export default function EditAkunModal({
                 name="name"
                 required
                 defaultValue={account.name}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-slate-400 outline-none transition-shadow"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-[#EA6C00]/20 focus:border-[#EA6C00] placeholder-slate-400 outline-none transition-shadow"
               />
             </div>
 
@@ -135,23 +197,46 @@ export default function EditAkunModal({
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Saldo Normal <span className="text-red-500">*</span>
               </label>
-              <select
-                name="normalBalance"
-                required
-                value={normalBalance}
-                onChange={(e) => setNormalBalance(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none outline-none transition-shadow"
-                style={{
-                  backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E")`,
-                  backgroundSize: "16px 16px",
-                  backgroundPosition: "right 12px center",
-                  backgroundRepeat: "no-repeat",
-                  paddingRight: "40px",
-                }}
-              >
-                <option value="DEBIT">Debit</option>
-                <option value="KREDIT">Kredit</option>
-              </select>
+              <input type="hidden" name="normalBalance" value={normalBalance} />
+              <div className="relative" ref={balanceRef}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBalanceOpen(!balanceOpen);
+                    setTypeOpen(false);
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-[#EA6C00]/20 focus:border-[#EA6C00] outline-none transition-shadow flex items-center justify-between"
+                >
+                  <span>
+                    {
+                      BALANCE_OPTIONS.find(
+                        (option) => option.value === normalBalance,
+                      )?.label
+                    }
+                  </span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className={`w-4 h-4 text-slate-400 transition-transform ${balanceOpen ? "rotate-180" : ""}`} viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+
+                {balanceOpen && (
+                  <div className="absolute z-50 left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden p-1.5">
+                    {BALANCE_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => {
+                          setNormalBalance(option.value);
+                          setBalanceOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${normalBalance === option.value ? "bg-[#EA6C00] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"}`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="mb-5">
@@ -163,7 +248,7 @@ export default function EditAkunModal({
                 defaultValue={account.description || ""}
                 placeholder="Deskripsi akun (opsional)"
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-slate-400 resize-none outline-none transition-shadow"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-[#EA6C00]/20 focus:border-[#EA6C00] placeholder-slate-400 resize-none outline-none transition-shadow"
               ></textarea>
             </div>
 
@@ -173,7 +258,7 @@ export default function EditAkunModal({
                 id="editAkunAktif"
                 name="isActive"
                 defaultChecked={account.isActive}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                className="w-4 h-4 text-[#EA6C00] border-gray-300 rounded focus:ring-[#EA6C00]/30 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
               />
               <label htmlFor="editAkunAktif" className="text-sm font-medium text-slate-800 dark:text-slate-200">
                 Akun Aktif
@@ -200,7 +285,7 @@ export default function EditAkunModal({
             <button
               type="submit"
               disabled={isPending}
-              className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50"
+              className="px-4 py-2 text-sm font-semibold text-white bg-[#EA6C00] hover:bg-[#C25500] rounded-lg transition-colors shadow-md shadow-orange-500/20 disabled:opacity-50"
             >
               {isPending ? "Menyimpan..." : "Simpan Perubahan"}
             </button>

@@ -32,13 +32,29 @@ export default function EditUserModal({
   }, [onClose, router, state]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
-        <div className="flex justify-between items-center p-5 border-b border-gray-200 dark:border-slate-700">
-          <h2 className="text-xl font-bold text-slate-800 dark:text-white">Edit User</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-white/20 dark:border-slate-700">
+        <div className="flex justify-between items-center p-5 border-b border-[#F3F4F6] dark:border-slate-700">
+          <h2 className="text-xl font-bold text-slate-800 dark:text-white">
+            Edit User
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-2 text-gray-400 hover:text-[#EA6C00] dark:hover:text-[#EA6C00] transition-colors rounded-full hover:bg-gray-50 dark:hover:bg-slate-700"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+              className="w-5 h-5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -56,7 +72,7 @@ export default function EditUserModal({
                 name="fullName"
                 defaultValue={user.fullName || ""}
                 placeholder="Nama karyawan"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-white outline-none focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00]"
               />
             </div>
 
@@ -69,7 +85,7 @@ export default function EditUserModal({
                 name="email"
                 required
                 defaultValue={user.email}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-white outline-none focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00]"
               />
             </div>
 
@@ -83,7 +99,7 @@ export default function EditUserModal({
                 required
                 defaultValue={user.role}
                 disabled={isSelf}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
+                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 outline-none focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] disabled:opacity-60"
               >
                 <option value="SUPER_ADMIN">SUPER_ADMIN</option>
                 <option value="AKUNTAN">AKUNTAN</option>
@@ -105,7 +121,7 @@ export default function EditUserModal({
                 name="password"
                 minLength={8}
                 placeholder="Kosongkan jika tidak ingin mengganti password"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-white outline-none focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00]"
               />
             </div>
 
@@ -116,19 +132,19 @@ export default function EditUserModal({
             )}
           </div>
 
-          <div className="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
+          <div className="flex justify-end gap-3 p-4 border-t border-[#F3F4F6] dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
             <button
               type="button"
               onClick={onClose}
               disabled={isPending}
-              className="px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
+              className="px-6 py-2.5 text-sm font-bold text-[#374151] dark:text-slate-300 bg-white dark:bg-slate-700 border border-[#D1D5DB] dark:border-slate-600 rounded-[10px] hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={isPending}
-              className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50"
+              className="px-6 py-2.5 text-sm font-bold text-white bg-[#EA6C00] hover:bg-[#C25500] rounded-[10px] transition-colors disabled:opacity-50 shadow-md shadow-orange-500/20"
             >
               {isPending ? "Menyimpan..." : "Simpan Perubahan"}
             </button>

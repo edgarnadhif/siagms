@@ -116,7 +116,7 @@ export default function EditProjectModal({
                         className={`w-full text-left px-3 py-2 text-sm font-semibold rounded-lg transition-colors flex items-center gap-3 ${
                           selectedStatus === option.value
                             ? "bg-[#EA6C00] text-white"
-                            : "text-gray-600 dark:text-gray-300 hover:bg-[#FFF0E6] hover:text-[#EA6C00] dark:hover:bg-slate-700"
+                            : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"
                         }`}
                       >
                         <div className={`w-2 h-2 rounded-full ${option.color} ${selectedStatus === option.value ? "bg-white" : ""}`} />

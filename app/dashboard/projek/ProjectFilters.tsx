@@ -124,7 +124,7 @@ export default function ProjectFilters({ initialSearch, initialStatus }: { initi
                   className={`text-left px-3 py-2 text-sm font-semibold rounded-md transition-colors ${
                     status === opt.id
                       ? "bg-[#EA6C00] text-white"
-                      : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 hover:text-[#EA6C00]"
+                      : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"
                   }`}
                 >
                   {opt.label}
