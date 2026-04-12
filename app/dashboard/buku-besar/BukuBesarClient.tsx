@@ -455,31 +455,30 @@ export default function BukuBesarClient({
 
       <div className="px-4 md:px-0">
         {/* ── Filter form ── */}
-        <form onSubmit={handleFilterSubmit} className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 p-2.5 mb-8 shadow-sm no-print relative">
+        <form onSubmit={handleFilterSubmit} className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-1 mb-6 shadow-sm no-print relative">
           {hideNativeDateIcon}
-          <div className="flex flex-col md:flex-row items-center gap-2">
+          <div className="flex flex-col md:flex-row items-center">
             {/* Custom Account Dropdown */}
             <div className="flex-1 w-full relative" ref={accountRef}>
               <button
                 type="button"
                 onClick={() => setAccountMenuOpen(!accountMenuOpen)}
-                className="w-full h-12 flex items-center justify-between px-4 bg-transparent rounded-2xl hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
+                className="w-full h-11 flex items-center justify-between px-5 bg-transparent rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <img src="/book_5.svg" alt="" className="w-5 h-5 opacity-50" />
                   <span className="text-sm font-bold text-gray-700 dark:text-gray-200 truncate">
                     {selectedAccount ? allAccounts.find(a => a.id === selectedAccount)?.name : "Semua Akun"}
                   </span>
                 </div>
-                <svg className={`w-4 h-4 text-gray-400 transition-transform ${accountMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                <svg className={`w-4 h-4 text-gray-300 transition-transform ${accountMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" /></svg>
               </button>
               
               {accountMenuOpen && (
-                <div className="absolute left-0 top-full mt-2 w-full max-h-60 overflow-y-auto bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 p-1.5">
+                <div className="absolute left-0 top-full mt-3 w-full max-h-60 overflow-y-auto bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-3xl shadow-2xl z-50 p-2 animate-in fade-in slide-in-from-top-2 duration-200">
                   <button
                     type="button"
                     onClick={() => { setSelectedAccount(""); setAccountMenuOpen(false); }}
-                    className={`w-full text-left px-4 py-2.5 text-sm font-bold rounded-xl transition-colors ${!selectedAccount ? 'bg-[#EA6C00] text-white' : 'hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200'}`}
+                    className={`w-full text-left px-4 py-2.5 text-sm font-bold rounded-2xl transition-colors ${!selectedAccount ? 'bg-[#EA6C00] text-white' : 'hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200'}`}
                   >
                     Semua Akun
                   </button>
@@ -488,7 +487,7 @@ export default function BukuBesarClient({
                       key={acc.id}
                       type="button"
                       onClick={() => { setSelectedAccount(acc.id); setAccountMenuOpen(false); }}
-                      className={`w-full text-left px-4 py-2.5 text-sm font-bold rounded-xl transition-colors mt-0.5 ${selectedAccount === acc.id ? 'bg-[#EA6C00] text-white' : 'hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200'}`}
+                      className={`w-full text-left px-4 py-2.5 text-sm font-bold rounded-2xl transition-colors mt-1 ${selectedAccount === acc.id ? 'bg-[#EA6C00] text-white' : 'hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200'}`}
                     >
                       {acc.code} - {acc.name}
                     </button>
@@ -496,31 +495,30 @@ export default function BukuBesarClient({
                 </div>
               )}
             </div>
-
-            <div className="hidden md:block w-px h-8 bg-gray-100 dark:bg-slate-700" />
+            
+            <div className="hidden md:block w-px h-6 bg-gray-100 dark:bg-slate-700 mx-1" />
 
             {/* Custom Project Dropdown */}
             <div className="flex-1 w-full relative" ref={projectRef}>
               <button
                 type="button"
                 onClick={() => setProjectMenuOpen(!projectMenuOpen)}
-                className="w-full h-12 flex items-center justify-between px-4 bg-transparent rounded-2xl hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
+                className="w-full h-11 flex items-center justify-between px-5 bg-transparent rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <img src="/house.svg" alt="" className="w-5 h-5 opacity-50" />
                   <span className="text-sm font-bold text-gray-700 dark:text-gray-200 truncate">
                     {selectedProject ? projects.find(p => p.id === selectedProject)?.name : "Semua Proyek"}
                   </span>
                 </div>
-                <svg className={`w-4 h-4 text-gray-400 transition-transform ${projectMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                <svg className={`w-4 h-4 text-gray-300 transition-transform ${projectMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" /></svg>
               </button>
 
               {projectMenuOpen && (
-                <div className="absolute left-0 top-full mt-2 w-full max-h-60 overflow-y-auto bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 p-1.5">
+                <div className="absolute left-0 top-full mt-3 w-full max-h-60 overflow-y-auto bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-3xl shadow-2xl z-50 p-2 animate-in fade-in slide-in-from-top-2 duration-200">
                   <button
                     type="button"
                     onClick={() => { setSelectedProject(""); setProjectMenuOpen(false); }}
-                    className={`w-full text-left px-4 py-2.5 text-sm font-bold rounded-xl transition-colors ${!selectedProject ? 'bg-[#EA6C00] text-white' : 'hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200'}`}
+                    className={`w-full text-left px-4 py-2.5 text-sm font-bold rounded-2xl transition-colors ${!selectedProject ? 'bg-[#EA6C00] text-white' : 'hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200'}`}
                   >
                     Semua Proyek
                   </button>
@@ -529,7 +527,7 @@ export default function BukuBesarClient({
                       key={p.id}
                       type="button"
                       onClick={() => { setSelectedProject(p.id); setProjectMenuOpen(false); }}
-                      className={`w-full text-left px-4 py-2.5 text-sm font-bold rounded-xl transition-colors mt-0.5 ${selectedProject === p.id ? 'bg-[#EA6C00] text-white' : 'hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200'}`}
+                      className={`w-full text-left px-4 py-2.5 text-sm font-bold rounded-2xl transition-colors mt-1 ${selectedProject === p.id ? 'bg-[#EA6C00] text-white' : 'hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200'}`}
                     >
                       {p.code} - {p.name}
                     </button>
@@ -538,46 +536,48 @@ export default function BukuBesarClient({
               )}
             </div>
 
-            <div className="hidden md:block w-px h-8 bg-gray-100 dark:bg-slate-700" />
+            <div className="hidden md:block w-px h-6 bg-gray-100 dark:bg-slate-700 mx-1" />
 
             {/* Date Inputs */}
-            <div className="flex-[0.8] w-full relative group">
+            <div className="flex-[0.7] w-full relative group">
               <input
                 type="date"
                 value={selectedFromDate}
                 onChange={(e) => setSelectedFromDate(e.target.value)}
                 onClick={(e) => e.currentTarget.showPicker()}
-                className="w-full h-12 pl-10 pr-2 border-0 bg-transparent text-[11px] font-bold text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer"
+                className="w-full h-11 pl-12 pr-4 border-0 bg-transparent text-[11px] font-bold text-gray-600 dark:text-gray-300 focus:ring-0 cursor-pointer rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
               />
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                <img src="/calendar_month.svg" alt="" className="w-4.5 h-4.5 opacity-30 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute left-5 top-1/2 -translate-y-1/2 pointer-events-none">
+                <img src="/calendar_month.svg" alt="" className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" />
               </div>
             </div>
 
-            <div className="hidden md:block w-px h-8 bg-gray-100 dark:bg-slate-700" />
+            <div className="hidden md:block w-px h-6 bg-gray-100 dark:bg-slate-700 mx-1" />
 
-            <div className="flex-[0.8] w-full relative group">
+            <div className="flex-[0.7] w-full relative group">
               <input
                 type="date"
                 value={selectedToDate}
                 onChange={(e) => setSelectedToDate(e.target.value)}
                 onClick={(e) => e.currentTarget.showPicker()}
-                className="w-full h-12 pl-10 pr-2 border-0 bg-transparent text-[11px] font-bold text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer"
+                className="w-full h-11 pl-12 pr-4 border-0 bg-transparent text-[11px] font-bold text-gray-600 dark:text-gray-300 focus:ring-0 cursor-pointer rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
               />
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                <img src="/calendar_month.svg" alt="" className="w-4.5 h-4.5 opacity-30 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute left-5 top-1/2 -translate-y-1/2 pointer-events-none">
+                <img src="/calendar_month.svg" alt="" className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" />
               </div>
             </div>
 
             {/* Search Button */}
-            <button
-              type="submit"
-              className="w-11 h-11 bg-[#EA6C00] text-white rounded-full shadow-lg shadow-orange-500/30 flex items-center justify-center shrink-0 hover:bg-[#C25500] hover:scale-110 active:scale-90 transition-all ml-1"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-              </svg>
-            </button>
+            <div className="pl-2 pr-1">
+              <button
+                type="submit"
+                className="w-9 h-9 bg-[#EA6C00] text-white rounded-full shadow-lg shadow-orange-500/20 flex items-center justify-center shrink-0 hover:bg-[#C25500] hover:scale-105 active:scale-95 transition-all"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-4.5 h-4.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                </svg>
+              </button>
+            </div>
           </div>
         </form>
 
@@ -586,7 +586,7 @@ export default function BukuBesarClient({
           {/* Summary header */}
 
           {/* Totals */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-[10px] mb-6">
             <div className="bg-white dark:bg-slate-800 rounded-[14px] border border-[#E5E7EB] dark:border-slate-700/50 p-5 shadow-sm">
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#EA6C00] mb-2">Total Debit</p>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{formatRupiah(totalDebit)}</h2>
@@ -606,7 +606,7 @@ export default function BukuBesarClient({
               <p className="text-xs text-gray-400 mt-1">Coba ubah filter atau pastikan transaksi dan jurnal sudah tercatat.</p>
             </div>
           ) : (
-            <div className="space-y-8 pb-10">
+            <div className="space-y-3 pb-6">
               {ledgerAccounts.map((account) => {
                 const isCollapsed = collapsedAccounts[account.id] || false;
                 const isAbnormal =
@@ -614,15 +614,21 @@ export default function BukuBesarClient({
                   (account.normalBalance === "KREDIT" && account.endingBalance < 0);
 
                 return (
-                  <div key={account.id} className="bg-white dark:bg-slate-900 rounded-[20px] border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden no-print">
+                  <div key={account.id} className="bg-white dark:bg-slate-900 rounded-[16px] border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden no-print">
                     {/* ── Account header ── */}
                     <button
                       onClick={() => toggleAccount(account.id)}
-                      className="w-full px-6 py-5 flex flex-col md:flex-row justify-between items-start md:items-center bg-gray-50/50 dark:bg-slate-800/50 hover:bg-gray-100/50 transition-colors text-left"
+                      className="w-full px-6 py-3.5 flex flex-col md:flex-row justify-between items-start md:items-center bg-gray-50 dark:bg-slate-900 hover:bg-gray-100/80 transition-colors text-left"
                     >
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-3">
-                          <span className="px-3 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-black rounded-full">
+                          <span className={`px-3 py-1 text-xs font-black rounded-full ${
+                            account.code.startsWith('1') ? "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400" :
+                            account.code.startsWith('2') ? "bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400" :
+                            account.code.startsWith('3') ? "bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400" :
+                            account.code.startsWith('4') ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" :
+                            "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400"
+                          }`}>
                             {account.code}
                           </span>
                           <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -635,8 +641,8 @@ export default function BukuBesarClient({
                         </p>
                       </div>
                       <div className="mt-4 md:mt-0 text-right">
-                        <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-0.5">Saldo Akhir</p>
-                        <p className={`text-xl font-black ${isAbnormal ? "text-red-600" : "text-emerald-600 dark:text-emerald-400"}`}>
+                        <p className="text-[10px] font-black text-gray-900 dark:text-gray-100 uppercase tracking-widest mb-0.5">Saldo Akhir</p>
+                        <p className={`text-base font-black ${isAbnormal ? "text-red-600" : "text-emerald-600 dark:text-emerald-400"}`}>
                           {formatRupiah(account.endingBalance)}
                         </p>
                       </div>
@@ -651,10 +657,10 @@ export default function BukuBesarClient({
                             <col style={{ width: 112 }} />
                             {/* REFERENSI 128px */}
                             <col style={{ width: 128 }} />
-                            {/* KETERANGAN flex */}
-                            <col />
-                            {/* PROYEK 144px */}
-                            <col style={{ width: 144 }} />
+                            {/* KETERANGAN 250px */}
+                            <col style={{ width: 250 }} />
+                            {/* PROYEK 200px */}
+                            <col style={{ width: 200 }} />
                             {/* DEBIT 128px */}
                             <col style={{ width: 128 }} />
                             {/* KREDIT 128px */}
@@ -662,58 +668,58 @@ export default function BukuBesarClient({
                             {/* SALDO 144px */}
                             <col style={{ width: 144 }} />
                           </colgroup>
-                          <thead className="bg-white dark:bg-slate-900">
+                          <thead className="bg-gray-50/50 dark:bg-slate-900/50 border-b border-gray-100 dark:border-slate-800">
                             <tr>
-                              <th className="px-6 py-4 text-left text-[11px] font-bold text-gray-400 tracking-wide">Tanggal</th>
-                              <th className="px-6 py-4 text-left text-[11px] font-bold text-gray-400 tracking-wide">No Ref</th>
-                              <th className="px-6 py-4 text-left text-[11px] font-bold text-gray-400 tracking-wide">Keterangan</th>
-                              <th className="px-6 py-4 text-left text-[11px] font-bold text-gray-400 tracking-wide">Proyek</th>
-                              <th className="px-6 py-4 text-right text-[11px] font-bold text-gray-400 tracking-wide">Debit</th>
-                              <th className="px-6 py-4 text-right text-[11px] font-bold text-gray-400 tracking-wide">Kredit</th>
-                              <th className="px-6 py-4 text-right text-[11px] font-bold text-gray-400 tracking-wide">Saldo</th>
+                              <th className="px-6 py-2.5 text-left text-[10px] font-bold text-gray-400 tracking-wide">Tanggal</th>
+                              <th className="px-6 py-2.5 text-left text-[10px] font-bold text-gray-400 tracking-wide">No Ref</th>
+                              <th className="px-6 py-2.5 text-left text-[10px] font-bold text-gray-400 tracking-wide">Keterangan</th>
+                              <th className="px-6 py-2.5 text-left text-[10px] font-bold text-gray-400 tracking-wide">Proyek</th>
+                              <th className="px-6 py-2.5 text-right text-[10px] font-bold text-gray-400 tracking-wide">Debit</th>
+                              <th className="px-6 py-2.5 text-right text-[10px] font-bold text-gray-400 tracking-wide">Kredit</th>
+                              <th className="px-6 py-2.5 text-right text-[10px] font-bold text-gray-400 tracking-wide">Saldo</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-gray-50 dark:divide-slate-800/50">
+                          <tbody className="divide-y divide-gray-50/50 dark:divide-slate-800/30">
                             {/* Opening balance row */}
-                            <tr className="bg-gray-50/20 dark:bg-slate-900/20">
-                              <td className="px-6 py-4 text-[11px] font-black text-gray-900 dark:text-white uppercase">-</td>
-                              <td className="px-6 py-4 text-[11px] text-gray-400">-</td>
-                              <td className="px-6 py-4 text-[11px] font-medium text-gray-400 italic">Saldo Awal</td>
-                              <td className="px-6 py-4 text-[11px] text-gray-400">-</td>
-                              <td className="px-6 py-4 text-right text-[11px] text-gray-400">-</td>
-                              <td className="px-6 py-4 text-right text-[11px] text-gray-400">-</td>
-                              <td className={`px-6 py-4 text-right text-[11px] font-black ${balanceColor(account.openingBalance)}`}>
+                            <tr className="bg-gray-50/10 dark:bg-slate-900/10">
+                              <td className="px-6 py-2.5 text-[10px] font-black text-gray-900 dark:text-white uppercase">-</td>
+                              <td className="px-6 py-2.5 text-[10px] text-gray-400">-</td>
+                              <td className="px-6 py-2.5 text-[10px] font-medium text-gray-400 italic">Saldo Awal</td>
+                              <td className="px-6 py-2.5 text-[10px] text-gray-400">-</td>
+                              <td className="px-6 py-2.5 text-right text-[10px] text-gray-400">-</td>
+                              <td className="px-6 py-2.5 text-right text-[10px] text-gray-400">-</td>
+                              <td className={`px-6 py-2.5 text-right text-[10px] font-black ${balanceColor(account.openingBalance)}`}>
                                 {formatRupiah(account.openingBalance)}
                               </td>
                             </tr>
 
                             {/* Transaction rows */}
                             {account.transactions.map((trx) => (
-                              <tr key={trx.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                                <td className="px-6 py-4 whitespace-nowrap text-[11px] font-black text-gray-900 dark:text-white uppercase">
+                              <tr key={trx.id} className="hover:bg-gray-50/30 dark:hover:bg-slate-800/30 transition-colors">
+                                <td className="px-6 py-2 whitespace-nowrap text-[10px] font-black text-gray-900 dark:text-white uppercase">
                                   {formatDate(trx.date)}
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-[11px] font-medium text-gray-400 dark:text-gray-500">
+                                <td className="px-6 py-2 whitespace-nowrap text-[10px] font-medium text-gray-400 dark:text-gray-500">
                                   {trx.reference}
                                 </td>
-                                <td className="px-6 py-4 text-[11px] font-medium text-gray-400 dark:text-gray-500 max-w-xs truncate">
+                                <td className="px-6 py-2 text-[10px] font-medium text-gray-400 dark:text-gray-500 truncate" style={{ maxWidth: 250 }}>
                                   {trx.description || "-"}
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-2 whitespace-nowrap">
                                   <span
-                                    className="inline-flex items-center px-2 py-0.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold rounded-md"
+                                    className="inline-flex items-center px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold rounded-md whitespace-nowrap"
                                     title={trx.projectName}
                                   >
-                                    {trx.projectName === "Tidak ada proyek" ? "-" : trx.projectName.split(" ")[0].toLowerCase()}
+                                    {trx.projectName === "Tidak ada proyek" ? "-" : trx.projectName}
                                   </span>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-[11px] font-bold text-gray-900 dark:text-gray-100 text-right">
+                                <td className="px-6 py-2 whitespace-nowrap text-[10px] font-bold text-gray-900 dark:text-gray-100 text-right">
                                   {trx.debit > 0 ? formatRupiah(trx.debit) : "-"}
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-[11px] font-bold text-gray-900 dark:text-gray-100 text-right">
+                                <td className="px-6 py-2 whitespace-nowrap text-[10px] font-bold text-gray-900 dark:text-gray-100 text-right">
                                   {trx.credit > 0 ? formatRupiah(trx.credit) : "-"}
                                 </td>
-                                <td className={`px-6 py-4 whitespace-nowrap text-[11px] font-bold text-right ${balanceColor(trx.balance)}`}>
+                                <td className={`px-6 py-2 whitespace-nowrap text-[10px] font-bold text-right ${balanceColor(trx.balance)}`}>
                                   {formatRupiah(trx.balance)}
                                 </td>
                               </tr>
