@@ -5,7 +5,13 @@ export const metadata = {
   title: "Kalender Aktivitas - SIAGMS",
 };
 
-export default function CalendarPage() {
+export default function CalendarPage({
+  searchParams,
+}: {
+  searchParams?: { date?: string };
+}) {
+  const initialDate = searchParams?.date;
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -18,7 +24,7 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      <CalendarView />
+      <CalendarView initialDate={initialDate} />
     </div>
   );
 }

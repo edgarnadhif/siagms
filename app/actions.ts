@@ -91,6 +91,56 @@ async function getUnitRevenueBreakdown(db: DbClient, tenantId: string, unitId: s
   }
 }
 
+function deriveUnitStatusFromRevenueCategories(categories: string[]) {
+  if (categories.includes('PELUNASAN_CASH') || categories.includes('PENCAIRAN_KPR')) {
+    return 'LUNAS'
+  }
+
+  if (categories.includes('DOWN_PAYMENT')) {
+    return 'INDENT'
+  }
+
+  if (categories.includes('BOOKING_FEE')) {
+    return 'BOOKING'
+  }
+
+  return 'TERSEDIA'
+}
+
+async function syncUnitStatusFromTransactions(db: DbClient, tenantId: string, unitId: string) {
+  const unit = await db.unit.findFirst({
+    where: { id: unitId, tenantId },
+    select: { id: true, status: true },
+  })
+
+  if (!unit) return
+
+  // Preserve manually advanced statuses from akad/serah-terima workflow.
+  if (unit.status === 'AKAD' || unit.status === 'SERAH_TERIMA') {
+    return
+  }
+
+  const revenueTransactions = await db.transaction.findMany({
+    where: {
+      tenantId,
+      unitId,
+      category: { in: [...REVENUE_PROJECT_CATEGORIES] },
+    },
+    select: { category: true },
+  })
+
+  const nextStatus = deriveUnitStatusFromRevenueCategories(
+    revenueTransactions.map((item) => item.category),
+  )
+
+  if (unit.status !== nextStatus) {
+    await db.unit.update({
+      where: { id: unitId },
+      data: { status: nextStatus as any },
+    })
+  }
+}
+
 function parseCurrencyInput(value: string | null) {
   if (!value) return 0
   return parseFloat(value.replace(/[^\d.-]/g, ''))
@@ -909,6 +959,15 @@ export async function updateTransaction(prevState: any, formData: FormData) {
       })
 
       await createAutoJournal(tx, updatedTransaction)
+
+      const affectedUnitIds = new Set<string>()
+      if (existingTransaction.unitId) affectedUnitIds.add(existingTransaction.unitId)
+      if (relations.unitId) affectedUnitIds.add(relations.unitId)
+
+      for (const affectedUnitId of affectedUnitIds) {
+        await syncUnitStatusFromTransactions(tx, auth.tenantId, affectedUnitId)
+      }
+
       return updatedTransaction
     })
 
@@ -953,15 +1012,6 @@ export async function createTransaction(prevState: any, formData: FormData) {
     return { error: 'Jumlah harus berupa angka positif' }
   }
 
-  // Determine unit status update based on category
-  const unitStatusMap: Record<string, string> = {
-    BOOKING_FEE: 'BOOKING',
-    DOWN_PAYMENT: 'INDENT',
-    PENCAIRAN_KPR: 'LUNAS',
-    PELUNASAN_CASH: 'LUNAS',
-  };
-  const newUnitStatus = category ? unitStatusMap[category] : null;
-
   try {
     await prisma.$transaction(async (tx) => {
       const relations = await resolveTransactionRelations(tx, auth.tenantId, {
@@ -989,11 +1039,8 @@ export async function createTransaction(prevState: any, formData: FormData) {
         }
       })
 
-      if (relations.unitId && newUnitStatus) {
-        await tx.unit.update({
-          where: { id: relations.unitId },
-          data: { status: newUnitStatus as any }
-        })
+      if (relations.unitId) {
+        await syncUnitStatusFromTransactions(tx, auth.tenantId, relations.unitId)
       }
 
       await createAutoJournal(tx, transaction)
@@ -1021,19 +1068,36 @@ export async function deleteTransaction(transactionId: string) {
   }
 
   try {
-    // Delete related journal entries first
-    await prisma.journalEntry.deleteMany({
-      where: { transactionId, tenantId: auth.tenantId },
-    })
+    await prisma.$transaction(async (tx) => {
+      const existingTransaction = await tx.transaction.findFirst({
+        where: { id: transactionId, tenantId: auth.tenantId },
+        select: { id: true, unitId: true },
+      })
 
-    await prisma.transaction.delete({
-      where: { id: transactionId, tenantId: auth.tenantId },
+      if (!existingTransaction) {
+        throw new Error('Transaksi tidak ditemukan atau bukan milik tenant ini')
+      }
+
+      // Delete related journal entries first
+      await tx.journalEntry.deleteMany({
+        where: { transactionId, tenantId: auth.tenantId },
+      })
+
+      await tx.transaction.delete({
+        where: { id: transactionId },
+      })
+
+      if (existingTransaction.unitId) {
+        await syncUnitStatusFromTransactions(tx, auth.tenantId, existingTransaction.unitId)
+      }
     })
 
     revalidatePath('/dashboard/transaksi')
     revalidatePath('/dashboard/jurnal-umum')
     revalidatePath('/dashboard/buku-besar')
     revalidatePath('/dashboard')
+    revalidatePath('/dashboard/unit')
+    revalidatePath('/dashboard/projek')
     return { success: true }
   } catch (err: any) {
     return { error: 'Terjadi kesalahan sistem: ' + err?.message }
@@ -1047,19 +1111,40 @@ export async function deleteTransactions(transactionIds: string[]) {
   }
 
   try {
-    // Delete related journal entries first
-    await prisma.journalEntry.deleteMany({
-      where: { transactionId: { in: transactionIds }, tenantId: auth.tenantId },
-    })
+    await prisma.$transaction(async (tx) => {
+      const affectedTransactions = await tx.transaction.findMany({
+        where: { id: { in: transactionIds }, tenantId: auth.tenantId },
+        select: { unitId: true },
+      })
 
-    await prisma.transaction.deleteMany({
-      where: { id: { in: transactionIds }, tenantId: auth.tenantId },
+      const affectedUnitIds = Array.from(
+        new Set(
+          affectedTransactions
+            .map((transaction) => transaction.unitId)
+            .filter((unitId): unitId is string => Boolean(unitId)),
+        ),
+      )
+
+      // Delete related journal entries first
+      await tx.journalEntry.deleteMany({
+        where: { transactionId: { in: transactionIds }, tenantId: auth.tenantId },
+      })
+
+      await tx.transaction.deleteMany({
+        where: { id: { in: transactionIds }, tenantId: auth.tenantId },
+      })
+
+      for (const affectedUnitId of affectedUnitIds) {
+        await syncUnitStatusFromTransactions(tx, auth.tenantId, affectedUnitId)
+      }
     })
 
     revalidatePath('/dashboard/transaksi')
     revalidatePath('/dashboard/jurnal-umum')
     revalidatePath('/dashboard/buku-besar')
     revalidatePath('/dashboard')
+    revalidatePath('/dashboard/unit')
+    revalidatePath('/dashboard/projek')
     return { success: true }
   } catch (err: any) {
     return { error: 'Terjadi kesalahan sistem: ' + err?.message }

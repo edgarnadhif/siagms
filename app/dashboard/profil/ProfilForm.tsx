@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { updateCompanyProfile } from "@/app/actions";
 
 interface ProfilFormProps {
@@ -14,10 +15,17 @@ interface ProfilFormProps {
 }
 
 export default function ProfilForm({ initialData }: ProfilFormProps) {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(
     updateCompanyProfile,
     null,
   );
+
+  useEffect(() => {
+    if (state?.message) {
+      router.refresh();
+    }
+  }, [state?.message, router]);
 
   return (
     <form action={formAction} className="space-y-6">

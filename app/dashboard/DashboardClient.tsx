@@ -411,6 +411,19 @@ function MiniCalendar({
   onSelectDate: (date: Date) => void;
   onNavigate: (date: Date) => void;
 }) {
+  const todayDay = new Date().getDate();
+
+  const handleMonthNavigate = useCallback(
+    (nextDate: Date) => {
+      const year = nextDate.getFullYear();
+      const month = nextDate.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const targetDay = Math.min(todayDay, daysInMonth);
+      onNavigate(new Date(year, month, targetDay));
+    },
+    [onNavigate, todayDay],
+  );
+
   // Build a map of dates that have events for dayPropGetter
   const eventDateMap = React.useMemo(() => {
     const map = new Map<string, string>(); // dateKey -> priority color
@@ -456,9 +469,10 @@ function MiniCalendar({
       return (
         <button
           type="button"
+          onClick={() => onSelectDate(date)}
           className={`relative flex items-center justify-center mx-auto transition-all text-xs font-semibold hover:shadow-xs w-7 h-7 ${
             isSelected
-              ? "bg-[#EA6C00] text-white rounded-lg"
+              ? "mini-cal-selected-day bg-[#EA6C00] text-white rounded-lg"
               : isToday
                 ? "bg-[#FFF0E6] border-2 border-[#EA6C00] text-[#EA6C00] rounded-[8px]"
                 : bg
@@ -473,7 +487,7 @@ function MiniCalendar({
         </button>
       );
     },
-    [eventDateMap, selectedDate],
+    [eventDateMap, onSelectDate, selectedDate],
   );
 
   // Hide event chips on the grid
@@ -501,8 +515,10 @@ function MiniCalendar({
         view={Views.MONTH}
         views={[Views.MONTH]}
         date={selectedDate}
-        onNavigate={(date: any) => onNavigate(date)}
+        onNavigate={(nextDate: any) => handleMonthNavigate(nextDate)}
+        onDrillDown={(nextDate: any) => onSelectDate(nextDate)}
         selectable
+        onSelectSlot={({ start }: { start: Date }) => onSelectDate(start)}
         dayPropGetter={dayPropGetter}
         eventPropGetter={() => ({ style: { display: "none" } })}
         components={{
@@ -968,7 +984,10 @@ export default function DashboardClient({
         <Card
           title="Agenda Proyek"
           action={
-            <Link href="/dashboard/calendar" className={dashboardActionClass}>
+            <Link
+              href={`/dashboard/calendar?date=${format(selectedDate, "yyyy-MM-dd")}`}
+              className={dashboardActionClass}
+            >
               Full Agenda
             </Link>
           }
@@ -1007,7 +1026,9 @@ export default function DashboardClient({
                             </span>
                           </div>
                           <span className="text-[10px] text-slate-400 font-bold">
-                            {evt.time}
+                            {evt.date
+                              ? format(new Date(evt.date), "HH:mm")
+                              : "-"}
                           </span>
                         </div>
                       ))

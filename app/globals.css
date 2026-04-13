@@ -325,7 +325,27 @@ h6,
 .mini-calendar-widget .rbc-date-cell>button {
   color: #374151 !important;
   font-weight: 500 !important;
-  pointer-events: none !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+/* Sidebar calendar on full Calendar page should allow day click navigation */
+.gcal-mini-calendar-widget .rbc-date-cell>a,
+.gcal-mini-calendar-widget .rbc-date-cell>button {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+.gcal-mini-calendar-widget .rbc-button-link {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+.mini-calendar-widget .rbc-date-cell > button.mini-cal-selected-day,
+.mini-calendar-widget .rbc-date-cell > a.mini-cal-selected-day,
+.gcal-mini-calendar-widget .rbc-date-cell > button.mini-cal-selected-day,
+.gcal-mini-calendar-widget .rbc-date-cell > a.mini-cal-selected-day {
+  color: #ffffff !important;
 }
 
 .mini-calendar-widget .rbc-off-range .rbc-date-cell>a,
