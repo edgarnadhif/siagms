@@ -36,7 +36,10 @@ export default function EditProjectModal({
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     }
@@ -85,13 +88,16 @@ export default function EditProjectModal({
                   type="button"
                   onClick={() => setIsOpen(!isOpen)}
                   className={`w-full flex items-center justify-between px-4 py-2.5 border rounded-[10px] text-sm transition-all outline-none ${
-                    isOpen 
-                      ? "border-[#EA6C00] ring-[3px] ring-[#EA6C00]/10 bg-white dark:bg-slate-800" 
+                    isOpen
+                      ? "border-[#EA6C00] ring-[3px] ring-[#EA6C00]/10 bg-white dark:bg-slate-800"
                       : "border-[#E5E7EB] dark:border-slate-600 bg-transparent"
                   }`}
                 >
                   <span className="font-semibold text-gray-700 dark:text-gray-200">
-                    {STATUS_OPTIONS.find(opt => opt.value === selectedStatus)?.label}
+                    {
+                      STATUS_OPTIONS.find((opt) => opt.value === selectedStatus)
+                        ?.label
+                    }
                   </span>
                   <svg
                     className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
@@ -99,7 +105,11 @@ export default function EditProjectModal({
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    <path
+                      fillRule="evenodd"
+                      d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </button>
 
@@ -110,7 +120,9 @@ export default function EditProjectModal({
                         key={option.value}
                         type="button"
                         onClick={() => {
-                          setSelectedStatus(option.value as typeof project.status);
+                          setSelectedStatus(
+                            option.value as typeof project.status,
+                          );
                           setIsOpen(false);
                         }}
                         className={`w-full text-left px-3 py-2 text-sm font-semibold rounded-lg transition-colors flex items-center gap-3 ${
@@ -119,7 +131,9 @@ export default function EditProjectModal({
                             : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"
                         }`}
                       >
-                        <div className={`w-2 h-2 rounded-full ${option.color} ${selectedStatus === option.value ? "bg-white" : ""}`} />
+                        <div
+                          className={`w-2 h-2 rounded-full ${option.color} ${selectedStatus === option.value ? "bg-white" : ""}`}
+                        />
                         {option.label}
                       </button>
                     ))}

@@ -27,7 +27,9 @@ export default function EditAkunModal({
 
   const [code, setCode] = React.useState(account.code);
   const [type, setType] = React.useState(account.type);
-  const [normalBalance, setNormalBalance] = React.useState(account.normalBalance);
+  const [normalBalance, setNormalBalance] = React.useState(
+    account.normalBalance,
+  );
   const [typeOpen, setTypeOpen] = React.useState(false);
   const [balanceOpen, setBalanceOpen] = React.useState(false);
   const typeRef = React.useRef<HTMLDivElement>(null);
@@ -48,16 +50,27 @@ export default function EditAkunModal({
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Hanya izinkan angka max 4 digit
-    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+    const val = e.target.value.replace(/\D/g, "").slice(0, 4);
     setCode(val);
 
     if (val.length > 0) {
       const firstDigit = val[0];
-      if (firstDigit === '1') { setType("ASET"); setNormalBalance("DEBIT"); }
-      else if (firstDigit === '2') { setType("KEWAJIBAN"); setNormalBalance("KREDIT"); }
-      else if (firstDigit === '3') { setType("EKUITAS"); setNormalBalance("KREDIT"); }
-      else if (firstDigit === '4') { setType("PENDAPATAN"); setNormalBalance("KREDIT"); }
-      else if (firstDigit === '5') { setType("BEBAN"); setNormalBalance("DEBIT"); }
+      if (firstDigit === "1") {
+        setType("ASET");
+        setNormalBalance("DEBIT");
+      } else if (firstDigit === "2") {
+        setType("KEWAJIBAN");
+        setNormalBalance("KREDIT");
+      } else if (firstDigit === "3") {
+        setType("EKUITAS");
+        setNormalBalance("KREDIT");
+      } else if (firstDigit === "4") {
+        setType("PENDAPATAN");
+        setNormalBalance("KREDIT");
+      } else if (firstDigit === "5") {
+        setType("BEBAN");
+        setNormalBalance("DEBIT");
+      }
     }
   };
 
@@ -65,7 +78,8 @@ export default function EditAkunModal({
     const val = e.target.value;
     setType(val);
     if (val === "ASET" || val === "BEBAN") setNormalBalance("DEBIT");
-    else if (val === "KEWAJIBAN" || val === "EKUITAS" || val === "PENDAPATAN") setNormalBalance("KREDIT");
+    else if (val === "KEWAJIBAN" || val === "EKUITAS" || val === "PENDAPATAN")
+      setNormalBalance("KREDIT");
   };
 
   useEffect(() => {
@@ -98,10 +112,26 @@ export default function EditAkunModal({
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
         {/* Header */}
         <div className="flex justify-between items-center p-5 border-b border-gray-200 dark:border-slate-700">
-          <h2 className="text-xl font-bold text-slate-800 dark:text-white">Edit Akun</h2>
-          <button onClick={onClose} className="p-1.5 rounded-full text-slate-400 hover:text-[#EA6C00] hover:bg-orange-50 dark:hover:bg-slate-700 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          <h2 className="text-xl font-bold text-slate-800 dark:text-white">
+            Edit Akun
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-full text-slate-400 hover:text-[#EA6C00] hover:bg-orange-50 dark:hover:bg-slate-700 transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+              className="w-5 h-5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -146,8 +176,17 @@ export default function EditAkunModal({
                           ?.label
                       }
                     </span>
-                    <svg xmlns="http://www.w3.org/2000/svg" className={`w-4 h-4 text-slate-400 transition-transform ${typeOpen ? "rotate-180" : ""}`} viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className={`w-4 h-4 text-slate-400 transition-transform ${typeOpen ? "rotate-180" : ""}`}
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                   </button>
 
@@ -214,8 +253,17 @@ export default function EditAkunModal({
                       )?.label
                     }
                   </span>
-                  <svg xmlns="http://www.w3.org/2000/svg" className={`w-4 h-4 text-slate-400 transition-transform ${balanceOpen ? "rotate-180" : ""}`} viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className={`w-4 h-4 text-slate-400 transition-transform ${balanceOpen ? "rotate-180" : ""}`}
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </button>
 
@@ -260,7 +308,10 @@ export default function EditAkunModal({
                 defaultChecked={account.isActive}
                 className="w-4 h-4 text-[#EA6C00] border-gray-300 rounded focus:ring-[#EA6C00]/30 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
               />
-              <label htmlFor="editAkunAktif" className="text-sm font-medium text-slate-800 dark:text-slate-200">
+              <label
+                htmlFor="editAkunAktif"
+                className="text-sm font-medium text-slate-800 dark:text-slate-200"
+              >
                 Akun Aktif
               </label>
             </div>

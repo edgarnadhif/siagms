@@ -13,7 +13,7 @@ const STATUS_OPTIONS = [
 export default function AddProjectModal() {
   const [state, formAction, isPending] = useActionState(createProject, null);
   const router = useRouter();
-  
+
   const [isOpen, setIsOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("AKTIF");
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -27,7 +27,10 @@ export default function AddProjectModal() {
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     }
@@ -43,35 +46,44 @@ export default function AddProjectModal() {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[2px] p-4">
       <div className="bg-white dark:bg-slate-800 rounded-[16px] w-full max-w-lg shadow-2xl overflow-hidden relative border border-gray-100 dark:border-slate-700">
         <div className="p-8">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-8">Tambah Proyek</h2>
-          
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-8">
+            Tambah Proyek
+          </h2>
+
           <form action={formAction} className="space-y-5">
             <div className="grid grid-cols-2 gap-5">
               <div>
-                <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Kode Proyek *</label>
-                <input 
-                  required 
-                  type="text" 
-                  name="code" 
-                  placeholder="e.g. PRJ-001" 
-                  className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all placeholder:text-gray-300" 
+                <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
+                  Kode Proyek *
+                </label>
+                <input
+                  required
+                  type="text"
+                  name="code"
+                  placeholder="e.g. PRJ-001"
+                  className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all placeholder:text-gray-300"
                 />
               </div>
-              
+
               <div className="relative" ref={dropdownRef}>
-                <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Status *</label>
+                <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
+                  Status *
+                </label>
                 <input type="hidden" name="status" value={selectedStatus} />
                 <button
                   type="button"
                   onClick={() => setIsOpen(!isOpen)}
                   className={`w-full flex items-center justify-between px-4 py-2.5 border rounded-[10px] text-sm transition-all outline-none ${
-                    isOpen 
-                      ? "border-[#EA6C00] ring-[3px] ring-[#EA6C00]/10 bg-white dark:bg-slate-800" 
+                    isOpen
+                      ? "border-[#EA6C00] ring-[3px] ring-[#EA6C00]/10 bg-white dark:bg-slate-800"
                       : "border-[#E5E7EB] dark:border-slate-600 bg-transparent"
                   }`}
                 >
                   <span className="font-semibold text-gray-700 dark:text-gray-200">
-                    {STATUS_OPTIONS.find(opt => opt.value === selectedStatus)?.label}
+                    {
+                      STATUS_OPTIONS.find((opt) => opt.value === selectedStatus)
+                        ?.label
+                    }
                   </span>
                   <svg
                     className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
@@ -79,7 +91,11 @@ export default function AddProjectModal() {
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    <path
+                      fillRule="evenodd"
+                      d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </button>
 
@@ -99,7 +115,9 @@ export default function AddProjectModal() {
                             : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"
                         }`}
                       >
-                        <div className={`w-2 h-2 rounded-full ${option.color} ${selectedStatus === option.value ? "bg-white" : ""}`} />
+                        <div
+                          className={`w-2 h-2 rounded-full ${option.color} ${selectedStatus === option.value ? "bg-white" : ""}`}
+                        />
                         {option.label}
                       </button>
                     ))}
@@ -109,66 +127,78 @@ export default function AddProjectModal() {
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Nama Proyek *</label>
-              <input 
-                required 
-                type="text" 
-                name="name" 
-                placeholder="Masukkan nama proyek" 
-                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all placeholder:text-gray-300" 
+              <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
+                Nama Proyek *
+              </label>
+              <input
+                required
+                type="text"
+                name="name"
+                placeholder="Masukkan nama proyek"
+                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all placeholder:text-gray-300"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Lokasi *</label>
-              <input 
-                required 
-                type="text" 
-                name="location" 
-                placeholder="Masukkan lokasi proyek" 
-                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all placeholder:text-gray-300" 
+              <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
+                Lokasi *
+              </label>
+              <input
+                required
+                type="text"
+                name="location"
+                placeholder="Masukkan lokasi proyek"
+                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all placeholder:text-gray-300"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Deskripsi Proyek</label>
-              <textarea 
-                name="description" 
-                placeholder="Tambahkan detail proyek (opsional)" 
-                rows={3} 
-                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all resize-none placeholder:text-gray-300" 
+              <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
+                Deskripsi Proyek
+              </label>
+              <textarea
+                name="description"
+                placeholder="Tambahkan detail proyek (opsional)"
+                rows={3}
+                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all resize-none placeholder:text-gray-300"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Tanggal Mulai</label>
-                <input 
-                  type="date" 
-                  name="startDate" 
-                  className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all" 
+                <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
+                  Tanggal Mulai
+                </label>
+                <input
+                  type="date"
+                  name="startDate"
+                  className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all"
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Target Selesai</label>
-                <input 
-                  type="date" 
-                  name="endDate" 
-                  className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all" 
+                <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
+                  Target Selesai
+                </label>
+                <input
+                  type="date"
+                  name="endDate"
+                  className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all"
                 />
               </div>
             </div>
 
             <div>
-                <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Budget (Rp) *</label>
-                <input 
-                  type="number" 
-                  name="budget" 
-                  min="1000000"
-                  required
-                  placeholder="Minimal 1000000" 
-                  className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all placeholder:text-gray-300" 
-                />
+              <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
+                Budget (Rp) *
+              </label>
+              <input
+                type="number"
+                name="budget"
+                min="1000000"
+                required
+                placeholder="Minimal 1000000"
+                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all placeholder:text-gray-300"
+              />
             </div>
 
             {state?.error && (
@@ -178,17 +208,17 @@ export default function AddProjectModal() {
             )}
 
             <div className="flex justify-end gap-3 pt-6 mt-8 border-t border-gray-100 dark:border-slate-700">
-              <button 
-                type="button" 
-                onClick={handleClose} 
-                disabled={isPending} 
+              <button
+                type="button"
+                onClick={handleClose}
+                disabled={isPending}
                 className="px-6 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 bg-white dark:bg-transparent border border-[#E5E7EB] rounded-[10px] hover:bg-gray-50 transition-all active:scale-95 disabled:opacity-50"
               >
                 Batal
               </button>
-              <button 
-                type="submit" 
-                disabled={isPending} 
+              <button
+                type="submit"
+                disabled={isPending}
                 className="px-8 py-2.5 text-sm font-bold text-white bg-[#EA6C00] hover:bg-[#C25500] rounded-[10px] shadow-lg shadow-orange-500/20 transition-all active:scale-95 disabled:opacity-50"
               >
                 {isPending ? "Menyimpan..." : "Simpan Proyek"}
