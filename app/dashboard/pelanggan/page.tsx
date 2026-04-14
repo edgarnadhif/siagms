@@ -19,7 +19,5 @@ export default async function PelangganPage() {
 
   const transactions = JSON.parse(JSON.stringify(customers));
 
-  return (
-    <PelangganClient initialData={transactions} currentRole={auth.role} />
-  );
+  return <PelangganClient initialData={transactions} currentRole={auth.role} />;
 }

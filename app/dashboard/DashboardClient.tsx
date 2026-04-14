@@ -109,7 +109,11 @@ function CashFlowTooltip({
         return (
           <p
             key={`${seriesName}-${index}`}
-            style={{ color: textColor, margin: "4px 0", fontWeight: isNetLine ? 700 : 600 }}
+            style={{
+              color: textColor,
+              margin: "4px 0",
+              fontWeight: isNetLine ? 700 : 600,
+            }}
           >
             {seriesName}: {formatRupiah(Number(item.value || 0))}
           </p>
@@ -1120,9 +1124,7 @@ export default function DashboardClient({
                   axisLine={false}
                   tickLine={false}
                 />
-                <Tooltip
-                  content={<CashFlowTooltip />}
-                />
+                <Tooltip content={<CashFlowTooltip />} />
                 <Legend
                   iconType="circle"
                   wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }}

@@ -138,7 +138,9 @@ export default function PelangganClient({
     null,
   );
   const [activateCustomer, setActivateCustomer] = useState<any | null>(null);
-  const [deletePermanentCustomer, setDeletePermanentCustomer] = useState<any | null>(null);
+  const [deletePermanentCustomer, setDeletePermanentCustomer] = useState<
+    any | null
+  >(null);
 
   const [detailCustomer, setDetailCustomer] = useState<any | null>(null);
 
@@ -759,7 +761,9 @@ export default function PelangganClient({
                                 </button>
                                 {currentRole === "SUPER_ADMIN" && (
                                   <button
-                                    onClick={() => setDeletePermanentCustomer(c)}
+                                    onClick={() =>
+                                      setDeletePermanentCustomer(c)
+                                    }
                                     title="Hapus Permanen"
                                     className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-red-600 bg-red-50 hover:bg-red-600 hover:text-white dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white transition-all"
                                   >
