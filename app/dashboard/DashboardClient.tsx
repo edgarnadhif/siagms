@@ -75,6 +75,50 @@ function cn(...classes: (string | boolean | undefined)[]) {
 const dashboardActionClass =
   "text-xs font-semibold text-[#EA6C00] hover:text-[#C25500] dark:text-[#F97316] dark:hover:text-[#FFF0E6] transition-colors border border-[#EA6C00] dark:border-[#F97316] px-3 py-1.5 rounded-md hover:bg-[#FFF0E6] dark:hover:bg-[#431407]";
 
+function CashFlowTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: Array<{ name?: string; value?: number; color?: string }>;
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+
+  return (
+    <div
+      className="rounded-xl border border-[#E5E7EB] bg-white dark:bg-slate-800 dark:border-slate-700 shadow-lg px-3 py-2.5"
+      style={{ fontSize: "12px" }}
+    >
+      <p
+        style={{
+          fontWeight: "bold",
+          color: "#EA6C00",
+          marginBottom: "8px",
+        }}
+      >
+        {label}
+      </p>
+
+      {payload.map((item, index) => {
+        const seriesName = item.name || "";
+        const isNetLine = seriesName.toLowerCase().includes("arus bersih");
+        const textColor = isNetLine ? "#1e293b" : item.color || "#475569";
+
+        return (
+          <p
+            key={`${seriesName}-${index}`}
+            style={{ color: textColor, margin: "4px 0", fontWeight: isNetLine ? 700 : 600 }}
+          >
+            {seriesName}: {formatRupiah(Number(item.value || 0))}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Chart Components ─────────────────────────────────────
 function DonutChart({
   data,
@@ -678,7 +722,10 @@ export default function DashboardClient({
   });
 
   return (
-    <div className="text-gray-600 dark:text-gray-300 w-full h-full">
+    <div
+      suppressHydrationWarning
+      className="text-gray-600 dark:text-gray-300 w-full h-full"
+    >
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="page-title dark:text-gray-100">Dashboard</h1>
@@ -1074,20 +1121,7 @@ export default function DashboardClient({
                   tickLine={false}
                 />
                 <Tooltip
-                  formatter={(value: any) => formatRupiah(Number(value))}
-                  contentStyle={{
-                    borderRadius: "12px",
-                    border: "1px solid #EA6C00",
-                    background: "#1a2332",
-                    boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
-                    fontSize: "12px",
-                    color: "#fff",
-                  }}
-                  labelStyle={{
-                    fontWeight: "bold",
-                    color: "#EA6C00",
-                    marginBottom: "8px",
-                  }}
+                  content={<CashFlowTooltip />}
                 />
                 <Legend
                   iconType="circle"

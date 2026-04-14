@@ -417,10 +417,10 @@ export default function UnitClient({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 px-4 md:px-0">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-              Master Unit Kavling
+              Master Unit
             </h1>
             <p className="text-sm text-gray-400 dark:text-gray-400 mt-3">
-              Kelola persediaan unit perumahan dan kavling
+              Kelola persediaan unit perumahan
             </p>
           </div>
           <button

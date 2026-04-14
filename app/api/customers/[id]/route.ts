@@ -91,10 +91,66 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
   }
 }
 
-export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
     const { id } = await context.params;
+    const body = await request.json();
+
+    const action = body?.action as "activate" | "deactivate" | undefined;
+    if (!action || !["activate", "deactivate"].includes(action)) {
+      return NextResponse.json(
+        { success: false, data: null, message: "Aksi tidak valid" },
+        { status: 400 }
+      );
+    }
+
+    const current = await prisma.customer.findFirst({
+      where: getTenantWhere(auth.tenantId, { id }),
+      include: { unit: true },
+    });
+
+    if (!current) {
+      return NextResponse.json({ success: false, data: null, message: "Pelanggan tidak ditemukan" }, { status: 404 });
+    }
+
+    if (action === "deactivate" && current.unit) {
+      return NextResponse.json(
+        { success: false, data: null, message: "Pelanggan tidak dapat dinonaktifkan karena masih memiliki unit aktif" },
+        { status: 403 }
+      );
+    }
+
+    const updatedCustomer = await prisma.customer.update({
+      where: { id },
+      data: { isActive: action === "activate" },
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: updatedCustomer,
+      message: action === "activate"
+        ? "Pelanggan berhasil diaktifkan kembali"
+        : "Pelanggan berhasil dinonaktifkan",
+    });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, data: null, message: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+  try {
+    const auth = await requireAuth(["SUPER_ADMIN"]);
+    const { id } = await context.params;
+    const { searchParams } = new URL(request.url);
+    const permanent = searchParams.get("permanent") === "true";
+
+    if (!permanent) {
+      return NextResponse.json(
+        { success: false, data: null, message: "Gunakan aksi PATCH untuk nonaktifkan/aktifkan pelanggan" },
+        { status: 400 }
+      );
+    }
 
     const current = await prisma.customer.findFirst({
       where: getTenantWhere(auth.tenantId, { id }),
@@ -107,17 +163,33 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
 
     if (current.unit) {
       return NextResponse.json(
-        { success: false, data: null, message: "Pelanggan tidak dapat dinonaktifkan karena masih memiliki unit aktif" },
+        { success: false, data: null, message: "Pelanggan tidak dapat dihapus permanen karena masih memiliki unit aktif" },
         { status: 403 }
       );
     }
 
-    const customer = await prisma.customer.update({
+    const [transactionCount, serahTerimaCount, unitAkadCount] = await Promise.all([
+      prisma.transaction.count({ where: { tenantId: auth.tenantId, customerId: id } }),
+      prisma.serahTerima.count({ where: { tenantId: auth.tenantId, customerId: id } }),
+      prisma.unitAkad.count({ where: { tenantId: auth.tenantId, customerId: id } }),
+    ]);
+
+    if (transactionCount > 0 || serahTerimaCount > 0 || unitAkadCount > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          data: null,
+          message: "Pelanggan tidak dapat dihapus permanen karena masih memiliki riwayat transaksi/akad/serah terima",
+        },
+        { status: 409 }
+      );
+    }
+
+    const customer = await prisma.customer.delete({
       where: { id },
-      data: { isActive: false },
     });
 
-    return NextResponse.json({ success: true, data: customer, message: "Pelanggan berhasil dinonaktifkan" });
+    return NextResponse.json({ success: true, data: customer, message: "Pelanggan berhasil dihapus permanen" });
   } catch (error: any) {
     return NextResponse.json({ success: false, data: null, message: error.message }, { status: 500 });
   }

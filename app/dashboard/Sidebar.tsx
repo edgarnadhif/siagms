@@ -179,9 +179,12 @@ export default function Sidebar({ role, user }: { role: AppRole; user?: { email:
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto py-4 custom-scrollbar">
+      <nav
+        suppressHydrationWarning
+        className="flex-1 overflow-y-auto py-4 custom-scrollbar"
+      >
         {menuGroups.map((group) => (
-          <div key={group.title} className="mb-4">
+          <div suppressHydrationWarning key={group.title} className="mb-4">
             {isExpanded && group.title && (
               <h3 className="px-3 sidebar-section mb-2">
                 {group.title}

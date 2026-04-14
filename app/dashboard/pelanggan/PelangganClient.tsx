@@ -31,7 +31,7 @@ function ToastContainer({
           {t.type === "success" ? (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="w-4 h-4 flex-shrink-0"
+              className="w-4 h-4 shrink-0"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -44,7 +44,7 @@ function ToastContainer({
           ) : (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="w-4 h-4 flex-shrink-0"
+              className="w-4 h-4 shrink-0"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -101,8 +101,10 @@ interface EditCustomerForm {
 
 export default function PelangganClient({
   initialData,
+  currentRole,
 }: {
   initialData: any[];
+  currentRole: "SUPER_ADMIN" | "AKUNTAN" | "MARKETING";
 }) {
   const [customers, setCustomers] = useState(initialData);
   const [searchTerm, setSearchTerm] = useState("");
@@ -135,6 +137,8 @@ export default function PelangganClient({
   const [deactivateCustomer, setDeactivateCustomer] = useState<any | null>(
     null,
   );
+  const [activateCustomer, setActivateCustomer] = useState<any | null>(null);
+  const [deletePermanentCustomer, setDeletePermanentCustomer] = useState<any | null>(null);
 
   const [detailCustomer, setDetailCustomer] = useState<any | null>(null);
 
@@ -351,7 +355,9 @@ export default function PelangganClient({
     setLoading(true);
     try {
       const response = await fetch(`/api/customers/${deactivateCustomer.id}`, {
-        method: "DELETE",
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "deactivate" }),
       });
       const result = await response.json();
       if (result.success) {
@@ -365,6 +371,62 @@ export default function PelangganClient({
       } else {
         showToast(result.message, "error");
         setDeactivateCustomer(null);
+      }
+    } catch {
+      showToast("Terjadi kesalahan sistem", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleActivate = async () => {
+    if (!activateCustomer) return;
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/customers/${activateCustomer.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "activate" }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setActivateCustomer(null);
+        setCustomers((prev) =>
+          prev.map((c) =>
+            c.id === result.data.id ? { ...c, isActive: true } : c,
+          ),
+        );
+        showToast("Pelanggan berhasil diaktifkan kembali");
+      } else {
+        showToast(result.message, "error");
+        setActivateCustomer(null);
+      }
+    } catch {
+      showToast("Terjadi kesalahan sistem", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePermanentDelete = async () => {
+    if (!deletePermanentCustomer) return;
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `/api/customers/${deletePermanentCustomer.id}?permanent=true`,
+        {
+          method: "DELETE",
+        },
+      );
+      const result = await response.json();
+      if (result.success) {
+        const deletedId = deletePermanentCustomer.id;
+        setDeletePermanentCustomer(null);
+        setCustomers((prev) => prev.filter((c) => c.id !== deletedId));
+        showToast("Pelanggan berhasil dihapus permanen");
+      } else {
+        showToast(result.message, "error");
+        setDeletePermanentCustomer(null);
       }
     } catch {
       showToast("Terjadi kesalahan sistem", "error");
@@ -411,7 +473,7 @@ export default function PelangganClient({
                   viewBox="0 0 24 24"
                   strokeWidth={2.5}
                   stroke="currentColor"
-                  className="w-4 h-4 text-gray-400 flex-shrink-0"
+                  className="w-4 h-4 text-gray-400 shrink-0"
                 >
                   <path
                     strokeLinecap="round"
@@ -656,8 +718,7 @@ export default function PelangganClient({
                                 />
                               </svg>
                             </button>
-                            {/* Nonaktifkan — only for active customers without active unit */}
-                            {c.isActive !== false && (
+                            {c.isActive !== false ? (
                               <button
                                 onClick={() => setDeactivateCustomer(c)}
                                 title="Nonaktifkan Pelanggan"
@@ -676,6 +737,47 @@ export default function PelangganClient({
                                   />
                                 </svg>
                               </button>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => setActivateCustomer(c)}
+                                  title="Aktifkan Kembali"
+                                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-emerald-600 bg-emerald-50 hover:bg-emerald-600 hover:text-white dark:bg-emerald-900/20 dark:text-emerald-400 dark:hover:bg-emerald-600 dark:hover:text-white transition-all"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="w-4 h-4"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                </button>
+                                {currentRole === "SUPER_ADMIN" && (
+                                  <button
+                                    onClick={() => setDeletePermanentCustomer(c)}
+                                    title="Hapus Permanen"
+                                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-red-600 bg-red-50 hover:bg-red-600 hover:text-white dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white transition-all"
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="w-4 h-4"
+                                      viewBox="0 0 20 20"
+                                      fill="currentColor"
+                                    >
+                                      <path
+                                        fillRule="evenodd"
+                                        d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2h.293l.853 10.236A2 2 0 007.14 18h5.72a2 2 0 001.994-1.764L15.707 6H16a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zm-1 4a1 1 0 112 0v8a1 1 0 11-2 0V6zm4-1a1 1 0 00-1 1v8a1 1 0 102 0V6a1 1 0 00-1-1z"
+                                        clipRule="evenodd"
+                                      />
+                                    </svg>
+                                  </button>
+                                )}
+                              </>
                             )}
                           </div>
                         </td>
@@ -1319,7 +1421,7 @@ export default function PelangganClient({
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden">
             <div className="p-6">
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="w-6 h-6 text-red-600"
@@ -1369,6 +1471,130 @@ export default function PelangganClient({
                   </>
                 ) : (
                   "Ya, Nonaktifkan"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activateCustomer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-6 h-6 text-emerald-600"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                    Aktifkan Kembali Pelanggan
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Pelanggan akan muncul lagi di daftar transaksi.
+                  </p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-slate-900/50 rounded-xl p-4">
+                Aktifkan kembali pelanggan{" "}
+                <span className="font-bold text-[#EA6C00]">
+                  {activateCustomer.name}
+                </span>{" "}
+                ({activateCustomer.customerCode})?
+              </p>
+            </div>
+            <div className="px-6 pb-6 flex justify-end gap-3">
+              <button
+                onClick={() => setActivateCustomer(null)}
+                className="px-5 h-11 text-sm font-bold text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-[10px] transition-all"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleActivate}
+                disabled={loading}
+                className="px-6 h-11 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-[10px] shadow-lg shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Memproses...
+                  </>
+                ) : (
+                  "Ya, Aktifkan"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deletePermanentCustomer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-6 h-6 text-red-600"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2h.293l.853 10.236A2 2 0 007.14 18h5.72a2 2 0 001.994-1.764L15.707 6H16a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zm-1 4a1 1 0 112 0v8a1 1 0 11-2 0V6zm4-1a1 1 0 00-1 1v8a1 1 0 102 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                    Hapus Permanen Pelanggan
+                  </h3>
+                  <p className="text-sm text-red-500">
+                    Data akan dihapus permanen dan tidak bisa dikembalikan.
+                  </p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-slate-900/50 rounded-xl p-4">
+                Hapus permanen pelanggan{" "}
+                <span className="font-bold text-[#EA6C00]">
+                  {deletePermanentCustomer.name}
+                </span>{" "}
+                ({deletePermanentCustomer.customerCode})?
+              </p>
+            </div>
+            <div className="px-6 pb-6 flex justify-end gap-3">
+              <button
+                onClick={() => setDeletePermanentCustomer(null)}
+                className="px-5 h-11 text-sm font-bold text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-[10px] transition-all"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handlePermanentDelete}
+                disabled={loading}
+                className="px-6 h-11 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-[10px] shadow-lg shadow-red-500/20 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Menghapus...
+                  </>
+                ) : (
+                  "Ya, Hapus Permanen"
                 )}
               </button>
             </div>
