@@ -32,7 +32,7 @@ export async function POST(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
+    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
     const { id: unitId } = await context.params;
     const body = await request.json();
 

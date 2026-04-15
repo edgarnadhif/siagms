@@ -8,7 +8,7 @@ type ManagedUser = {
   id: number;
   fullName: string | null;
   email: string;
-  role: "SUPER_ADMIN" | "AKUNTAN" | "MARKETING";
+  role: "SUPER_ADMIN" | "AKUNTAN";
   isActive: boolean;
 };
 
@@ -103,7 +103,6 @@ export default function EditUserModal({
               >
                 <option value="SUPER_ADMIN">SUPER_ADMIN</option>
                 <option value="AKUNTAN">AKUNTAN</option>
-                <option value="MARKETING">MARKETING</option>
               </select>
               {isSelf && (
                 <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">

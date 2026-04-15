@@ -104,7 +104,7 @@ export default function PelangganClient({
   currentRole,
 }: {
   initialData: any[];
-  currentRole: "SUPER_ADMIN" | "AKUNTAN" | "MARKETING";
+  currentRole: "SUPER_ADMIN" | "AKUNTAN";
 }) {
   const [customers, setCustomers] = useState(initialData);
   const [searchTerm, setSearchTerm] = useState("");

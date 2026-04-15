@@ -8,7 +8,7 @@ export async function PUT(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
+    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
     const { id } = await context.params;
     const body = await request.json();
     const { status } = body as { status?: string };

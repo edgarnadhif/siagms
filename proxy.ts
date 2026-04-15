@@ -23,7 +23,7 @@ async function hasValidSession(request: NextRequest) {
   }
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const isAuthenticated = await hasValidSession(request);
   const { pathname } = request.nextUrl;
 

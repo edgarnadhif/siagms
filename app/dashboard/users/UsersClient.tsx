@@ -15,7 +15,7 @@ type ManagedUser = {
   id: number;
   fullName: string | null;
   email: string;
-  role: "SUPER_ADMIN" | "AKUNTAN" | "MARKETING";
+  role: "SUPER_ADMIN" | "AKUNTAN";
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -25,8 +25,6 @@ const ROLE_STYLE: Record<ManagedUser["role"], string> = {
   SUPER_ADMIN:
     "bg-gray-50 text-slate-700 border-gray-200 dark:bg-slate-700/30 dark:text-gray-200 dark:border-slate-600",
   AKUNTAN:
-    "bg-gray-50 text-slate-700 border-gray-200 dark:bg-slate-700/30 dark:text-gray-200 dark:border-slate-600",
-  MARKETING:
     "bg-gray-50 text-slate-700 border-gray-200 dark:bg-slate-700/30 dark:text-gray-200 dark:border-slate-600",
 };
 
@@ -62,9 +60,7 @@ export default function UsersClient({
       ? "SUPER_ADMIN"
       : roleFilter === "AKUNTAN"
         ? "AKUNTAN"
-        : roleFilter === "MARKETING"
-          ? "MARKETING"
-          : "Semua Role";
+        : "Semua Role";
 
   const selectedStatusLabel =
     statusFilter === "active"
@@ -304,11 +300,10 @@ export default function UsersClient({
               {roleDropdownOpen && (
                 <div className="absolute z-50 right-0 mt-3 w-56 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden flex flex-col p-1.5">
                   {[
-                    { value: "", label: "Semua Role" },
-                    { value: "SUPER_ADMIN", label: "SUPER_ADMIN" },
-                    { value: "AKUNTAN", label: "AKUNTAN" },
-                    { value: "MARKETING", label: "MARKETING" },
-                  ].map((option) => (
+                  { value: "", label: "Semua Role" },
+                  { value: "SUPER_ADMIN", label: "SUPER_ADMIN" },
+                  { value: "AKUNTAN", label: "AKUNTAN" },
+                ].map((option) => (
                     <button
                       key={option.label}
                       type="button"

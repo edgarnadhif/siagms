@@ -44,7 +44,10 @@ export async function requireAuth(allowedRoles?: AppRole[]) {
     throw new AuthorizationError("Akses ditolak", 403);
   }
 
-  return user;
+  return {
+    ...user,
+    role: user.role as AppRole,
+  };
 }
 
 export function getTenantWhere<T extends object>(

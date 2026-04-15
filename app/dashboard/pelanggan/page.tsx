@@ -3,7 +3,7 @@ import { requireAuth } from "@/lib/auth";
 import PelangganClient from "./PelangganClient";
 
 export default async function PelangganPage() {
-  const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
+  const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
   // Fetch all customers (active & inactive) so client-side toggle works without refetch
   const customers = await prisma.customer.findMany({
     where: { tenantId: auth.tenantId },

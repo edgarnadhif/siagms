@@ -23,7 +23,7 @@ export default async function UsersPage(props: {
             ],
           }
         : {}),
-      ...(roleFilter ? { role: roleFilter as "SUPER_ADMIN" | "AKUNTAN" | "MARKETING" } : {}),
+      ...(roleFilter ? { role: roleFilter as "SUPER_ADMIN" | "AKUNTAN" } : {}),
       ...(statusFilter === "active" ? { isActive: true } : {}),
       ...(statusFilter === "inactive" ? { isActive: false } : {}),
     },

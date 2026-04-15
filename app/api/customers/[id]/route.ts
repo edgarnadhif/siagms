@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
+    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
     const { id } = await context.params;
     const customer = await prisma.customer.findFirst({
       where: getTenantWhere(auth.tenantId, { id }),
@@ -25,7 +25,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
 export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
+    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
     const { id } = await context.params;
     const body = await request.json();
 
@@ -93,7 +93,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
+    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
     const { id } = await context.params;
     const body = await request.json();
 

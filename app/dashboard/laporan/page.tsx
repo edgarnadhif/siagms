@@ -76,7 +76,7 @@ function getExpenseLabel(accountCode: string) {
 export default async function LaporanKeuanganPage(props: {
   searchParams?: Promise<SearchParams>;
 }) {
-  const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
+  const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
   const searchParams = await props.searchParams;
   const fromDate = searchParams?.from || "";
   const toDate = searchParams?.to || "";

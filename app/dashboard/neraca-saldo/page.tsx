@@ -29,7 +29,7 @@ function buildProjectEntryWhere(projectId: string): Prisma.JournalEntryWhereInpu
 export default async function NeracaSaldoPage(props: {
   searchParams?: Promise<SearchParams>;
 }) {
-  const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
+  const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
   const searchParams = await props.searchParams;
   const fromDate = searchParams?.from || "";
   const toDate = searchParams?.to || "";

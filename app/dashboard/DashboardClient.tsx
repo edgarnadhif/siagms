@@ -140,6 +140,13 @@ function DonutChart({
   const chartData =
     total > 0 ? data : [{ label: "Belum Ada", value: 1, color: "#FFF0E6" }];
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) {
+    return <div style={{ width: size, height: size }} />;
+  }
+
   return (
     <div
       style={{ width: size, height: size }}
@@ -661,6 +668,9 @@ export default function DashboardClient({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const [chartsMounted, setChartsMounted] = useState(false);
+  useEffect(() => setChartsMounted(true), []);
+
   const totalPages = Math.ceil(recentTransactions.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedTransactions = recentTransactions.slice(
@@ -1099,78 +1109,82 @@ export default function DashboardClient({
       <div className="mb-4 lg:mb-3">
         <Card title="Arus Kas (6 Bulan Terakhir)">
           <div className="h-[320px] w-full mt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart
-                data={cashFlowData}
-                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  vertical={true}
-                  horizontal={true}
-                  stroke="#e2e8f0"
-                  className="dark:stroke-slate-700/50"
-                />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fontSize: 11, fill: "#64748b" }}
-                  tickMargin={10}
-                  axisLine={{ stroke: "#cbd5e1" }}
-                  tickLine={false}
-                />
-                <YAxis
-                  tickFormatter={(val) => formatCompact(val)}
-                  tick={{ fontSize: 11, fill: "#64748b" }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip content={<CashFlowTooltip />} />
-                <Legend
-                  iconType="circle"
-                  wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="masuk"
-                  name="Kas Masuk"
-                  fill="url(#colorMasuk)"
-                  stroke="#22c55e"
-                  strokeWidth={2}
-                  fillOpacity={0.2}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="keluar"
-                  name="Kas Keluar"
-                  fill="url(#colorKeluar)"
-                  stroke="#ef4444"
-                  strokeWidth={2}
-                  fillOpacity={0.2}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="bersih"
-                  name="Arus Bersih (Kumulatif)"
-                  stroke="#1e293b"
-                  strokeWidth={2.5}
-                  strokeDasharray="5 5"
-                  className="dark:stroke-slate-300"
-                  dot={false}
-                  activeDot={{ r: 6 }}
-                />
+            {chartsMounted ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart
+                  data={cashFlowData}
+                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={true}
+                    horizontal={true}
+                    stroke="#e2e8f0"
+                    className="dark:stroke-slate-700/50"
+                  />
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fontSize: 11, fill: "#64748b" }}
+                    tickMargin={10}
+                    axisLine={{ stroke: "#cbd5e1" }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tickFormatter={(val) => formatCompact(val)}
+                    tick={{ fontSize: 11, fill: "#64748b" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip content={<CashFlowTooltip />} />
+                  <Legend
+                    iconType="circle"
+                    wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="masuk"
+                    name="Kas Masuk"
+                    fill="url(#colorMasuk)"
+                    stroke="#22c55e"
+                    strokeWidth={2}
+                    fillOpacity={0.2}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="keluar"
+                    name="Kas Keluar"
+                    fill="url(#colorKeluar)"
+                    stroke="#ef4444"
+                    strokeWidth={2}
+                    fillOpacity={0.2}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="bersih"
+                    name="Arus Bersih (Kumulatif)"
+                    stroke="#1e293b"
+                    strokeWidth={2.5}
+                    strokeDasharray="5 5"
+                    className="dark:stroke-slate-300"
+                    dot={false}
+                    activeDot={{ r: 6 }}
+                  />
 
-                <defs>
-                  <linearGradient id="colorMasuk" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorKeluar" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-              </ComposedChart>
-            </ResponsiveContainer>
+                  <defs>
+                    <linearGradient id="colorMasuk" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="colorKeluar" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                </ComposedChart>
+              </ResponsiveContainer>
+            ) : (
+              <div style={{ height: 320 }} />
+            )}
           </div>
         </Card>
       </div>

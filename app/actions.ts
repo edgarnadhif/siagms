@@ -298,7 +298,7 @@ export async function login(prevState: any, formData: FormData) {
     {
       userId: user.id,
       tenantId: user.tenantId,
-      role: user.role as 'SUPER_ADMIN' | 'AKUNTAN' | 'MARKETING',
+      role: user.role as 'SUPER_ADMIN' | 'AKUNTAN',
     },
     remember,
   )
@@ -306,7 +306,7 @@ export async function login(prevState: any, formData: FormData) {
   redirect('/dashboard')
 }
 
-const MANAGEABLE_ROLES = ['SUPER_ADMIN', 'AKUNTAN', 'MARKETING'] as const
+const MANAGEABLE_ROLES = ['SUPER_ADMIN', 'AKUNTAN'] as const
 
 function isManageableRole(role: string): role is typeof MANAGEABLE_ROLES[number] {
   return MANAGEABLE_ROLES.includes(role as typeof MANAGEABLE_ROLES[number])
@@ -579,7 +579,7 @@ export async function permanentlyDeleteTenantUser(userId: number) {
 }
 
 export async function createProject(prevState: any, formData: FormData) {
-  const auth = await requireAuth(['SUPER_ADMIN', 'MARKETING'])
+  const auth = await requireAuth(['SUPER_ADMIN', 'AKUNTAN'])
   const code = (formData.get('code') as string)?.trim()
   const name = (formData.get('name') as string)?.trim()
   const description = (formData.get('description') as string)?.trim()
@@ -628,7 +628,7 @@ export async function createProject(prevState: any, formData: FormData) {
 }
 
 export async function updateProject(prevState: any, formData: FormData) {
-  const auth = await requireAuth(['SUPER_ADMIN', 'MARKETING'])
+  const auth = await requireAuth(['SUPER_ADMIN', 'AKUNTAN'])
   const id = formData.get('id') as string
   const code = (formData.get('code') as string)?.trim()
   const name = (formData.get('name') as string)?.trim()
@@ -894,7 +894,7 @@ async function resolveTransactionRelations(
 }
 
 export async function updateTransaction(prevState: any, formData: FormData) {
-  const auth = await requireAuth(['SUPER_ADMIN', 'AKUNTAN', 'MARKETING'])
+  const auth = await requireAuth(['SUPER_ADMIN', 'AKUNTAN'])
   const id = formData.get('id') as string
   const reference = formData.get('reference') as string
   const dateStr = formData.get('date') as string
@@ -992,7 +992,7 @@ export async function updateTransaction(prevState: any, formData: FormData) {
 }
 
 export async function createTransaction(prevState: any, formData: FormData) {
-  const auth = await requireAuth(['SUPER_ADMIN', 'AKUNTAN', 'MARKETING'])
+  const auth = await requireAuth(['SUPER_ADMIN', 'AKUNTAN'])
   const reference = formData.get('reference') as string
   const dateStr = formData.get('date') as string
   const description = formData.get('description') as string
