@@ -7,6 +7,10 @@ import { redirect } from 'next/navigation'
 import { createSession, deleteSession } from '@/lib/session'
 import { revalidatePath } from 'next/cache'
 import { getTenantWhere, requireAuth } from '@/lib/auth'
+import {
+  getCompanySettingsByTenantId,
+  upsertCompanySettingsByTenantId,
+} from '@/lib/company-settings'
 
 function slugifyTenantName(value: string) {
   return value
@@ -115,11 +119,6 @@ async function syncUnitStatusFromTransactions(db: DbClient, tenantId: string, un
 
   if (!unit) return
 
-  // Preserve manually advanced statuses from akad/serah-terima workflow.
-  if (unit.status === 'AKAD' || unit.status === 'SERAH_TERIMA') {
-    return
-  }
-
   const revenueTransactions = await db.transaction.findMany({
     where: {
       tenantId,
@@ -132,6 +131,11 @@ async function syncUnitStatusFromTransactions(db: DbClient, tenantId: string, un
   const nextStatus = deriveUnitStatusFromRevenueCategories(
     revenueTransactions.map((item) => item.category),
   )
+
+  // Preserve manually advanced statuses from akad/serah-terima workflow, unless it upgrades to LUNAS.
+  if ((unit.status === 'AKAD' && nextStatus !== 'LUNAS') || unit.status === 'SERAH_TERIMA') {
+    return
+  }
 
   if (unit.status !== nextStatus) {
     await db.unit.update({
@@ -148,22 +152,18 @@ function parseCurrencyInput(value: string | null) {
 
 export async function getCompanyProfile() {
   const auth = await requireAuth()
-  const profile = await prisma.companyProfile.findUnique({
-    where: { tenantId: auth.tenantId },
-  })
-  if (!profile) {
-    return {
-      name: "SIAGMS",
-      logoUrl: "",
-      address: "",
-      phone: "",
-      email: "",
-    }
+  const settings = await getCompanySettingsByTenantId(auth.tenantId)
+
+  return {
+    name: settings.companyName,
+    logoUrl: settings.logoUrl ?? "",
+    address: settings.companyAddress ?? "",
+    phone: settings.companyPhone ?? "",
+    email: settings.companyEmail ?? "",
   }
-  return profile
 }
 
-export async function updateCompanyProfile(prevState: any, formData: FormData) {
+export async function updateCompanyProfile(_prevState: unknown, formData: FormData) {
   const auth = await requireAuth(['SUPER_ADMIN'])
   const name = formData.get('name') as string
   const address = formData.get('address') as string
@@ -171,23 +171,20 @@ export async function updateCompanyProfile(prevState: any, formData: FormData) {
   const email = formData.get('email') as string
   const logoUrl = formData.get('logoUrl') as string // In real app, handle file upload
 
-  const existing = await prisma.companyProfile.findUnique({
-    where: { tenantId: auth.tenantId },
+  await upsertCompanySettingsByTenantId(auth.tenantId, {
+    companyName: name,
+    companyAddress: address,
+    companyPhone: phone,
+    companyEmail: email,
+    logoUrl,
   })
-
-  if (existing) {
-    await prisma.companyProfile.update({
-      where: { id: existing.id },
-      data: { name, address, phone, email, logoUrl },
-    })
-  } else {
-    await prisma.companyProfile.create({
-      data: { tenantId: auth.tenantId, name, address, phone, email, logoUrl },
-    })
-  }
 
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/profil')
+  revalidatePath('/dashboard/settings')
+  revalidatePath('/dashboard/laporan')
+  revalidatePath('/dashboard/buku-besar')
+  revalidatePath('/dashboard/neraca-saldo')
   
   return { message: 'Profile updated successfully' }
 }
@@ -240,6 +237,14 @@ export async function register(prevState: any, formData: FormData) {
         tenantId: tenant.id,
         name: companyName.trim(),
         email: email.trim().toLowerCase(),
+      },
+    })
+
+    await tx.companySettings.create({
+      data: {
+        tenantId: tenant.id,
+        companyName: companyName.trim(),
+        companyEmail: email.trim().toLowerCase(),
       },
     })
   })

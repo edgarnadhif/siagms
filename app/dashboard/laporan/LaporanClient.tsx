@@ -5,6 +5,82 @@ import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import jsPDF from "jspdf";
 
+type ProjectOption = {
+  id: string;
+  code: string;
+  name: string;
+};
+
+type LabaRugiData = {
+  pendapatanPenjualan: number;
+  pendapatanLainLain: number;
+  totalPendapatanLR: number;
+  hpp: number;
+  labaKotor: number;
+  bebanKonstruksi: number;
+  bebanMarketing: number;
+  bebanGaji: number;
+  bebanOperasional: number;
+  bebanLainLain: number;
+  totalBebanOperasional: number;
+  labaBersih: number;
+};
+
+type NeracaData = {
+  kas: number;
+  bank: number;
+  piutangPembeli: number;
+  piutangKPR: number;
+  persediaanUnit: number;
+  bdk: number;
+  tanah: number;
+  totalAset: number;
+  pendDiterimaDiMuka: number;
+  hutangKontraktor: number;
+  hutangUsaha: number;
+  hutangBank: number;
+  totalKewajiban: number;
+  modalDisetor: number;
+  labaDitahan: number;
+  labaBersih: number;
+  totalEkuitas: number;
+};
+
+type ArusKasData = {
+  operasiMasuk: {
+    bookingFee: number;
+    downPayment: number;
+    pencairanKPR: number;
+    pelunasanCash: number;
+    penerimaanLainnya: number;
+  };
+  operasiKeluar: {
+    konstruksi: number;
+    marketing: number;
+    gaji: number;
+    operasional: number;
+    lain: number;
+  };
+  kasBersihOperasi: number;
+  kasBersihInvestasi: number;
+  kasBersihPendanaan: number;
+  saldoAwal: number;
+  saldoAkhir: number;
+  saldoBukuBesar: number;
+};
+
+type LaporanClientProps = {
+  activeTab: string;
+  fromDate: string;
+  toDate: string;
+  projectFilter: string;
+  projects: ProjectOption[];
+  companyName: string;
+  labaRugiData: LabaRugiData;
+  neracaData: NeracaData;
+  arusKasData: ArusKasData;
+};
+
 function formatRupiah(num: number) {
   return "Rp " + num.toLocaleString("id-ID");
 }
@@ -37,7 +113,7 @@ export default function LaporanClient({
   labaRugiData,
   neracaData,
   arusKasData,
-}: any) {
+}: LaporanClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -49,12 +125,6 @@ export default function LaporanClient({
   const [fromDateFocused, setFromDateFocused] = useState(false);
   const [toDateFocused, setToDateFocused] = useState(false);
   const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
-
-  useEffect(() => {
-    setSelectedFromDate(fromDate || "");
-    setSelectedToDate(toDate || "");
-    setSelectedProject(projectFilter || "");
-  }, [fromDate, toDate, projectFilter]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -197,7 +267,7 @@ export default function LaporanClient({
     };
 
     const companyLineY = y;
-    writeCenter("PT Multi Griya Sejahtera", 18, "bold");
+    writeCenter(companyName, 18, "bold");
 
     if (logoDataUrl) {
       const logoWidth = 14;
@@ -340,6 +410,12 @@ export default function LaporanClient({
         "Pelunasan Cash",
         formatRupiah(arusKasData.operasiMasuk.pelunasanCash),
       );
+      if (arusKasData.operasiMasuk.penerimaanLainnya !== 0) {
+        writeRow(
+          "Penerimaan Lainnya",
+          formatRupiah(arusKasData.operasiMasuk.penerimaanLainnya),
+        );
+      }
 
       y += 8;
       writeSection("AKTIVITAS OPERASI - KAS KELUAR");
@@ -379,6 +455,11 @@ export default function LaporanClient({
       writeRow(
         "SALDO KAS AWAL PERIODE",
         formatRupiah(arusKasData.saldoAwal),
+        true,
+      );
+      writeRow(
+        "KENAIKAN/PENURUNAN KAS",
+        formatRupiah(arusKasData.kasBersihOperasi),
         true,
       );
       writeRow(
@@ -500,7 +581,7 @@ export default function LaporanClient({
                 className="w-full h-11 pl-5 pr-10 border-0 bg-transparent text-sm font-bold text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-left"
               >
                 {selectedProject
-                  ? projects.find((p: any) => p.id === selectedProject)?.name ||
+                  ? projects.find((p) => p.id === selectedProject)?.name ||
                     "Semua Proyek"
                   : "Semua Proyek"}
               </button>
@@ -529,7 +610,7 @@ export default function LaporanClient({
                   >
                     Semua Proyek
                   </button>
-                  {projects.map((p: any) => (
+                  {projects.map((p) => (
                     <button
                       key={p.id}
                       type="button"
@@ -604,7 +685,7 @@ export default function LaporanClient({
             </div>
             <div className="flex-1 text-center -ml-12">
               <h2 className="text-3xl font-bold text-slate-900 dark:text-white leading-tight">
-                PT Multi Griya Sejahtera
+                {companyName}
               </h2>
               <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mt-1 leading-tight">
                 {reportTitle}
@@ -816,6 +897,14 @@ export default function LaporanClient({
                 {formatRupiah(arusKasData.operasiMasuk.pelunasanCash)}
               </span>
             </div>
+            {arusKasData.operasiMasuk.penerimaanLainnya !== 0 && (
+              <div className="flex justify-between pl-6 text-slate-700 dark:text-slate-300">
+                <span>Penerimaan Lainnya</span>
+                <span>
+                  {formatRupiah(arusKasData.operasiMasuk.penerimaanLainnya)}
+                </span>
+              </div>
+            )}
 
             <div className="font-semibold text-slate-800 dark:text-slate-200 mt-4">
               Pengeluaran kas untuk operasi:
@@ -881,6 +970,10 @@ export default function LaporanClient({
             <div className="flex justify-between font-semibold text-sm pt-2 text-slate-600">
               <span>SALDO KAS AWAL PERIODE</span>
               <span>{formatRupiah(arusKasData.saldoAwal)}</span>
+            </div>
+            <div className="flex justify-between font-semibold text-sm pt-2 text-slate-600">
+              <span>KENAIKAN/PENURUNAN KAS</span>
+              <span>{formatRupiah(arusKasData.kasBersihOperasi)}</span>
             </div>
             <div className="flex justify-between font-black text-lg border-t-2 border-slate-900 dark:border-slate-200 pt-3 mt-2 text-[#EA6C00]">
               <span>SALDO KAS AKHIR PERIODE</span>

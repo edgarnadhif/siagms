@@ -215,6 +215,7 @@ export default function AddTransaksiModal({
     : "Tanpa proyek";
 
   const unitObj = units?.find((u) => u.id === selectedUnit);
+  const displayedUnits = selectedProj ? units?.filter((u) => u.projectId === selectedProj) : units;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
@@ -524,7 +525,7 @@ export default function AddTransaksiModal({
                   : "Opsional untuk kategori ini"}
               </p>
               {unitOpen && (
-                <div className="absolute z-[60] left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-[10px] shadow-xl py-2">
+                <div className="absolute z-[60] left-0 right-0 mt-1 max-h-80 overflow-y-auto bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-[10px] shadow-xl py-2">
                   <button
                     type="button"
                     onClick={() => handleSelectUnit("")}
@@ -535,29 +536,35 @@ export default function AddTransaksiModal({
                   <div className="px-4 py-1 mb-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-slate-700/30">
                     Daftar Unit Terjual/Booking
                   </div>
-                  {units?.map((u) => (
-                    <button
-                      key={u.id}
-                      type="button"
-                      onClick={() => handleSelectUnit(u.id)}
-                      className={`block w-full text-left px-4 py-2.5 transition-colors border-l-4 ${
-                        selectedUnit === u.id
-                          ? "bg-[#FFF0E6] dark:bg-orange-950/30 border-[#EA6C00]"
-                          : "border-transparent hover:bg-gray-50 dark:hover:bg-slate-700"
-                      }`}
-                    >
-                      <div className="flex flex-col">
-                        <span
-                          className={`text-sm font-bold ${selectedUnit === u.id ? "text-[#EA6C00]" : "text-gray-700 dark:text-gray-200"}`}
-                        >
-                          {u.unitCode} - Blok {u.blockName} No.{u.unitNumber}
-                        </span>
-                        <span className="text-[11px] text-gray-500">
-                          {u.customer?.name || "Tanpa Pelanggan"} • {u.status}
-                        </span>
-                      </div>
-                    </button>
-                  ))}
+                  {displayedUnits?.length === 0 ? (
+                    <div className="px-4 py-3 text-sm text-center text-gray-500 italic">
+                      Tidak ada unit di proyek ini
+                    </div>
+                  ) : (
+                    displayedUnits?.map((u) => (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => handleSelectUnit(u.id)}
+                        className={`block w-full text-left px-4 py-2.5 transition-colors border-l-4 ${
+                          selectedUnit === u.id
+                            ? "bg-[#FFF0E6] dark:bg-orange-950/30 border-[#EA6C00]"
+                            : "border-transparent hover:bg-gray-50 dark:hover:bg-slate-700"
+                        }`}
+                      >
+                        <div className="flex flex-col">
+                          <span
+                            className={`text-sm font-bold ${selectedUnit === u.id ? "text-[#EA6C00]" : "text-gray-700 dark:text-gray-200"}`}
+                          >
+                            {u.unitCode} - Blok {u.blockName} No.{u.unitNumber}
+                          </span>
+                          <span className="text-[11px] text-gray-500">
+                            {u.customer?.name || "Tanpa Pelanggan"} • {u.status}
+                          </span>
+                        </div>
+                      </button>
+                    ))
+                  )}
                 </div>
               )}
             </div>

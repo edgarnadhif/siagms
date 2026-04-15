@@ -508,7 +508,8 @@ export default function UnitDetailModal({ unitId, onClose, onCancelSuccess }: Un
   const CANCELLABLE_STATUSES = ["BOOKING", "INDENT"];
   const canCancel = CANCELLABLE_STATUSES.includes(unit.status);
   const canProcessAkad = unit.status === "INDENT";
-  const canInputPencairan = unit.status === "AKAD" && latestAkad;
+  const sudahCair = unit.transactions.some((t: any) => t.category === "PENCAIRAN_KPR");
+  const canInputPencairan = unit.status === "AKAD" && latestAkad && !sudahCair;
 
   const getStatusStep = (status: string) => {
     const steps = ["TERSEDIA", "BOOKING", "INDENT", "AKAD", "LUNAS", "SERAH_TERIMA"];

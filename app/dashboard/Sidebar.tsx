@@ -17,7 +17,7 @@ export default function Sidebar({
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const pathname = usePathname();
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [companyProfile, setCompanyProfile] = useState<{
@@ -121,8 +121,8 @@ export default function Sidebar({
           roles: ["SUPER_ADMIN"],
         },
         {
-          title: "Profil Perusahaan",
-          href: "/dashboard/profil",
+          title: "Pengaturan Perusahaan",
+          href: "/dashboard/settings",
           icon: "/domain.svg",
           roles: ["SUPER_ADMIN"],
         },

@@ -3,9 +3,14 @@
 import React, { useState } from "react";
 import { cleanupDuplicateSTJournals } from "@/app/actions";
 
+type CleanupResult = {
+  error?: string;
+  message?: string;
+};
+
 export default function SettingsClient({ actionType }: { actionType: string }) {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<CleanupResult | null>(null);
 
   const handleCleanupST = async () => {
     if (!confirm("Konfirmasi perbaikan jurnal ST BA-ST yang dobel atau nominalnya salah? Aksi ini tidak dapat dibatalkan.")) return;
@@ -13,8 +18,10 @@ export default function SettingsClient({ actionType }: { actionType: string }) {
     try {
       const res = await cleanupDuplicateSTJournals();
       setResult(res);
-    } catch (err: any) {
-      setResult({ error: err.message });
+    } catch (err: unknown) {
+      setResult({
+        error: err instanceof Error ? err.message : "Gagal menjalankan cleanup",
+      });
     } finally {
       setLoading(false);
     }

@@ -20,6 +20,12 @@ const categoryConfig: Record<TransactionCategory, { label: string; bg: string; t
     text: "#C2410C",
     border: "#FED7AA",
   },
+  ANGSURAN_KPR: {
+    label: "Angsuran KPR",
+    bg: "#F0FDF4",
+    text: "#15803D",
+    border: "#BBF7D0",
+  },
   PELUNASAN_CASH: {
     label: "Pelunasan Cash",
     bg: "#FFF7ED",

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
+import { getCompanySettingsByTenantId } from "@/lib/company-settings";
 import BukuBesarClient from "./BukuBesarClient";
 
 type SearchParams = {
@@ -45,7 +46,7 @@ export default async function BukuBesarPage(props: {
   const fromDateObj = fromDate ? new Date(fromDate) : null;
   const toDateObj = toDate ? new Date(`${toDate}T23:59:59`) : null;
 
-  const [allAccounts, projects, company] = await Promise.all([
+  const [allAccounts, projects, companySettings] = await Promise.all([
     prisma.account.findMany({
       where: { tenantId: auth.tenantId, isActive: true },
       select: { id: true, code: true, name: true, type: true, normalBalance: true },
@@ -56,10 +57,7 @@ export default async function BukuBesarPage(props: {
       select: { id: true, code: true, name: true },
       orderBy: { name: "asc" },
     }),
-    prisma.companyProfile.findFirst({
-      where: { tenantId: auth.tenantId },
-      select: { name: true },
-    }),
+    getCompanySettingsByTenantId(auth.tenantId),
   ]);
 
   const currentPeriodWhere = {
@@ -263,7 +261,7 @@ export default async function BukuBesarPage(props: {
   return (
     <BukuBesarClient
       key={`${accountFilter}|${projectFilter}|${fromDate}|${toDate}`}
-      companyName={company?.name || "SIAGMS"}
+      companyName={companySettings.companyName}
       allAccounts={allAccounts}
       projects={projects}
       ledgerAccounts={ledgerAccounts}

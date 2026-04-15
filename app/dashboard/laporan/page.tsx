@@ -1,24 +1,80 @@
-import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
+
 import { requireAuth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { getCompanySettingsByTenantId } from "@/lib/company-settings";
+
 import LaporanClient from "./LaporanClient";
 
-const PENDAPATAN_DIAKUI_CATEGORIES = [
-  "BOOKING_FEE",
-  "DOWN_PAYMENT",
-  "PENCAIRAN_KPR",
-  "PELUNASAN_CASH",
-] as const;
+type SearchParams = {
+  from?: string;
+  to?: string;
+  project?: string;
+  tab?: string;
+};
 
-const LABA_RUGI_BEBAN_CATEGORIES = [
-  "BIAYA_KONSTRUKSI",
-  "BIAYA_MARKETING",
-  "BIAYA_GAJI",
-  "BIAYA_OPERASIONAL",
-  "LAIN_LAIN",
-] as const;
+function buildDateFilter(fromDate: string, toDate: string) {
+  const filter: Prisma.DateTimeFilter = {};
+
+  if (fromDate) {
+    filter.gte = new Date(fromDate);
+  }
+
+  if (toDate) {
+    filter.lte = new Date(`${toDate}T23:59:59`);
+  }
+
+  return Object.keys(filter).length > 0 ? filter : undefined;
+}
+
+function buildProjectEntryWhere(projectId: string): Prisma.JournalEntryWhereInput {
+  if (!projectId) {
+    return {};
+  }
+
+  return {
+    OR: [
+      { unit: { is: { projectId } } },
+      { transaction: { is: { unit: { projectId } } } },
+      { transaction: { is: { projectId, unitId: null } } },
+    ],
+  };
+}
+
+function buildJournalEntryWhere(
+  tenantId: string,
+  fromDate: string,
+  toDate: string,
+  projectId: string,
+): Prisma.JournalEntryWhereInput {
+  const dateFilter = buildDateFilter(fromDate, toDate);
+
+  return {
+    tenantId,
+    ...(dateFilter ? { date: dateFilter } : {}),
+    ...buildProjectEntryWhere(projectId),
+  };
+}
+
+function getExpenseLabel(accountCode: string) {
+  switch (accountCode) {
+    case "5200":
+      return "bebanKonstruksi";
+    case "5300":
+      return "bebanMarketing";
+    case "5400":
+      return "bebanGaji";
+    case "5500":
+      return "bebanOperasional";
+    case "5600":
+      return "bebanLainLain";
+    default:
+      return null;
+  }
+}
 
 export default async function LaporanKeuanganPage(props: {
-  searchParams?: Promise<{ from?: string; to?: string; project?: string; tab?: string }>;
+  searchParams?: Promise<SearchParams>;
 }) {
   const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN", "MARKETING"]);
   const searchParams = await props.searchParams;
@@ -27,40 +83,188 @@ export default async function LaporanKeuanganPage(props: {
   const projectFilter = searchParams?.project || "";
   const activeTab = searchParams?.tab || "laba_rugi";
 
-  const dateFilter: any = {};
-  if (fromDate) dateFilter.gte = new Date(fromDate);
-  if (toDate) dateFilter.lte = new Date(toDate + "T23:59:59");
-  const dateWhereStr = (fromDate || toDate) ? { date: dateFilter } : {};
-  const projectWhereStr = projectFilter
-    ? {
-        OR: [
-          { unit: { is: { projectId: projectFilter } } },
-          { transaction: { is: { unit: { projectId: projectFilter } } } },
-          { transaction: { is: { projectId: projectFilter, unitId: null } } },
-        ],
-      }
-    : {};
+  const periodEntryWhere = buildJournalEntryWhere(
+    auth.tenantId,
+    fromDate,
+    toDate,
+    projectFilter,
+  );
 
-  // 1. Get all journals for the period
-  const entries = await prisma.journalEntry.findMany({
-    where: { tenantId: auth.tenantId, ...dateWhereStr, ...projectWhereStr },
-    include: {
-      account: { select: { code: true, name: true, type: true, normalBalance: true } },
-    },
-  });
+  const openingDate = fromDate ? new Date(fromDate) : null;
+  const projectEntryWhere = buildProjectEntryWhere(projectFilter);
+  const endingDateFilter = toDate
+    ? ({ lte: new Date(`${toDate}T23:59:59`) } satisfies Prisma.DateTimeFilter)
+    : undefined;
 
-  const balances = new Map<string, number>(); // code -> balance
-  // Helper to calculate exact balances
+  const [
+    entries,
+    expenseAccounts,
+    openingCashEntries,
+    cashLedgerBalance,
+    projects,
+    companySettings,
+  ] = await Promise.all([
+    prisma.journalEntry.findMany({
+      where: periodEntryWhere,
+      include: {
+        account: {
+          select: {
+            code: true,
+            name: true,
+            type: true,
+            normalBalance: true,
+          },
+        },
+        transaction: {
+          select: {
+            category: true,
+          },
+        },
+      },
+      orderBy: [{ date: "asc" }, { createdAt: "asc" }],
+    }),
+    prisma.account.findMany({
+      where: {
+        tenantId: auth.tenantId,
+        type: "BEBAN",
+        code: { startsWith: "5" },
+        isActive: true,
+      },
+      select: {
+        code: true,
+        name: true,
+      },
+      orderBy: { code: "asc" },
+    }),
+    openingDate
+      ? prisma.journalEntry.findMany({
+          where: {
+            tenantId: auth.tenantId,
+            account: {
+              code: { in: ["1100", "1200"] },
+            },
+            date: { lt: openingDate },
+            ...projectEntryWhere,
+          },
+          select: {
+            debit: true,
+            credit: true,
+          },
+        })
+      : Promise.resolve([]),
+    prisma.journalEntry.aggregate({
+      where: {
+        tenantId: auth.tenantId,
+        account: {
+          code: { in: ["1100", "1200"] },
+        },
+        ...(endingDateFilter ? { date: endingDateFilter } : {}),
+        ...projectEntryWhere,
+      },
+      _sum: {
+        debit: true,
+        credit: true,
+      },
+    }),
+    prisma.project.findMany({
+      where: { tenantId: auth.tenantId },
+      select: { id: true, code: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+    getCompanySettingsByTenantId(auth.tenantId),
+  ]);
+
+  const balances = new Map<string, number>();
+  const revenueBalances = new Map<string, number>();
+  const expenseBalances = new Map<string, number>();
+
+  const cashFlowData = {
+    bookingFee: 0,
+    downPayment: 0,
+    pencairanKPR: 0,
+    pelunasanCash: 0,
+    penerimaanLainnya: 0,
+    konstruksi: 0,
+    marketing: 0,
+    gaji: 0,
+    operasional: 0,
+    lain: 0,
+  };
+
+  let kasMutasiPeriode = 0;
+
   for (const entry of entries) {
-    const acc = entry.account;
-    const kode = acc.code;
+    const accountCode = entry.account.code;
     const debit = Number(entry.debit);
     const credit = Number(entry.credit);
-    let net = 0;
-    if (acc.normalBalance === "DEBIT") net = debit - credit;
-    else net = credit - debit;
+    const signedBalance =
+      entry.account.normalBalance === "DEBIT"
+        ? debit - credit
+        : credit - debit;
 
-    balances.set(kode, (balances.get(kode) || 0) + net);
+    balances.set(accountCode, (balances.get(accountCode) || 0) + signedBalance);
+
+    if (
+      entry.account.type === "PENDAPATAN" &&
+      accountCode.startsWith("4")
+    ) {
+      revenueBalances.set(
+        accountCode,
+        (revenueBalances.get(accountCode) || 0) + (credit - debit),
+      );
+    }
+
+    if (entry.account.type === "BEBAN" && accountCode.startsWith("5")) {
+      expenseBalances.set(
+        accountCode,
+        (expenseBalances.get(accountCode) || 0) + (debit - credit),
+      );
+    }
+
+    if (accountCode === "1100" || accountCode === "1200") {
+      const cashMutation = debit - credit;
+      kasMutasiPeriode += cashMutation;
+
+      if (cashMutation >= 0) {
+        switch (entry.transaction?.category) {
+          case "BOOKING_FEE":
+            cashFlowData.bookingFee += cashMutation;
+            break;
+          case "DOWN_PAYMENT":
+            cashFlowData.downPayment += cashMutation;
+            break;
+          case "PENCAIRAN_KPR":
+            cashFlowData.pencairanKPR += cashMutation;
+            break;
+          case "PELUNASAN_CASH":
+            cashFlowData.pelunasanCash += cashMutation;
+            break;
+          default:
+            cashFlowData.penerimaanLainnya += cashMutation;
+            break;
+        }
+      } else {
+        const cashOutflow = Math.abs(cashMutation);
+
+        switch (entry.transaction?.category) {
+          case "BIAYA_KONSTRUKSI":
+            cashFlowData.konstruksi += cashOutflow;
+            break;
+          case "BIAYA_MARKETING":
+            cashFlowData.marketing += cashOutflow;
+            break;
+          case "BIAYA_GAJI":
+            cashFlowData.gaji += cashOutflow;
+            break;
+          case "BIAYA_OPERASIONAL":
+            cashFlowData.operasional += cashOutflow;
+            break;
+          default:
+            cashFlowData.lain += cashOutflow;
+            break;
+        }
+      }
+    }
   }
 
   const sumByPrefix = (prefix: string) =>
@@ -68,169 +272,117 @@ export default async function LaporanKeuanganPage(props: {
       .filter(([code]) => code.startsWith(prefix))
       .reduce((sum, [, amount]) => sum + amount, 0);
 
-  // --- TAHAP 2: LABA RUGI ---
-  const transactionLabaRugiWhere = {
-    tenantId: auth.tenantId,
-    ...(fromDate || toDate ? { date: dateFilter } : {}),
-    ...(projectFilter ? { projectId: projectFilter } : {}),
+  const pendapatanPenjualan = revenueBalances.get("4100") || 0;
+  const pendapatanLainLain = Array.from(revenueBalances.entries())
+    .filter(([code]) => code !== "4100")
+    .reduce((sum, [, amount]) => sum + amount, 0);
+  const totalPendapatanLR = Array.from(revenueBalances.values()).reduce(
+    (sum, amount) => sum + amount,
+    0,
+  );
+
+  const hpp = expenseBalances.get("5100") || 0;
+  const labaKotor = totalPendapatanLR - hpp;
+
+  const expenseBreakdown = {
+    bebanKonstruksi: 0,
+    bebanMarketing: 0,
+    bebanGaji: 0,
+    bebanOperasional: 0,
+    bebanLainLain: 0,
   };
 
-  const pendapatanPenjualanAgg = await prisma.transaction.aggregate({
-    where: {
-      ...transactionLabaRugiWhere,
-      category: {
-        in: [...PENDAPATAN_DIAKUI_CATEGORIES],
-      },
-      unit: {
-        is: {
-          tenantId: auth.tenantId,
-          status: { in: ["LUNAS", "SERAH_TERIMA"] },
-          ...(projectFilter ? { projectId: projectFilter } : {}),
-        },
-      },
-    },
-    _sum: { amount: true },
-  });
+  for (const account of expenseAccounts) {
+    const key = getExpenseLabel(account.code);
 
-  const bebanAgg = await prisma.transaction.groupBy({
-    by: ["category"],
-    where: {
-      ...transactionLabaRugiWhere,
-      category: {
-        in: [...LABA_RUGI_BEBAN_CATEGORIES],
-      },
-    },
-    _sum: { amount: true },
-  });
+    if (!key) {
+      continue;
+    }
 
-  const getBeban = (category: string) =>
-    Number(bebanAgg.find((item) => item.category === category)?._sum.amount || 0);
+    expenseBreakdown[key] = expenseBalances.get(account.code) || 0;
+  }
 
-  const pendapatanPenjualan = Number(pendapatanPenjualanAgg._sum.amount || 0);
-  const hpp = 0;
-  const labaKotor = pendapatanPenjualan - hpp;
+  const totalBebanOperasional = Object.values(expenseBreakdown).reduce(
+    (sum, value) => sum + value,
+    0,
+  );
+  const labaBersih = totalPendapatanLR - hpp - totalBebanOperasional;
 
-  const bebanKonstruksi = getBeban("BIAYA_KONSTRUKSI");
-  const bebanMarketing = getBeban("BIAYA_MARKETING");
-  const bebanGaji = getBeban("BIAYA_GAJI");
-  const bebanOperasional = getBeban("BIAYA_OPERASIONAL");
-  const bebanLainLain = getBeban("LAIN_LAIN");
-  const pendapatanLainLain = 0;
-
-  const totalPendapatanLR = pendapatanPenjualan + pendapatanLainLain;
-  const totalBebanOperasional = bebanKonstruksi + bebanMarketing + bebanGaji + bebanOperasional + bebanLainLain;
-  const labaBersih = labaKotor - totalBebanOperasional + pendapatanLainLain;
-  
   const labaRugiData = {
     pendapatanPenjualan,
     pendapatanLainLain,
     totalPendapatanLR,
     hpp,
     labaKotor,
-    bebanKonstruksi,
-    bebanMarketing,
-    bebanGaji,
-    bebanOperasional,
-    bebanLainLain,
+    ...expenseBreakdown,
     totalBebanOperasional,
-    labaBersih
+    labaBersih,
   };
-
-
-  // --- TAHAP 3: NERACA ---
-  const kas = balances.get("1100") || 0;
-  const bank = balances.get("1200") || 0;
-  const piutangPembeli = balances.get("1300") || 0;
-  const piutangKPR = balances.get("1400") || 0;
-  const persediaanUnit = balances.get("1500") || 0;
-
-  const bdk = balances.get("1600") || 0;
-  const tanah = balances.get("1700") || 0;
-  const totalAset = sumByPrefix("1");
-
-  const pendDiterimaDiMuka = balances.get("2100") || 0;
-  const hutangKontraktor = balances.get("2200") || 0;
-  const hutangUsaha = balances.get("2300") || 0;
-  const hutangBank = balances.get("2400") || 0;
-  const totalKewajiban = sumByPrefix("2");
-
-  console.log(
-    "[Laporan Neraca Debug] Kewajiban raw:",
-    JSON.stringify(
-      Array.from(balances.entries())
-        .filter(([code]) => code.startsWith("2"))
-        .map(([code, saldo]) => ({ code, saldo }))
-    )
-  );
-
-  const modalDisetor = balances.get("3100") || 0;
-  const labaDitahan = balances.get("3200") || 0;
-  const labaBerjalan = sumByPrefix("4") - sumByPrefix("5");
-  const totalEkuitas = modalDisetor + labaDitahan + labaBerjalan;
 
   const neracaData = {
-    kas, bank, piutangPembeli, piutangKPR, persediaanUnit, bdk, tanah, totalAset,
-    pendDiterimaDiMuka, hutangKontraktor, hutangUsaha, hutangBank, totalKewajiban,
-    modalDisetor, labaDitahan, labaBersih: labaBerjalan, totalEkuitas
+    kas: balances.get("1100") || 0,
+    bank: balances.get("1200") || 0,
+    piutangPembeli: balances.get("1300") || 0,
+    piutangKPR: balances.get("1400") || 0,
+    persediaanUnit: balances.get("1500") || 0,
+    bdk: balances.get("1600") || 0,
+    tanah: balances.get("1700") || 0,
+    totalAset: sumByPrefix("1"),
+    pendDiterimaDiMuka: balances.get("2100") || 0,
+    hutangKontraktor: balances.get("2200") || 0,
+    hutangUsaha: balances.get("2300") || 0,
+    hutangBank: balances.get("2400") || 0,
+    totalKewajiban: sumByPrefix("2"),
+    modalDisetor: balances.get("3100") || 0,
+    labaDitahan: balances.get("3200") || 0,
+    labaBersih: totalPendapatanLR - sumByPrefix("5"),
+    totalEkuitas:
+      (balances.get("3100") || 0) +
+      (balances.get("3200") || 0) +
+      (totalPendapatanLR - sumByPrefix("5")),
   };
 
+  const saldoAwal = openingCashEntries.reduce((sum, entry) => {
+    return sum + Number(entry.debit) - Number(entry.credit);
+  }, 0);
 
-  // --- TAHAP 4: ARUS KAS ---
-  // Aggregate transactions mapping logic
-  const txFilter = {
-    tenantId: auth.tenantId,
-    ...(fromDate || toDate ? { date: dateFilter } : {}),
-    ...(projectFilter ? { projectId: projectFilter } : {})
-  };
+  const saldoAkhir = saldoAwal + kasMutasiPeriode;
+  const saldoBukuBesar =
+    Number(cashLedgerBalance._sum.debit || 0) -
+    Number(cashLedgerBalance._sum.credit || 0);
 
-  const sums = await prisma.transaction.groupBy({
-    by: ['category'],
-    where: txFilter,
-    _sum: { amount: true }
-  });
-
-  const getSum = (cat: string) => Number(sums.find(s => s.category === cat)?._sum.amount || 0);
-
-  const cfOperasiMasuk = getSum('BOOKING_FEE') + getSum('DOWN_PAYMENT') + getSum('PENCAIRAN_KPR') + getSum('PELUNASAN_CASH');
-  const cfOperasiKeluar = getSum('BIAYA_KONSTRUKSI') + getSum('BIAYA_MARKETING') + getSum('BIAYA_GAJI') + getSum('BIAYA_OPERASIONAL') + getSum('LAIN_LAIN');
-  
   const arusKasData = {
     operasiMasuk: {
-      bookingFee: getSum('BOOKING_FEE'),
-      downPayment: getSum('DOWN_PAYMENT'),
-      pencairanKPR: getSum('PENCAIRAN_KPR'),
-      pelunasanCash: getSum('PELUNASAN_CASH')
+      bookingFee: cashFlowData.bookingFee,
+      downPayment: cashFlowData.downPayment,
+      pencairanKPR: cashFlowData.pencairanKPR,
+      pelunasanCash: cashFlowData.pelunasanCash,
+      penerimaanLainnya: cashFlowData.penerimaanLainnya,
     },
     operasiKeluar: {
-      konstruksi: getSum('BIAYA_KONSTRUKSI'),
-      marketing: getSum('BIAYA_MARKETING'),
-      gaji: getSum('BIAYA_GAJI'),
-      operasional: getSum('BIAYA_OPERASIONAL'),
-      lain: getSum('LAIN_LAIN')
+      konstruksi: cashFlowData.konstruksi,
+      marketing: cashFlowData.marketing,
+      gaji: cashFlowData.gaji,
+      operasional: cashFlowData.operasional,
+      lain: cashFlowData.lain,
     },
-    kasBersihOperasi: cfOperasiMasuk - cfOperasiKeluar,
+    kasBersihOperasi: kasMutasiPeriode,
     kasBersihInvestasi: 0,
     kasBersihPendanaan: 0,
-    saldoAwal: 0, // Simplified, idealnya dihitung semua trx sblm fromDate 
-    saldoAkhir: kas + bank
+    saldoAwal,
+    saldoAkhir,
+    saldoBukuBesar,
   };
-
-
-  const projects = await prisma.project.findMany({
-    where: { tenantId: auth.tenantId },
-    select: { id: true, code: true, name: true },
-    orderBy: { name: "asc" },
-  });
-  const company = await prisma.companyProfile.findFirst({ where: { tenantId: auth.tenantId } });
 
   return (
     <LaporanClient
+      key={`${activeTab}|${fromDate}|${toDate}|${projectFilter}|${companySettings.companyName}`}
       activeTab={activeTab}
       fromDate={fromDate}
       toDate={toDate}
       projectFilter={projectFilter}
       projects={projects}
-      companyName={company?.name || "SIAGMS"}
+      companyName={companySettings.companyName}
       labaRugiData={labaRugiData}
       neracaData={neracaData}
       arusKasData={arusKasData}

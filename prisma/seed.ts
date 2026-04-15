@@ -4,6 +4,24 @@ import { prisma } from '../lib/db';
 async function main() {
   console.log('Mulai melakukan standarisasi & seeding akun...');
 
+  const tenants = await prisma.tenant.findMany({
+    select: { id: true }
+  });
+
+  for (const tenant of tenants) {
+    await prisma.companySettings.upsert({
+      where: { tenantId: tenant.id },
+      update: {},
+      create: {
+        tenantId: tenant.id,
+        companyName: 'CV. Griya Mandiri Sejahtera',
+        companyAddress: 'Jl. Raya Purwokerto No. 45, Banyumas',
+        companyPhone: '0281-123456',
+        companyEmail: 'info@griyamandiri.com',
+      }
+    });
+  }
+
   await prisma.$transaction(async (tx) => {
     // 1. MAPPING AKUN LAMA KE KODE BARU (agar JournalEntry tidak error/breaking)
     const mappings = [

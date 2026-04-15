@@ -29,6 +29,23 @@ interface Project {
   name: string;
 }
 
+interface CustomerOption {
+  id: string;
+  name: string;
+  customerCode?: string;
+  paymentMethod?: string;
+}
+
+interface UnitOption {
+  id: string;
+  unitCode: string;
+  blockName: string;
+  unitNumber: string;
+  status: string;
+  projectId: string;
+  customer?: CustomerOption | null;
+}
+
 function formatRupiah(num: number) {
   return "Rp " + num.toLocaleString("id-ID");
 }
@@ -64,8 +81,8 @@ export default function TransaksiClient({
 }: {
   transactions: Transaction[];
   projects: Project[];
-  units: any[];
-  customers: any[];
+  units: UnitOption[];
+  customers: CustomerOption[];
   search: string;
   category: string;
   projectFilter: string;
@@ -192,11 +209,6 @@ export default function TransaksiClient({
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // Reset to page 1 on filter
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, category, projectFilter]);
-
   const filteredTransactions = transactions.filter((t) => {
     const matchesSearch =
       t.description.toLowerCase().includes(search.toLowerCase()) ||
@@ -207,7 +219,8 @@ export default function TransaksiClient({
   });
 
   const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  const safeCurrentPage = Math.min(currentPage, Math.max(totalPages, 1));
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage;
   const paginatedTransactions = filteredTransactions.slice(
     startIndex,
     startIndex + itemsPerPage,
@@ -218,9 +231,9 @@ export default function TransaksiClient({
     if (totalPages <= 5) {
       for (let i = 1; i <= totalPages; i++) pages.push(i);
     } else {
-      if (currentPage <= 3) {
+      if (safeCurrentPage <= 3) {
         pages.push(1, 2, 3, 4, "...", totalPages);
-      } else if (currentPage >= totalPages - 2) {
+      } else if (safeCurrentPage >= totalPages - 2) {
         pages.push(
           1,
           "...",
@@ -233,9 +246,9 @@ export default function TransaksiClient({
         pages.push(
           1,
           "...",
-          currentPage - 1,
-          currentPage,
-          currentPage + 1,
+          safeCurrentPage - 1,
+          safeCurrentPage,
+          safeCurrentPage + 1,
           "...",
           totalPages,
         );
@@ -297,13 +310,19 @@ export default function TransaksiClient({
                 type="text"
                 placeholder="Cari keterangan atau referensi..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="flex-1 bg-transparent border-none focus:ring-0 outline-none text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 font-medium"
               />
               {search && (
                 <button
                   type="button"
-                  onClick={() => setSearch("")}
+                  onClick={() => {
+                    setSearch("");
+                    setCurrentPage(1);
+                  }}
                   className="p-1 text-gray-300 hover:text-gray-500 transition-colors"
                   title="Hapus pencarian"
                 >
@@ -356,10 +375,11 @@ export default function TransaksiClient({
                 <div className="absolute z-50 right-0 mt-3 w-56 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden flex flex-col p-1.5 animate-in fade-in zoom-in-95 duration-200">
                   <button
                     type="button"
-                    onClick={() => {
-                      setCategory("");
-                      setCatDropdownOpen(false);
-                    }}
+                      onClick={() => {
+                        setCategory("");
+                        setCurrentPage(1);
+                        setCatDropdownOpen(false);
+                      }}
                     className={`text-left px-3 py-2 text-sm font-semibold rounded-md transition-colors ${category === "" ? "bg-[#EA6C00] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"}`}
                   >
                     Semua Kategori
@@ -380,6 +400,7 @@ export default function TransaksiClient({
                       key={cat}
                       onClick={() => {
                         setCategory(cat);
+                        setCurrentPage(1);
                         setCatDropdownOpen(false);
                       }}
                       className={`text-left px-3 py-2 text-sm font-semibold rounded-md transition-colors ${category === cat ? "bg-[#EA6C00] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"}`}
@@ -426,6 +447,7 @@ export default function TransaksiClient({
                     type="button"
                     onClick={() => {
                       setProjectFilter("");
+                      setCurrentPage(1);
                       setProjDropdownOpen(false);
                     }}
                     className={`text-left px-3 py-2 text-sm font-semibold rounded-md transition-colors ${projectFilter === "" ? "bg-[#EA6C00] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"}`}
@@ -438,6 +460,7 @@ export default function TransaksiClient({
                       key={p.id}
                       onClick={() => {
                         setProjectFilter(p.id);
+                        setCurrentPage(1);
                         setProjDropdownOpen(false);
                       }}
                       className={`text-left px-3 py-2 text-sm font-semibold rounded-md transition-colors ${projectFilter === p.id ? "bg-[#EA6C00] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"}`}
@@ -522,7 +545,7 @@ export default function TransaksiClient({
                 Belum ada transaksi
               </p>
               <p className="text-sm text-gray-400 mt-1 italic">
-                Klik "Tambah Transaksi" untuk memulai pencatatan.
+                Klik &quot;Tambah Transaksi&quot; untuk memulai pencatatan.
               </p>
             </div>
           ) : (
@@ -705,7 +728,7 @@ export default function TransaksiClient({
                   onClick={() =>
                     setCurrentPage((prev) => Math.max(1, prev - 1))
                   }
-                  disabled={currentPage === 1}
+                  disabled={safeCurrentPage === 1}
                   className="p-2 text-gray-400 hover:text-[#EA6C00] disabled:opacity-30 disabled:hover:text-gray-400 transition-colors"
                 >
                   <svg
@@ -732,7 +755,7 @@ export default function TransaksiClient({
                     }
                     disabled={page === "..."}
                     className={`min-w-[32px] h-8 flex items-center justify-center rounded-lg text-sm font-bold transition-all ${
-                      currentPage === page
+                      safeCurrentPage === page
                         ? "bg-[#FFF0E6] text-[#EA6C00]"
                         : page === "..."
                           ? "text-gray-400 cursor-default"
@@ -747,7 +770,7 @@ export default function TransaksiClient({
                   onClick={() =>
                     setCurrentPage((prev) => Math.min(totalPages, prev + 1))
                   }
-                  disabled={currentPage === totalPages}
+                  disabled={safeCurrentPage === totalPages || totalPages === 0}
                   className="p-2 text-gray-400 hover:text-[#EA6C00] disabled:opacity-30 disabled:hover:text-gray-400 transition-colors"
                 >
                   <svg

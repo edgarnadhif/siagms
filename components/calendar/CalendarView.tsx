@@ -39,6 +39,18 @@ export interface ICalendarEvent {
   isLocked?: boolean;
 }
 
+type CalendarDisplayEvent = ICalendarEvent & {
+  start: Date;
+  end: Date;
+};
+
+type CalendarToolbarProps = {
+  label: string;
+  onNavigate: (action: "PREV" | "NEXT" | "TODAY" | "DATE") => void;
+  onView: (view: string) => void;
+  view: string;
+};
+
 function parseInitialDate(input?: string) {
   if (!input) return new Date();
   const parsed = new Date(input);
@@ -140,7 +152,7 @@ export default function CalendarView({
     setIsModalOpen(true);
   };
 
-  const handleSelectEvent = (event: any) => {
+  const handleSelectEvent = (event: CalendarDisplayEvent) => {
     setSelectedEvent(event);
     setFormData({
       title: event.title || "",
@@ -159,7 +171,7 @@ export default function CalendarView({
     setIsModalOpen(true);
   };
 
-  const eventPropGetter = (event: any) => {
+  const eventPropGetter = (event: ICalendarEvent) => {
     let backgroundColor = "#378ADD"; // MANUAL
     if (event.status === "DONE") {
       backgroundColor = "#639922"; // DONE green
@@ -186,7 +198,7 @@ export default function CalendarView({
     .sort((a, b) => +new Date(a.start) - +new Date(b.start))
     .slice(0, 6);
 
-  const Toolbar = (toolbarProps: any) => {
+  const Toolbar = (toolbarProps: CalendarToolbarProps) => {
     const {
       label,
       onNavigate: navigate,
@@ -422,10 +434,12 @@ export default function CalendarView({
                 date={date}
                 view={Views.MONTH}
                 views={[Views.MONTH]}
-                onNavigate={(nextDate) => setDate(nextDate)}
+                onNavigate={(nextDate: Date) => setDate(nextDate)}
                 selectable
-                onSelectSlot={({ start }) => setDate(start)}
-                onDrillDown={(nextDate) => setDate(nextDate)}
+                onSelectSlot={({ start }: { start: Date; end: Date }) =>
+                  setDate(start)
+                }
+                onDrillDown={(nextDate: Date) => setDate(nextDate)}
                 components={{ month: { dateHeader: MiniDateHeader } }}
                 toolbar={false}
                 style={{ height: 230 }}
@@ -492,9 +506,9 @@ export default function CalendarView({
                 time: "Waktu",
                 event: "Event",
                 noEventsInRange: "Tidak ada event pada rentang ini.",
-                showMore: (total) => `+${total} lainnya`,
+                showMore: (total: number) => `+${total} lainnya`,
               }}
-              dayPropGetter={(currentDate) =>
+              dayPropGetter={(currentDate: Date) =>
                 isSameDay(currentDate, new Date())
                   ? { className: "cal-today-cell" }
                   : {}

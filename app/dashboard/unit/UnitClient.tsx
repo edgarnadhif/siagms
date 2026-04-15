@@ -364,12 +364,8 @@ export default function UnitClient({
       const result = await response.json();
       if (result.success) {
         setDeleteUnit(null);
-        setUnits((prev) =>
-          prev.map((u) =>
-            u.id === deleteUnit.id ? { ...u, isActive: false } : u,
-          ),
-        );
-        showToast("Data unit berhasil dihapus");
+        setUnits((prev) => prev.filter((u) => u.id !== deleteUnit.id));
+        showToast("Data unit berhasil dihapus secara permanen");
       } else {
         showToast(result.message, "error");
         setDeleteUnit(null);
@@ -801,8 +797,7 @@ export default function UnitClient({
                               </button>
                             )}
                             {/* Delete */}
-                            {DELETABLE_STATUSES.includes(u.status) &&
-                              u.isActive !== false && (
+                            {DELETABLE_STATUSES.includes(u.status) && (
                                 <button
                                   onClick={() => setDeleteUnit(u)}
                                   title="Hapus Unit"

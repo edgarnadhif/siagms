@@ -4,6 +4,19 @@ import React from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import * as xlsx from "xlsx";
 
+type NeracaSaldoItem = {
+  code: string;
+  name: string;
+  finalDebit: number;
+  finalCredit: number;
+};
+
+type ProjectOption = {
+  id: string;
+  code: string;
+  name: string;
+};
+
 function formatRupiah(num: number) {
   return "Rp " + num.toLocaleString("id-ID");
 }
@@ -11,12 +24,14 @@ function formatRupiah(num: number) {
 export default function NeracaSaldoClient({ 
   balances, 
   projects,
+  companyName,
   fromDate,
   toDate,
   projectFilter 
 }: { 
-  balances: any[];
-  projects: any[];
+  balances: NeracaSaldoItem[];
+  projects: ProjectOption[];
+  companyName: string;
   fromDate: string;
   toDate: string;
   projectFilter: string;
@@ -103,6 +118,21 @@ export default function NeracaSaldoClient({
       </div>
 
         <div className="bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-[12px] shadow-sm overflow-hidden mb-10">
+          <div className="px-6 py-6 border-b border-[#E5E7EB] dark:border-slate-700">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                {companyName}
+              </h2>
+              <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mt-1">
+                Neraca Saldo
+              </p>
+              <p className="text-xs text-gray-400 mt-2">
+                {fromDate || toDate
+                  ? `Periode ${fromDate || "..."} s/d ${toDate || "..."}`
+                  : "Semua Periode"}
+              </p>
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left border-collapse">
               <thead className="bg-[#F9FAFB] dark:bg-slate-900 border-b border-[#E5E7EB] dark:border-slate-700">

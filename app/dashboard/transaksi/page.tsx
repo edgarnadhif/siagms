@@ -42,7 +42,13 @@ export default async function TransaksiPage(props: {
   });
 
   const units = await prisma.unit.findMany({
-    where: { tenantId: auth.tenantId, status: { not: "TERSEDIA" } },
+    where: {
+      tenantId: auth.tenantId,
+      OR: [
+        { status: { not: "TERSEDIA" } },
+        { customerId: { not: null } }
+      ]
+    },
     include: { customer: true },
     orderBy: { blockName: "asc" },
   });

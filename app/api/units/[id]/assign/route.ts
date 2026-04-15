@@ -32,13 +32,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         throw new Error("Pelanggan tidak ditemukan");
       }
 
-      const newStatus = customer.paymentMethod === 'KPR' ? 'INDENT' : 'BOOKING';
-
       const updatedUnit = await tx.unit.update({
         where: { id },
         data: {
           customerId: customer.id,
-          status: newStatus as any,
         },
         include: {
           customer: true,

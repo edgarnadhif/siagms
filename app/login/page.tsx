@@ -14,8 +14,12 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (state?.error) {
-      setPassword("");
-      setShowPassword(false);
+      const timeoutId = window.setTimeout(() => {
+        setPassword("");
+        setShowPassword(false);
+      }, 0);
+
+      return () => window.clearTimeout(timeoutId);
     }
   }, [state]);
 

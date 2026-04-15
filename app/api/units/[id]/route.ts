@@ -126,12 +126,11 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
       return NextResponse.json({ success: false, data: null, message: "Unit memiliki riwayat transaksi" }, { status: 403 });
     }
 
-    await prisma.unit.update({
-      where: { id },
-      data: { isActive: false }
+    await prisma.unit.delete({
+      where: { id }
     });
 
-    return NextResponse.json({ success: true, data: null, message: "Unit berhasil dinonaktifkan" });
+    return NextResponse.json({ success: true, data: null, message: "Unit berhasil dihapus permanen" });
   } catch (error: any) {
     return NextResponse.json({ success: false, data: null, message: error.message }, { status: 500 });
   }
