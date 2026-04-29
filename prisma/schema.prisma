@@ -27,6 +27,7 @@ model Tenant {
   serahTerimas    SerahTerima[]
   cancellations   Cancellation[]
   calendarEvents  CalendarEvent[]
+  journalMappings JournalMapping[]
 }
 
 enum Role {
@@ -127,12 +128,15 @@ model Account {
   normalBalance  NormalBalance
   description    String?
   isActive       Boolean        @default(true)
+  isSystem       Boolean        @default(false)
   parentId       String?
   parent         Account?       @relation("SubAccount", fields: [parentId], references: [id])
   children       Account[]      @relation("SubAccount")
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   journalEntries JournalEntry[]
+  debitMappings  JournalMapping[] @relation("DebitMapping")
+  creditMappings JournalMapping[] @relation("CreditMapping")
 
   @@unique([tenantId, code])
   @@index([tenantId, isActive])
@@ -390,4 +394,21 @@ model CalendarEvent {
 
   @@index([tenantId, date])
   @@index([tenantId, createdBy])
+}
+
+model JournalMapping {
+  id              String   @id @default(cuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category        String
+  description     String
+  debitAccountId  String
+  debitAccount    Account  @relation("DebitMapping", fields: [debitAccountId], references: [id])
+  creditAccountId String
+  creditAccount   Account  @relation("CreditMapping", fields: [creditAccountId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([tenantId, category])
+  @@index([tenantId])
 }

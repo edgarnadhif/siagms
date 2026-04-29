@@ -772,6 +772,20 @@ export async function updateAccount(prevState: any, formData: FormData) {
   }
 
   try {
+    // Check if system account
+    const existingAccount = await prisma.account.findFirst({
+      where: { id, tenantId: auth.tenantId },
+      select: { id: true, isSystem: true },
+    })
+
+    if (!existingAccount) {
+      return { error: 'Akun tidak ditemukan' }
+    }
+
+    if (existingAccount.isSystem) {
+      return { error: 'Akun sistem tidak dapat diubah karena digunakan oleh jurnal otomatis' }
+    }
+
     await prisma.account.update({
       where: { id, tenantId: auth.tenantId },
       data: {
@@ -801,6 +815,39 @@ export async function deleteAccount(accountId: string) {
   }
 
   try {
+    // Check if account exists and belongs to tenant
+    const account = await prisma.account.findFirst({
+      where: { id: accountId, tenantId: auth.tenantId },
+      select: { id: true, isSystem: true },
+    })
+
+    if (!account) {
+      return { error: 'Akun tidak ditemukan' }
+    }
+
+    // Prevent deletion of system accounts
+    if (account.isSystem) {
+      return { error: 'Akun sistem tidak dapat dihapus karena digunakan oleh jurnal otomatis' }
+    }
+
+    // Check if account is used in journal mapping
+    const usedInMapping = await prisma.journalMapping.findFirst({
+      where: {
+        tenantId: auth.tenantId,
+        OR: [
+          { debitAccountId: accountId },
+          { creditAccountId: accountId },
+        ],
+      },
+      select: { description: true },
+    })
+
+    if (usedInMapping) {
+      return {
+        error: `Akun tidak dapat dihapus karena digunakan dalam konfigurasi jurnal otomatis kategori: ${usedInMapping.description}. Ubah konfigurasi jurnal terlebih dahulu di Pengaturan → Konfigurasi Jurnal.`,
+      }
+    }
+
     await prisma.account.delete({
       where: { id: accountId, tenantId: auth.tenantId },
     })
@@ -1158,6 +1205,7 @@ export async function deleteTransactions(transactionIds: string[]) {
 
 // ─── AUTO JOURNAL HELPER ────────────────────────────────────────
 
+// Legacy fallback template — used only when JournalMapping is not configured yet.
 const ACCOUNTS_TEMPLATE = {
   bank:             { code: '1200', name: 'Bank',                              type: 'ASET',       normalBalance: 'DEBIT'  },
   pendapatanMuka:   { code: '2100', name: 'Pendapatan Diterima di Muka',       type: 'KEWAJIBAN',  normalBalance: 'KREDIT' },
@@ -1191,66 +1239,96 @@ async function ensureAccount(db: DbClient, tenantId: string, templateKey: keyof 
   return acc;
 }
 
+/**
+ * Get journal accounts from JournalMapping table.
+ * Falls back to legacy hardcoded template if mapping is not found.
+ */
+async function getJournalAccounts(
+  db: DbClient,
+  tenantId: string,
+  category: string
+): Promise<{ debitAccount: { id: string }; creditAccount: { id: string } } | null> {
+  const mapping = await db.journalMapping.findFirst({
+    where: {
+      tenantId,
+      category,
+    },
+    include: {
+      debitAccount: true,
+      creditAccount: true,
+    },
+  })
+
+  if (mapping) {
+    return {
+      debitAccount: mapping.debitAccount,
+      creditAccount: mapping.creditAccount,
+    }
+  }
+
+  return null
+}
+
 async function createAutoJournal(db: DbClient, trans: any) {
   const tenantId = trans.tenantId;
   let entries: { accountId: string; debit: number; credit: number }[] = [];
-  const bank = await ensureAccount(db, tenantId, 'bank');
   const amount = Number(trans.amount);
   const defaultDesc = `Auto Journal - ${trans.description}`;
 
-  switch (trans.category) {
-    case 'BOOKING_FEE':
-    case 'DOWN_PAYMENT':
-    case 'ANGSURAN_KPR': {
-      const pMuka = await ensureAccount(db, tenantId, 'pendapatanMuka');
-      entries.push({ accountId: bank.id, debit: amount, credit: 0 });
-      entries.push({ accountId: pMuka.id, debit: 0, credit: amount });
-      break;
+  // Try JournalMapping first
+  const mappedAccounts = await getJournalAccounts(db, tenantId, trans.category);
+
+  if (mappedAccounts) {
+    entries.push({ accountId: mappedAccounts.debitAccount.id, debit: amount, credit: 0 });
+    entries.push({ accountId: mappedAccounts.creditAccount.id, debit: 0, credit: amount });
+  } else {
+    // Fallback to legacy hardcoded logic if mapping not configured
+    const bank = await ensureAccount(db, tenantId, 'bank');
+
+    switch (trans.category) {
+      case 'BOOKING_FEE':
+      case 'DOWN_PAYMENT':
+      case 'ANGSURAN_KPR':
+      case 'PENCAIRAN_KPR':
+      case 'PELUNASAN_CASH': {
+        const pMuka = await ensureAccount(db, tenantId, 'pendapatanMuka');
+        entries.push({ accountId: bank.id, debit: amount, credit: 0 });
+        entries.push({ accountId: pMuka.id, debit: 0, credit: amount });
+        break;
+      }
+      case 'BIAYA_KONSTRUKSI': {
+        const bKons = await ensureAccount(db, tenantId, 'bebanKonstruksi');
+        entries.push({ accountId: bKons.id, debit: amount, credit: 0 });
+        entries.push({ accountId: bank.id, debit: 0, credit: amount });
+        break;
+      }
+      case 'BIAYA_MARKETING': {
+        const bMkt = await ensureAccount(db, tenantId, 'bebanMarketing');
+        entries.push({ accountId: bMkt.id, debit: amount, credit: 0 });
+        entries.push({ accountId: bank.id, debit: 0, credit: amount });
+        break;
+      }
+      case 'BIAYA_GAJI': {
+        const bGaji = await ensureAccount(db, tenantId, 'bebanGaji');
+        entries.push({ accountId: bGaji.id, debit: amount, credit: 0 });
+        entries.push({ accountId: bank.id, debit: 0, credit: amount });
+        break;
+      }
+      case 'BIAYA_OPERASIONAL': {
+        const bOps = await ensureAccount(db, tenantId, 'bebanOperasional');
+        entries.push({ accountId: bOps.id, debit: amount, credit: 0 });
+        entries.push({ accountId: bank.id, debit: 0, credit: amount });
+        break;
+      }
+      case 'LAIN_LAIN': {
+        const bOps = await ensureAccount(db, tenantId, 'bebanOperasional');
+        entries.push({ accountId: bOps.id, debit: amount, credit: 0 });
+        entries.push({ accountId: bank.id, debit: 0, credit: amount });
+        break;
+      }
+      default:
+        break;
     }
-    case 'PENCAIRAN_KPR': {
-      const pMuka = await ensureAccount(db, tenantId, 'pendapatanMuka');
-      entries.push({ accountId: bank.id, debit: amount, credit: 0 });
-      entries.push({ accountId: pMuka.id, debit: 0, credit: amount });
-      break;
-    }
-    case 'PELUNASAN_CASH': {
-      const pMuka = await ensureAccount(db, tenantId, 'pendapatanMuka');
-      entries.push({ accountId: bank.id, debit: amount, credit: 0 });
-      entries.push({ accountId: pMuka.id, debit: 0, credit: amount });
-      break;
-    }
-    case 'BIAYA_KONSTRUKSI': {
-      const bKons = await ensureAccount(db, tenantId, 'bebanKonstruksi');
-      entries.push({ accountId: bKons.id, debit: amount, credit: 0 });
-      entries.push({ accountId: bank.id, debit: 0, credit: amount });
-      break;
-    }
-    case 'BIAYA_MARKETING': {
-      const bMkt = await ensureAccount(db, tenantId, 'bebanMarketing');
-      entries.push({ accountId: bMkt.id, debit: amount, credit: 0 });
-      entries.push({ accountId: bank.id, debit: 0, credit: amount });
-      break;
-    }
-    case 'BIAYA_GAJI': {
-      const bGaji = await ensureAccount(db, tenantId, 'bebanGaji');
-      entries.push({ accountId: bGaji.id, debit: amount, credit: 0 });
-      entries.push({ accountId: bank.id, debit: 0, credit: amount });
-      break;
-    }
-    case 'BIAYA_OPERASIONAL': {
-      const bOps = await ensureAccount(db, tenantId, 'bebanOperasional');
-      entries.push({ accountId: bOps.id, debit: amount, credit: 0 });
-      entries.push({ accountId: bank.id, debit: 0, credit: amount });
-      break;
-    }
-    case 'LAIN_LAIN': {
-      const bOps = await ensureAccount(db, tenantId, 'bebanOperasional');
-      entries.push({ accountId: bOps.id, debit: amount, credit: 0 });
-      entries.push({ accountId: bank.id, debit: 0, credit: amount });
-      break;
-    }
-    default:
-      break;
   }
 
   if (entries.length > 0) {

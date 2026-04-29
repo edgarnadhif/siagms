@@ -25,6 +25,16 @@ export default async function DaftarAkunPage(props: {
       ...(type ? { type: type as any } : {}),
       isActive: true, // HANYA TAMPILKAN YANG AKTIF
     },
+    select: {
+      id: true,
+      code: true,
+      name: true,
+      type: true,
+      normalBalance: true,
+      description: true,
+      isActive: true,
+      isSystem: true,
+    },
     orderBy: [{ type: "asc" }, { code: "asc" }],
   });
 
