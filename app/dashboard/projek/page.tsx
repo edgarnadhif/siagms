@@ -25,7 +25,7 @@ export default async function ProjectPage({
 }: {
   searchParams: Promise<{ search?: string; status?: string; add?: string }>;
 }) {
-const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
+const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
   const { search = "", status = "", add } = await searchParams;
   const showAddModal = add === "true";
 

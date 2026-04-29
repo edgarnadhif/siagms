@@ -17,6 +17,7 @@ interface JournalMappingItem {
   creditAccountId: string;
   debitAccount: AccountOption;
   creditAccount: AccountOption;
+  isActive: boolean;
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -46,11 +47,19 @@ export default function JournalMappingConfig({
   const [accounts] = useState<AccountOption[]>(initialAccounts);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [savingCategory, setSavingCategory] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [changes, setChanges] = useState<
-    Record<string, { debitAccountId?: string; creditAccountId?: string }>
+    Record<
+      string,
+      {
+        debitAccountId?: string;
+        creditAccountId?: string;
+        isActive?: boolean;
+      }
+    >
   >({});
 
   const fetchMappings = useCallback(async () => {
@@ -75,17 +84,37 @@ export default function JournalMappingConfig({
   }, [fetchMappings]);
 
   const handleChange = (
-    category: string,
-    field: "debitAccountId" | "creditAccountId",
-    value: string
+    mapping: JournalMappingItem,
+    field: "debitAccountId" | "creditAccountId" | "isActive",
+    value: string | boolean
   ) => {
-    setChanges((prev) => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
+    setChanges((prev) => {
+      const nextChange = {
+        ...prev[mapping.category],
         [field]: value,
-      },
-    }));
+      };
+
+      const nextValues = {
+        debitAccountId: nextChange.debitAccountId ?? mapping.debitAccountId,
+        creditAccountId: nextChange.creditAccountId ?? mapping.creditAccountId,
+        isActive: nextChange.isActive ?? mapping.isActive,
+      };
+
+      const changed =
+        nextValues.debitAccountId !== mapping.debitAccountId ||
+        nextValues.creditAccountId !== mapping.creditAccountId ||
+        nextValues.isActive !== mapping.isActive;
+
+      const next = { ...prev };
+
+      if (changed) {
+        next[mapping.category] = nextChange;
+      } else {
+        delete next[mapping.category];
+      }
+
+      return next;
+    });
   };
 
   const getCurrentValue = (
@@ -93,6 +122,10 @@ export default function JournalMappingConfig({
     field: "debitAccountId" | "creditAccountId"
   ) => {
     return changes[mapping.category]?.[field] ?? mapping[field];
+  };
+
+  const getCurrentStatus = (mapping: JournalMappingItem) => {
+    return changes[mapping.category]?.isActive ?? mapping.isActive;
   };
 
   const hasChanges = Object.keys(changes).length > 0;
@@ -116,13 +149,14 @@ export default function JournalMappingConfig({
           changes[category]?.debitAccountId ?? mapping.debitAccountId;
         const creditAccountId =
           changes[category]?.creditAccountId ?? mapping.creditAccountId;
+        const isActive = changes[category]?.isActive ?? mapping.isActive;
 
         const res = await fetch(
           `/api/journal-mappings/${encodeURIComponent(category)}`,
           {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ debitAccountId, creditAccountId }),
+            body: JSON.stringify({ debitAccountId, creditAccountId, isActive }),
           }
         );
 
@@ -150,6 +184,40 @@ export default function JournalMappingConfig({
     } finally {
       setSaving(false);
       setSavingCategory(null);
+    }
+  };
+
+  const handleResetDefaults = async () => {
+    if (
+      !confirm(
+        "Kembalikan semua konfigurasi jurnal otomatis ke default sistem?"
+      )
+    ) {
+      return;
+    }
+
+    setResetting(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      const res = await fetch("/api/journal-mappings", {
+        method: "POST",
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        setError(data.message || "Gagal mereset konfigurasi jurnal");
+        return;
+      }
+
+      setChanges({});
+      setSuccessMessage(data.message || "Konfigurasi berhasil direset");
+      await fetchMappings();
+    } catch {
+      setError("Gagal mereset konfigurasi jurnal");
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -197,7 +265,7 @@ export default function JournalMappingConfig({
           Belum ada konfigurasi jurnal.
         </p>
         <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-          Jalankan script <code className="text-[#EA6C00]">seedJournalMapping.ts</code> untuk mengatur mapping awal.
+          Pastikan daftar akun dasar sudah tersedia untuk tenant ini.
         </p>
       </div>
     );
@@ -252,7 +320,7 @@ export default function JournalMappingConfig({
                     : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
                 }`}
               >
-                {isRevenue ? "↓ Penerimaan" : "↑ Pengeluaran"}
+                {isRevenue ? "Penerimaan" : "Pengeluaran"}
               </span>
               <span className="text-xs text-slate-400 dark:text-slate-500 font-medium tracking-tight">
                 {groupMappings.length} kategori
@@ -282,6 +350,7 @@ export default function JournalMappingConfig({
                   {groupMappings.map((mapping) => {
                     const isChanged = !!changes[mapping.category];
                     const isSavingThis = savingCategory === mapping.category;
+                    const isActive = getCurrentStatus(mapping);
 
                     return (
                       <tr
@@ -289,6 +358,8 @@ export default function JournalMappingConfig({
                         className={`transition-all duration-150 ${
                           isChanged
                             ? "bg-orange-50/50 dark:bg-orange-900/10"
+                            : !isActive
+                              ? "bg-slate-50/60 dark:bg-slate-900/20"
                             : "hover:bg-slate-50/50 dark:hover:bg-slate-700/20"
                         }`}
                       >
@@ -311,7 +382,7 @@ export default function JournalMappingConfig({
                             )}
                             onChange={(e) =>
                               handleChange(
-                                mapping.category,
+                                mapping,
                                 "debitAccountId",
                                 e.target.value
                               )
@@ -333,7 +404,7 @@ export default function JournalMappingConfig({
                             )}
                             onChange={(e) =>
                               handleChange(
-                                mapping.category,
+                                mapping,
                                 "creditAccountId",
                                 e.target.value
                               )
@@ -348,15 +419,38 @@ export default function JournalMappingConfig({
                           </select>
                         </td>
                         <td className="px-5 py-3 text-center">
-                          {isChanged ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                              Berubah
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={isActive}
+                              onClick={() =>
+                                handleChange(mapping, "isActive", !isActive)
+                              }
+                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                isActive
+                                  ? "bg-emerald-500"
+                                  : "bg-gray-300 dark:bg-slate-600"
+                              }`}
+                            >
+                              <span
+                                className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                                  isActive ? "translate-x-5" : "translate-x-1"
+                                }`}
+                              />
+                            </button>
+                            <span
+                              className={`inline-flex min-w-16 justify-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                                isChanged
+                                  ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                                  : isActive
+                                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                                    : "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300"
+                              }`}
+                            >
+                              {isChanged ? "Berubah" : isActive ? "Aktif" : "Nonaktif"}
                             </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-                              Aktif
-                            </span>
-                          )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -369,10 +463,25 @@ export default function JournalMappingConfig({
       })}
 
       {/* Save Button */}
-      <div className="flex justify-end pt-2">
+      <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-2">
+        <button
+          type="button"
+          onClick={handleResetDefaults}
+          disabled={saving || resetting}
+          className="flex items-center justify-center gap-2.5 px-6 py-3 text-sm font-bold rounded-[10px] border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {resetting ? (
+            <>
+              <div className="w-4 h-4 border-2 border-gray-300 border-t-[#EA6C00] rounded-full animate-spin" />
+              Mereset...
+            </>
+          ) : (
+            "Reset Default"
+          )}
+        </button>
         <button
           onClick={handleSaveAll}
-          disabled={!hasChanges || saving}
+          disabled={!hasChanges || saving || resetting}
           className={`flex items-center gap-2.5 px-8 py-3 text-sm font-bold rounded-[10px] transition-all shadow-md ${
             hasChanges
               ? "bg-[#EA6C00] hover:bg-[#C25500] text-white shadow-orange-500/20 active:scale-95"

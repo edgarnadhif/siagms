@@ -164,7 +164,7 @@ export async function getCompanyProfile() {
 }
 
 export async function updateCompanyProfile(_prevState: unknown, formData: FormData) {
-  const auth = await requireAuth(['SUPER_ADMIN'])
+  const auth = await requireAuth(['ADMIN'])
   const name = formData.get('name') as string
   const address = formData.get('address') as string
   const phone = formData.get('phone') as string
@@ -228,7 +228,7 @@ export async function register(prevState: any, formData: FormData) {
         email: email.trim().toLowerCase(),
         password: hashedPassword,
         fullName: fullName.trim(),
-        role: 'SUPER_ADMIN',
+        role: 'ADMIN',
       },
     })
 
@@ -298,7 +298,7 @@ export async function login(prevState: any, formData: FormData) {
     {
       userId: user.id,
       tenantId: user.tenantId,
-      role: user.role as 'SUPER_ADMIN' | 'AKUNTAN',
+      role: user.role as 'ADMIN' | 'AKUNTAN',
     },
     remember,
   )
@@ -306,7 +306,7 @@ export async function login(prevState: any, formData: FormData) {
   redirect('/dashboard')
 }
 
-const MANAGEABLE_ROLES = ['SUPER_ADMIN', 'AKUNTAN'] as const
+const MANAGEABLE_ROLES = ['ADMIN', 'AKUNTAN'] as const
 
 function isManageableRole(role: string): role is typeof MANAGEABLE_ROLES[number] {
   return MANAGEABLE_ROLES.includes(role as typeof MANAGEABLE_ROLES[number])
@@ -316,14 +316,14 @@ async function countActiveSuperAdmins(tenantId: string) {
   return prisma.user.count({
     where: {
       tenantId,
-      role: 'SUPER_ADMIN',
+      role: 'ADMIN',
       isActive: true,
     },
   })
 }
 
 export async function createTenantUser(prevState: any, formData: FormData) {
-  const auth = await requireAuth(['SUPER_ADMIN'])
+  const auth = await requireAuth(['ADMIN'])
   const fullName = (formData.get('fullName') as string)?.trim()
   const email = (formData.get('email') as string)?.trim().toLowerCase()
   const password = formData.get('password') as string
@@ -367,7 +367,7 @@ export async function createTenantUser(prevState: any, formData: FormData) {
 }
 
 export async function updateTenantUser(prevState: any, formData: FormData) {
-  const auth = await requireAuth(['SUPER_ADMIN'])
+  const auth = await requireAuth(['ADMIN'])
   const userIdRaw = formData.get('userId') as string
   const fullName = (formData.get('fullName') as string)?.trim()
   const email = (formData.get('email') as string)?.trim().toLowerCase()
@@ -400,14 +400,14 @@ export async function updateTenantUser(prevState: any, formData: FormData) {
     return { error: 'User tidak ditemukan atau bukan milik tenant ini' }
   }
 
-  if (targetUser.id === auth.id && role !== 'SUPER_ADMIN') {
-    return { error: 'SUPER_ADMIN tidak dapat menurunkan role dirinya sendiri' }
+  if (targetUser.id === auth.id && role !== 'ADMIN') {
+    return { error: 'ADMIN tidak dapat menurunkan role dirinya sendiri' }
   }
 
-  if (targetUser.role === 'SUPER_ADMIN' && role !== 'SUPER_ADMIN') {
+  if (targetUser.role === 'ADMIN' && role !== 'ADMIN') {
     const superAdminCount = await countActiveSuperAdmins(auth.tenantId)
     if (superAdminCount <= 1) {
-      return { error: 'Tenant harus memiliki minimal satu SUPER_ADMIN aktif' }
+      return { error: 'Tenant harus memiliki minimal satu ADMIN aktif' }
     }
   }
 
@@ -450,7 +450,7 @@ export async function updateTenantUser(prevState: any, formData: FormData) {
 }
 
 export async function deactivateTenantUser(userId: number) {
-  const auth = await requireAuth(['SUPER_ADMIN'])
+  const auth = await requireAuth(['ADMIN'])
 
   if (!userId) {
     return { error: 'ID user tidak valid' }
@@ -476,10 +476,10 @@ export async function deactivateTenantUser(userId: number) {
     return { error: 'Anda tidak dapat menghapus akun Anda sendiri' }
   }
 
-  if (targetUser.role === 'SUPER_ADMIN') {
+  if (targetUser.role === 'ADMIN') {
     const superAdminCount = await countActiveSuperAdmins(auth.tenantId)
     if (superAdminCount <= 1) {
-      return { error: 'Tenant harus memiliki minimal satu SUPER_ADMIN aktif' }
+      return { error: 'Tenant harus memiliki minimal satu ADMIN aktif' }
     }
   }
 
@@ -493,7 +493,7 @@ export async function deactivateTenantUser(userId: number) {
 }
 
 export async function activateTenantUser(userId: number) {
-  const auth = await requireAuth(['SUPER_ADMIN'])
+  const auth = await requireAuth(['ADMIN'])
 
   if (!userId) {
     return { error: 'ID user tidak valid' }
@@ -524,7 +524,7 @@ export async function activateTenantUser(userId: number) {
 }
 
 export async function permanentlyDeleteTenantUser(userId: number) {
-  const auth = await requireAuth(['SUPER_ADMIN'])
+  const auth = await requireAuth(['ADMIN'])
 
   if (!userId) {
     return { error: 'ID user tidak valid' }
@@ -554,10 +554,10 @@ export async function permanentlyDeleteTenantUser(userId: number) {
     return { error: 'Nonaktifkan user terlebih dahulu sebelum hapus permanen' }
   }
 
-  if (targetUser.role === 'SUPER_ADMIN') {
+  if (targetUser.role === 'ADMIN') {
     const superAdminCount = await countActiveSuperAdmins(auth.tenantId)
     if (superAdminCount <= 1) {
-      return { error: 'Tenant harus memiliki minimal satu SUPER_ADMIN aktif' }
+      return { error: 'Tenant harus memiliki minimal satu ADMIN aktif' }
     }
   }
 
@@ -579,7 +579,7 @@ export async function permanentlyDeleteTenantUser(userId: number) {
 }
 
 export async function createProject(prevState: any, formData: FormData) {
-  const auth = await requireAuth(['SUPER_ADMIN', 'AKUNTAN'])
+  const auth = await requireAuth(['ADMIN', 'AKUNTAN'])
   const code = (formData.get('code') as string)?.trim()
   const name = (formData.get('name') as string)?.trim()
   const description = (formData.get('description') as string)?.trim()
@@ -628,7 +628,7 @@ export async function createProject(prevState: any, formData: FormData) {
 }
 
 export async function updateProject(prevState: any, formData: FormData) {
-  const auth = await requireAuth(['SUPER_ADMIN', 'AKUNTAN'])
+  const auth = await requireAuth(['ADMIN', 'AKUNTAN'])
   const id = formData.get('id') as string
   const code = (formData.get('code') as string)?.trim()
   const name = (formData.get('name') as string)?.trim()
@@ -686,7 +686,7 @@ export async function updateProject(prevState: any, formData: FormData) {
 }
 
 export async function deleteProject(projectId: string) {
-  const auth = await requireAuth(['SUPER_ADMIN'])
+  const auth = await requireAuth(['ADMIN'])
   if (!projectId) {
     return { error: 'ID proyek tidak valid' }
   }
@@ -722,7 +722,7 @@ export async function deleteProject(projectId: string) {
 // ─── ACCOUNT (Daftar Akun / Chart of Accounts) ──────────────
 
 export async function createAccount(prevState: any, formData: FormData) {
-  const auth = await requireAuth(['SUPER_ADMIN', 'AKUNTAN'])
+  const auth = await requireAuth(['ADMIN', 'AKUNTAN'])
   const code = formData.get('code') as string
   const name = formData.get('name') as string
   const type = formData.get('type') as string
@@ -758,7 +758,7 @@ export async function createAccount(prevState: any, formData: FormData) {
 }
 
 export async function updateAccount(prevState: any, formData: FormData) {
-  const auth = await requireAuth(['SUPER_ADMIN', 'AKUNTAN'])
+  const auth = await requireAuth(['ADMIN', 'AKUNTAN'])
   const id = formData.get('id') as string
   const code = formData.get('code') as string
   const name = formData.get('name') as string
@@ -809,7 +809,7 @@ export async function updateAccount(prevState: any, formData: FormData) {
 }
 
 export async function deleteAccount(accountId: string) {
-  const auth = await requireAuth(['SUPER_ADMIN'])
+  const auth = await requireAuth(['ADMIN'])
   if (!accountId) {
     return { error: 'ID akun tidak valid' }
   }
@@ -941,7 +941,7 @@ async function resolveTransactionRelations(
 }
 
 export async function updateTransaction(prevState: any, formData: FormData) {
-  const auth = await requireAuth(['SUPER_ADMIN', 'AKUNTAN'])
+  const auth = await requireAuth(['ADMIN', 'AKUNTAN'])
   const id = formData.get('id') as string
   const reference = formData.get('reference') as string
   const dateStr = formData.get('date') as string
@@ -1039,7 +1039,7 @@ export async function updateTransaction(prevState: any, formData: FormData) {
 }
 
 export async function createTransaction(prevState: any, formData: FormData) {
-  const auth = await requireAuth(['SUPER_ADMIN', 'AKUNTAN'])
+  const auth = await requireAuth(['ADMIN', 'AKUNTAN'])
   const reference = formData.get('reference') as string
   const dateStr = formData.get('date') as string
   const description = formData.get('description') as string
@@ -1114,7 +1114,7 @@ export async function createTransaction(prevState: any, formData: FormData) {
 }
 
 export async function deleteTransaction(transactionId: string) {
-  const auth = await requireAuth(['SUPER_ADMIN', 'AKUNTAN'])
+  const auth = await requireAuth(['ADMIN', 'AKUNTAN'])
   if (!transactionId) {
     return { error: 'ID transaksi tidak valid' }
   }
@@ -1157,7 +1157,7 @@ export async function deleteTransaction(transactionId: string) {
 }
 
 export async function deleteTransactions(transactionIds: string[]) {
-  const auth = await requireAuth(['SUPER_ADMIN'])
+  const auth = await requireAuth(['ADMIN'])
   if (!transactionIds || transactionIds.length === 0) {
     return { error: 'Tidak ada transaksi yang dipilih' }
   }
@@ -1247,7 +1247,11 @@ async function getJournalAccounts(
   db: DbClient,
   tenantId: string,
   category: string
-): Promise<{ debitAccount: { id: string }; creditAccount: { id: string } } | null> {
+): Promise<
+  | { isActive: true; debitAccount: { id: string }; creditAccount: { id: string } }
+  | { isActive: false }
+  | null
+> {
   const mapping = await db.journalMapping.findFirst({
     where: {
       tenantId,
@@ -1260,7 +1264,12 @@ async function getJournalAccounts(
   })
 
   if (mapping) {
+    if (!mapping.isActive) {
+      return { isActive: false }
+    }
+
     return {
+      isActive: true,
       debitAccount: mapping.debitAccount,
       creditAccount: mapping.creditAccount,
     }
@@ -1271,7 +1280,7 @@ async function getJournalAccounts(
 
 async function createAutoJournal(db: DbClient, trans: any) {
   const tenantId = trans.tenantId;
-  let entries: { accountId: string; debit: number; credit: number }[] = [];
+  const entries: { accountId: string; debit: number; credit: number }[] = [];
   const amount = Number(trans.amount);
   const defaultDesc = `Auto Journal - ${trans.description}`;
 
@@ -1279,6 +1288,10 @@ async function createAutoJournal(db: DbClient, trans: any) {
   const mappedAccounts = await getJournalAccounts(db, tenantId, trans.category);
 
   if (mappedAccounts) {
+    if (!mappedAccounts.isActive) {
+      return;
+    }
+
     entries.push({ accountId: mappedAccounts.debitAccount.id, debit: amount, credit: 0 });
     entries.push({ accountId: mappedAccounts.creditAccount.id, debit: 0, credit: amount });
   } else {
@@ -1351,15 +1364,26 @@ async function createAutoJournal(db: DbClient, trans: any) {
 // ─── JOURNAL ENTRY (Jurnal Umum) ────────────────────────────
 
 export async function createJournalEntries(prevState: any, formData: FormData) {
-  const auth = await requireAuth(['SUPER_ADMIN', 'AKUNTAN'])
+  const auth = await requireAuth(['ADMIN', 'AKUNTAN'])
   const reference = formData.get('reference') as string
   const dateStr = formData.get('date') as string
   const description = formData.get('description') as string
   const transactionId = formData.get('transactionId') as string
+  const scope = (formData.get('scope') as string) || 'GLOBAL'
+  const projectId = (formData.get('projectId') as string) || ''
+  const effectiveProjectId = scope === 'PROJECT' ? projectId : ''
   const entriesJson = formData.get('entries') as string
 
   if (!reference || !dateStr || !description || !entriesJson) {
     return { error: 'Referensi, Tanggal, Keterangan, dan Baris Jurnal wajib diisi' }
+  }
+
+  if (scope !== 'GLOBAL' && scope !== 'PROJECT') {
+    return { error: 'Ruang lingkup jurnal tidak valid' }
+  }
+
+  if (scope === 'PROJECT' && !effectiveProjectId) {
+    return { error: 'Proyek wajib dipilih untuk jurnal per proyek' }
   }
 
   let entries: { accountId: string; debit: number; credit: number }[]
@@ -1383,6 +1407,17 @@ export async function createJournalEntries(prevState: any, formData: FormData) {
   const date = new Date(dateStr)
 
   try {
+    const selectedProject = effectiveProjectId
+      ? await prisma.project.findFirst({
+          where: { id: effectiveProjectId, tenantId: auth.tenantId },
+          select: { id: true },
+        })
+      : null
+
+    if (effectiveProjectId && !selectedProject) {
+      return { error: 'Proyek tidak ditemukan' }
+    }
+
     await prisma.journalEntry.createMany({
       data: entries.map(entry => ({
         tenantId: auth.tenantId,
@@ -1390,6 +1425,7 @@ export async function createJournalEntries(prevState: any, formData: FormData) {
         date,
         description,
         transactionId: transactionId || null,
+        projectId: selectedProject?.id || null,
         accountId: entry.accountId,
         debit: entry.debit || 0,
         credit: entry.credit || 0,
@@ -1406,7 +1442,7 @@ export async function createJournalEntries(prevState: any, formData: FormData) {
 }
 
 export async function deleteJournalEntriesByReference(reference: string) {
-  const auth = await requireAuth(['SUPER_ADMIN', 'AKUNTAN'])
+  const auth = await requireAuth(['ADMIN', 'AKUNTAN'])
   if (!reference) {
     return { error: 'Referensi tidak valid' }
   }
@@ -1428,7 +1464,7 @@ export async function deleteJournalEntriesByReference(reference: string) {
 // ─── REVENUE RECOGNITION (Pengakuan Pendapatan) ─────────────────────────
 
 export async function markProjectTerjual(projectId: string) {
-  const auth = await requireAuth(['SUPER_ADMIN', 'AKUNTAN'])
+  const auth = await requireAuth(['ADMIN', 'AKUNTAN'])
   if (!projectId) {
     return { error: 'ID proyek tidak valid' }
   }
@@ -1532,7 +1568,7 @@ export async function serahTerimaUnit(prevState: any, formData: FormData) {
   const date = new Date(dateStr);
 
   try {
-    const auth = await requireAuth(['SUPER_ADMIN', 'AKUNTAN']);
+    const auth = await requireAuth(['ADMIN', 'AKUNTAN']);
 
     // ── Guard: cek apakah unit sudah diserahterimakan ──
     const unitCheck = await prisma.unit.findFirst({ 
@@ -1661,7 +1697,7 @@ export async function serahTerimaUnit(prevState: any, formData: FormData) {
 // ─── CLEANUP ACTIONS ──────────────────────────────────────────
 
 export async function cleanupDuplicateSTJournals() {
-  const auth = await requireAuth(['SUPER_ADMIN']);
+  const auth = await requireAuth(['ADMIN']);
   
   try {
     const entries = await prisma.journalEntry.findMany({

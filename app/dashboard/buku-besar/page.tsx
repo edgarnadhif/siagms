@@ -11,12 +11,17 @@ type SearchParams = {
 };
 
 function getProjectInfo(entry: {
+  project: { id: string; code: string; name: string } | null;
   transaction: {
     project: { id: string; code: string; name: string } | null;
     unit: { project: { id: string; code: string; name: string } | null } | null;
   } | null;
 }) {
-  const project = entry.transaction?.unit?.project || entry.transaction?.project || null;
+  const project =
+    entry.project ||
+    entry.transaction?.unit?.project ||
+    entry.transaction?.project ||
+    null;
   return project
     ? {
         id: project.id,
@@ -35,7 +40,7 @@ function getProjectInfo(entry: {
 export default async function BukuBesarPage(props: {
   searchParams?: Promise<SearchParams>;
 }) {
-  const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
+  const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
   const searchParams = await props.searchParams;
   const accountFilter = searchParams?.account || "";
   const projectFilter = searchParams?.project || "";
@@ -75,6 +80,9 @@ export default async function BukuBesarPage(props: {
       ? {
           OR: [
             {
+              projectId: selectedProjectId,
+            },
+            {
               unit: {
                 is: {
                   projectId: selectedProjectId,
@@ -103,6 +111,7 @@ export default async function BukuBesarPage(props: {
 
   const includeConfig = {
     account: { select: { id: true, code: true, name: true, type: true, normalBalance: true } },
+    project: { select: { id: true, code: true, name: true } },
     transaction: {
       include: {
         project: { select: { id: true, code: true, name: true } },

@@ -20,7 +20,7 @@ const LABA_RUGI_BEBAN_CATEGORIES = [
 export default async function DashboardPage(props: {
   searchParams?: Promise<{ project?: string }>;
 }) {
-const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
+const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
   const searchParams = await props.searchParams;
   const projectFilter = searchParams?.project && searchParams?.project !== "all" ? searchParams.project : null;
 

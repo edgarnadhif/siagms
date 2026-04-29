@@ -1,7 +1,18 @@
 -- Remap legacy MARKETING users to AKUNTAN before removing the enum value.
-UPDATE "User"
-SET "role" = 'AKUNTAN'
-WHERE "role" = 'MARKETING';
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM pg_enum e
+    JOIN pg_type t ON t.oid = e.enumtypid
+    WHERE t.typname = 'Role'
+      AND e.enumlabel = 'MARKETING'
+  ) THEN
+    UPDATE "User"
+    SET "role" = 'AKUNTAN'
+    WHERE "role"::text = 'MARKETING';
+  END IF;
+END $$;
 
 ALTER TABLE "User" ALTER COLUMN "role" DROP DEFAULT;
 

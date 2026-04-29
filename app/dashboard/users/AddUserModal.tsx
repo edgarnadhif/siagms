@@ -94,7 +94,7 @@ export default function AddUserModal() {
                 defaultValue="AKUNTAN"
                 className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 outline-none focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00]"
               >
-                <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+                <option value="ADMIN">ADMIN</option>
                 <option value="AKUNTAN">AKUNTAN</option>
               </select>
             </div>

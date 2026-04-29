@@ -11,9 +11,22 @@ interface Account {
   name: string;
 }
 
-export default function AddJurnalModal({ accounts }: { accounts: Account[] }) {
+interface Project {
+  id: string;
+  code: string;
+  name: string;
+}
+
+export default function AddJurnalModal({
+  accounts,
+  projects,
+}: {
+  accounts: Account[];
+  projects: Project[];
+}) {
   const [state, formAction, isPending] = useActionState(createJournalEntries, null);
   const router = useRouter();
+  const [scope, setScope] = useState<"GLOBAL" | "PROJECT">("GLOBAL");
 
   const [rows, setRows] = useState([
     { id: 1, accountId: "", debit: 0, credit: 0 },
@@ -104,6 +117,57 @@ export default function AddJurnalModal({ accounts }: { accounts: Account[] }) {
                 />
               </div>
             </div>
+
+            <div className="mb-5">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Ruang Lingkup Jurnal
+              </label>
+              <div className="grid grid-cols-2 gap-2 rounded-lg bg-slate-100 dark:bg-slate-900/50 p-1">
+                <button
+                  type="button"
+                  onClick={() => setScope("GLOBAL")}
+                  className={`h-10 rounded-md text-sm font-bold transition-all ${
+                    scope === "GLOBAL"
+                      ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm"
+                      : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                  }`}
+                >
+                  Global
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScope("PROJECT")}
+                  className={`h-10 rounded-md text-sm font-bold transition-all ${
+                    scope === "PROJECT"
+                      ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm"
+                      : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                  }`}
+                >
+                  Per Proyek
+                </button>
+              </div>
+              <input type="hidden" name="scope" value={scope} />
+            </div>
+
+            {scope === "PROJECT" && (
+              <div className="mb-5">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Proyek <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="projectId"
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-slate-800 dark:text-white outline-none"
+                >
+                  <option value="">Pilih proyek...</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.code} - {project.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="mb-6">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">

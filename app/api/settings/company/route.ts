@@ -12,7 +12,7 @@ function getErrorMessage(error: unknown) {
 
 export async function GET() {
   try {
-    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
+    const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
     const settings = await getCompanySettingsByTenantId(auth.tenantId);
 
     return NextResponse.json(settings);
@@ -26,7 +26,7 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   try {
-    const auth = await requireAuth(["SUPER_ADMIN"]);
+    const auth = await requireAuth(["ADMIN"]);
     const body = (await request.json()) as {
       companyName?: string;
       companyAddress?: string;

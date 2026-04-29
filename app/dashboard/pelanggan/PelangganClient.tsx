@@ -104,7 +104,7 @@ export default function PelangganClient({
   currentRole,
 }: {
   initialData: any[];
-  currentRole: "SUPER_ADMIN" | "AKUNTAN";
+  currentRole: "ADMIN" | "AKUNTAN";
 }) {
   const [customers, setCustomers] = useState(initialData);
   const [searchTerm, setSearchTerm] = useState("");
@@ -759,7 +759,7 @@ export default function PelangganClient({
                                     />
                                   </svg>
                                 </button>
-                                {currentRole === "SUPER_ADMIN" && (
+                                {currentRole === "ADMIN" && (
                                   <button
                                     onClick={() =>
                                       setDeletePermanentCustomer(c)

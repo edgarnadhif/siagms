@@ -1,16 +1,20 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { deleteJournalEntriesByReference } from "@/app/actions";
 import AddJurnalModal from "./AddJurnalModal";
 import StatusBadge from "@/components/ui/StatusBadge";
+import KonfigurasiJurnalModal from "./KonfigurasiJurnalModal";
 
 interface JournalGroup {
   reference: string;
   date: string;
   description: string | null;
+  projectId: string | null;
+  projectCode: string | null;
+  projectName: string | null;
   entries: {
     id: string;
     accountCode: string;
@@ -24,6 +28,12 @@ interface JournalGroup {
 }
 
 interface Account {
+  id: string;
+  code: string;
+  name: string;
+}
+
+interface Project {
   id: string;
   code: string;
   name: string;
@@ -55,16 +65,21 @@ function formatDate(dateStr: string) {
 export default function JurnalUmumClient({
   journals,
   accounts,
+  projects,
+  mappingAccounts,
   search,
   showAddModal,
 }: {
   journals: JournalGroup[];
   accounts: Account[];
+  projects: Project[];
+  mappingAccounts: { id: string; code: string; name: string; isActive: boolean }[];
   search: string;
   showAddModal: boolean;
 }) {
   const router = useRouter();
   const [deletingRef, setDeletingRef] = useState<string | null>(null);
+  const [showConfigModal, setShowConfigModal] = useState(false);
 
   const handleDelete = async (reference: string) => {
     if (!confirm(`Yakin ingin menghapus jurnal ${reference}?`)) return;
@@ -139,17 +154,24 @@ export default function JurnalUmumClient({
             Pencatatan debit dan kredit
           </p>
         </div>
-        <Link
-          href="?add=true"
-          className="flex items-center gap-2 px-5 h-10 bg-[#EA6C00] hover:bg-[#C25500] text-white text-sm font-bold rounded-[10px] shadow-lg shadow-orange-500/20 transition-all active:scale-95 ml-auto w-full md:w-auto justify-center md:justify-start"
-        >
-          <img
-            src="/add.svg"
-            alt="Add"
-            className="w-5 h-5 invert dark:invert-0"
-          />
-          Tambah Jurnal
-        </Link>
+        <div className="flex items-center gap-3 ml-auto w-full md:w-auto">
+          <button
+            onClick={() => setShowConfigModal(true)}
+            className="flex items-center gap-2 px-4 h-10 text-sm font-bold rounded-[10px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:border-[#EA6C00] hover:text-[#EA6C00] transition-all active:scale-95 w-full md:w-auto justify-center"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z" />
+            </svg>
+            Konfigurasi Jurnal
+          </button>
+          <Link
+            href="?add=true"
+            className="flex items-center gap-2 px-5 h-10 bg-[#EA6C00] hover:bg-[#C25500] text-white text-sm font-bold rounded-[10px] shadow-lg shadow-orange-500/20 transition-all active:scale-95 w-full md:w-auto justify-center md:justify-start"
+          >
+            <img src="/add.svg" alt="Add" className="w-5 h-5 invert dark:invert-0" />
+            Tambah Jurnal
+          </Link>
+        </div>
       </div>
 
       {/* Search */}
@@ -263,6 +285,19 @@ export default function JurnalUmumClient({
                     <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
                       {journal.description || "-"}
                     </p>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                          journal.projectId
+                            ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                            : "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300"
+                        }`}
+                      >
+                        {journal.projectId
+                          ? `${journal.projectCode} - ${journal.projectName}`
+                          : "Global"}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-4">
@@ -459,8 +494,14 @@ export default function JurnalUmumClient({
         )}
       </div>
 
-      {/* Add Modal */}
-      {showAddModal && <AddJurnalModal accounts={accounts} />}
+      {/* Modals */}
+      {showAddModal && <AddJurnalModal accounts={accounts} projects={projects} />}
+      {showConfigModal && (
+        <KonfigurasiJurnalModal
+          mappingAccounts={mappingAccounts}
+          onClose={() => setShowConfigModal(false)}
+        />
+      )}
     </div>
   );
 }

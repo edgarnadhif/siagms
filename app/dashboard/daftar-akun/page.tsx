@@ -5,7 +5,7 @@ import DaftarAkunClient from "./DaftarAkunClient";
 export default async function DaftarAkunPage(props: {
   searchParams?: Promise<{ search?: string; type?: string; add?: string }>;
 }) {
-  const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
+  const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
   const searchParams = await props.searchParams;
   const search = searchParams?.search || "";
   const type = searchParams?.type || "";

@@ -5,7 +5,7 @@ import UsersClient from "./UsersClient";
 export default async function UsersPage(props: {
   searchParams?: Promise<{ search?: string; role?: string; status?: string; add?: string }>;
 }) {
-  const auth = await requireAuth(["SUPER_ADMIN"]);
+  const auth = await requireAuth(["ADMIN"]);
   const searchParams = await props.searchParams;
   const search = searchParams?.search || "";
   const roleFilter = searchParams?.role || "";
@@ -23,7 +23,7 @@ export default async function UsersPage(props: {
             ],
           }
         : {}),
-      ...(roleFilter ? { role: roleFilter as "SUPER_ADMIN" | "AKUNTAN" } : {}),
+      ...(roleFilter ? { role: roleFilter as "ADMIN" | "AKUNTAN" } : {}),
       ...(statusFilter === "active" ? { isActive: true } : {}),
       ...(statusFilter === "inactive" ? { isActive: false } : {}),
     },

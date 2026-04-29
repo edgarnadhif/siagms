@@ -5,7 +5,7 @@ import JurnalUmumClient from "./JurnalUmumClient";
 export default async function JurnalUmumPage(props: {
   searchParams?: Promise<{ search?: string; add?: string }>;
 }) {
-  const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
+  const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
   const searchParams = await props.searchParams;
   const search = searchParams?.search || "";
   const showAddModal = searchParams?.add === "true";
@@ -25,6 +25,7 @@ export default async function JurnalUmumPage(props: {
     },
     include: {
       account: { select: { code: true, name: true } },
+      project: { select: { id: true, code: true, name: true } },
     },
     orderBy: [{ date: "desc" }, { reference: "asc" }],
   });
@@ -34,6 +35,9 @@ export default async function JurnalUmumPage(props: {
     reference: string;
     date: string;
     description: string | null;
+    projectId: string | null;
+    projectCode: string | null;
+    projectName: string | null;
     entries: { id: string; accountCode: string; accountName: string; debit: number; credit: number }[];
     totalDebit: number;
     totalCredit: number;
@@ -46,6 +50,9 @@ export default async function JurnalUmumPage(props: {
         reference: entry.reference,
         date: entry.date.toISOString(),
         description: entry.description,
+        projectId: entry.project?.id || null,
+        projectCode: entry.project?.code || null,
+        projectName: entry.project?.name || null,
         entries: [],
         totalDebit: 0,
         totalCredit: 0,
@@ -75,10 +82,25 @@ export default async function JurnalUmumPage(props: {
     orderBy: { code: "asc" },
   });
 
+  // Fetch accounts for journal mapping config modal
+  const mappingAccounts = await prisma.account.findMany({
+    where: { tenantId: auth.tenantId, isActive: true },
+    select: { id: true, code: true, name: true, isActive: true },
+    orderBy: [{ type: "asc" }, { code: "asc" }],
+  });
+
+  const projects = await prisma.project.findMany({
+    where: { tenantId: auth.tenantId },
+    select: { id: true, code: true, name: true },
+    orderBy: { name: "asc" },
+  });
+
   return (
     <JurnalUmumClient
       journals={journals}
       accounts={accounts}
+      projects={projects}
+      mappingAccounts={mappingAccounts}
       search={search}
       showAddModal={showAddModal}
     />

@@ -1,6 +1,10 @@
 import { prisma } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
+import {
+  ensureDefaultJournalMappings,
+  isJournalMappingCategory,
+} from '@/lib/journal-mappings'
 
 export async function PUT(
   request: NextRequest,
@@ -10,7 +14,14 @@ export async function PUT(
     const auth = await requireAuth(['SUPER_ADMIN'])
     const { category } = await params
     const body = await request.json()
-    const { debitAccountId, creditAccountId } = body
+    const { debitAccountId, creditAccountId, isActive } = body
+
+    if (!isJournalMappingCategory(category)) {
+      return NextResponse.json(
+        { success: false, message: 'Kategori transaksi tidak dikenali' },
+        { status: 400 }
+      )
+    }
 
     if (!debitAccountId || !creditAccountId) {
       return NextResponse.json(
@@ -25,6 +36,8 @@ export async function PUT(
         { status: 400 }
       )
     }
+
+    await ensureDefaultJournalMappings(prisma, auth.tenantId)
 
     // Validate both accounts exist and belong to this tenant
     const [debitAccount, creditAccount] = await Promise.all([
@@ -52,6 +65,13 @@ export async function PUT(
       )
     }
 
+    if (!debitAccount.isActive || !creditAccount.isActive) {
+      return NextResponse.json(
+        { success: false, message: 'Akun debit dan kredit harus berstatus aktif' },
+        { status: 400 }
+      )
+    }
+
     // Update the mapping
     const mapping = await prisma.journalMapping.update({
       where: {
@@ -63,6 +83,7 @@ export async function PUT(
       data: {
         debitAccountId,
         creditAccountId,
+        ...(typeof isActive === 'boolean' ? { isActive } : {}),
       },
       include: {
         debitAccount: {

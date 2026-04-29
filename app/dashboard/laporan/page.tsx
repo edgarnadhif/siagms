@@ -34,6 +34,7 @@ function buildProjectEntryWhere(projectId: string): Prisma.JournalEntryWhereInpu
 
   return {
     OR: [
+      { projectId },
       { unit: { is: { projectId } } },
       { transaction: { is: { unit: { projectId } } } },
       { transaction: { is: { projectId, unitId: null } } },
@@ -76,7 +77,7 @@ function getExpenseLabel(accountCode: string) {
 export default async function LaporanKeuanganPage(props: {
   searchParams?: Promise<SearchParams>;
 }) {
-  const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
+  const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
   const searchParams = await props.searchParams;
   const fromDate = searchParams?.from || "";
   const toDate = searchParams?.to || "";

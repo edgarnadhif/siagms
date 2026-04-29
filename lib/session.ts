@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
 const secretKey = process.env.SESSION_SECRET;
 const encodedKey = new TextEncoder().encode(secretKey || "default_secret_key");
 
-export type AppRole = "SUPER_ADMIN" | "AKUNTAN";
+export type AppRole = "ADMIN" | "AKUNTAN";
 
 export type SessionPayload = {
   userId: number;

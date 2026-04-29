@@ -5,7 +5,7 @@ import TransaksiClient from "./TransaksiClient";
 export default async function TransaksiPage(props: {
   searchParams?: Promise<{ search?: string; category?: string; project?: string; add?: string }>;
 }) {
-  const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
+  const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
   const searchParams = await props.searchParams;
   const search = searchParams?.search || "";
   const category = searchParams?.category || "";

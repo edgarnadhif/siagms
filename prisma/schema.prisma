@@ -31,7 +31,7 @@ model Tenant {
 }
 
 enum Role {
-  SUPER_ADMIN
+  ADMIN
   AKUNTAN
 }
 
@@ -84,22 +84,23 @@ enum ProjectStatus {
 }
 
 model Project {
-  id           String        @id @default(cuid())
-  tenantId     String
-  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  code         String
-  name         String
-  description  String?
-  location     String?
-  startDate    DateTime?
-  endDate      DateTime?
-  status       ProjectStatus @default(AKTIF)
-  budget       Decimal       @default(0)
-  handoverDate DateTime?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  transactions Transaction[]
-  units        Unit[]
+  id             String         @id @default(cuid())
+  tenantId       String
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  code           String
+  name           String
+  description    String?
+  location       String?
+  startDate      DateTime?
+  endDate        DateTime?
+  status         ProjectStatus  @default(AKTIF)
+  budget         Decimal        @default(0)
+  handoverDate   DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  transactions   Transaction[]
+  units          Unit[]
+  journalEntries JournalEntry[]
 
   @@unique([tenantId, code])
   @@index([tenantId, status])
@@ -119,21 +120,21 @@ enum NormalBalance {
 }
 
 model Account {
-  id             String         @id @default(cuid())
+  id             String           @id @default(cuid())
   tenantId       String
-  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   code           String
   name           String
   type           AccountType
   normalBalance  NormalBalance
   description    String?
-  isActive       Boolean        @default(true)
-  isSystem       Boolean        @default(false)
+  isActive       Boolean          @default(true)
+  isSystem       Boolean          @default(false)
   parentId       String?
-  parent         Account?       @relation("SubAccount", fields: [parentId], references: [id])
-  children       Account[]      @relation("SubAccount")
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  parent         Account?         @relation("SubAccount", fields: [parentId], references: [id])
+  children       Account[]        @relation("SubAccount")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
   journalEntries JournalEntry[]
   debitMappings  JournalMapping[] @relation("DebitMapping")
   creditMappings JournalMapping[] @relation("CreditMapping")
@@ -229,6 +230,8 @@ model JournalEntry {
   transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: Cascade)
   accountId     String
   account       Account      @relation(fields: [accountId], references: [id])
+  projectId     String?
+  project       Project?     @relation(fields: [projectId], references: [id])
   unitId        String?
   unit          Unit?        @relation(fields: [unitId], references: [id])
   debit         Decimal      @default(0)
@@ -239,6 +242,7 @@ model JournalEntry {
   @@index([tenantId, date])
   @@index([tenantId, reference])
   @@index([tenantId, journalId])
+  @@index([tenantId, projectId])
 }
 
 enum PaymentMethod {
@@ -406,9 +410,11 @@ model JournalMapping {
   debitAccount    Account  @relation("DebitMapping", fields: [debitAccountId], references: [id])
   creditAccountId String
   creditAccount   Account  @relation("CreditMapping", fields: [creditAccountId], references: [id])
+  isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   @@unique([tenantId, category])
   @@index([tenantId])
+  @@index([tenantId, isActive])
 }

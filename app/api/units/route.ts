@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 
 export async function GET(request: Request) {
   try {
-    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
+    const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const projectId = searchParams.get("projectId");
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
+    const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
     const body = await request.json();
 
     let newCode = `UNIT-${body.blockName}${body.unitNumber}`;
