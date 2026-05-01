@@ -15,9 +15,10 @@ type LabaRugiData = {
   pendapatanPenjualan: number;
   pendapatanLainLain: number;
   totalPendapatanLR: number;
+  hppUmum: number;
+  bebanKonstruksi: number;
   hpp: number;
   labaKotor: number;
-  bebanKonstruksi: number;
   bebanMarketing: number;
   bebanGaji: number;
   bebanOperasional: number;
@@ -307,9 +308,14 @@ export default function LaporanClient({
         formatRupiah(labaRugiData.totalPendapatanLR),
         true,
       );
-      y += 3;
+      y += 5;
+      writeRow("HPP - Umum", formatRupiah(labaRugiData.hppUmum));
+      writeRow("Biaya Konstruksi", formatRupiah(labaRugiData.bebanKonstruksi));
+      y += 1;
+      pdf.line(left, y, right, y);
+      y += 7;
       writeRow(
-        "HARGA POKOK PENJUALAN",
+        "TOTAL HARGA POKOK PENJUALAN",
         `(${formatRupiah(labaRugiData.hpp)})`,
         true,
       );
@@ -320,7 +326,6 @@ export default function LaporanClient({
       y += 8;
 
       writeSection("BEBAN OPERASIONAL");
-      writeRow("Beban Konstruksi", formatRupiah(labaRugiData.bebanKonstruksi));
       writeRow("Beban Marketing", formatRupiah(labaRugiData.bebanMarketing));
       writeRow("Beban Gaji", formatRupiah(labaRugiData.bebanGaji));
       writeRow(
@@ -483,7 +488,7 @@ export default function LaporanClient({
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 px-4 md:px-0">
         <div>
           <h1 className="page-title dark:text-gray-100">Laporan Keuangan</h1>
-          <p className="card-subtitle text-gray-400 dark:text-gray-400 mt-3">
+          <p className="card-subtitle text-gray-400 dark:text-gray-400 mt-2">
             Laporan Laba Rugi, Neraca & Arus Kas
           </p>
         </div>
@@ -716,8 +721,19 @@ export default function LaporanClient({
               <span>{formatRupiah(labaRugiData.totalPendapatanLR)}</span>
             </div>
 
-            <div className="flex justify-between font-bold text-slate-900 dark:text-white pb-4">
-              <span>HARGA POKOK PENJUALAN</span>
+            <div className="font-bold border-b-2 border-slate-900 dark:border-slate-200 pb-2 pt-4 text-slate-900 dark:text-slate-100">
+              HARGA POKOK PENJUALAN
+            </div>
+            <div className="flex justify-between pl-4 text-slate-700 dark:text-slate-300 pt-2">
+              <span>HPP - Umum</span>
+              <span>{formatRupiah(labaRugiData.hppUmum)}</span>
+            </div>
+            <div className="flex justify-between pl-4 text-slate-700 dark:text-slate-300">
+              <span>Biaya Konstruksi</span>
+              <span>{formatRupiah(labaRugiData.bebanKonstruksi)}</span>
+            </div>
+            <div className="flex justify-between font-bold text-slate-900 dark:text-white border-t border-slate-200 pt-2 pb-4 mt-2">
+              <span>TOTAL HARGA POKOK PENJUALAN</span>
               <span>({formatRupiah(labaRugiData.hpp)})</span>
             </div>
 
@@ -729,11 +745,7 @@ export default function LaporanClient({
             <div className="font-bold border-b-2 border-slate-900 dark:border-slate-200 pb-2 pt-4 text-slate-900 dark:text-slate-100">
               BEBAN OPERASIONAL
             </div>
-            <div className="flex justify-between pl-4 text-slate-700 dark:text-slate-300">
-              <span>Beban Konstruksi</span>
-              <span>{formatRupiah(labaRugiData.bebanKonstruksi)}</span>
-            </div>
-            <div className="flex justify-between pl-4 text-slate-700 dark:text-slate-300">
+            <div className="flex justify-between pl-4 text-slate-700 dark:text-slate-300 pt-2">
               <span>Beban Marketing</span>
               <span>{formatRupiah(labaRugiData.bebanMarketing)}</span>
             </div>

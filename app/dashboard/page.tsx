@@ -296,10 +296,10 @@ const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
   }
 
   const breakdownData = [
-    { label: "Konstruksi", value: breakdownMap.get("BIAYA_KONSTRUKSI") || 0, color: "#EA6C00" },
-    { label: "Marketing", value: breakdownMap.get("BIAYA_MARKETING") || 0, color: "#f97316" },
-    { label: "Gaji", value: breakdownMap.get("BIAYA_GAJI") || 0, color: "#fb923c" },
-    { label: "Operasional", value: breakdownMap.get("BIAYA_OPERASIONAL") || 0, color: "#ef4444" },
+    { label: "Konstruksi", value: breakdownMap.get("BIAYA_KONSTRUKSI") || 0, color: "#f97316" }, // orange-500
+    { label: "Marketing", value: breakdownMap.get("BIAYA_MARKETING") || 0, color: "#0ea5e9" }, // sky-500
+    { label: "Gaji", value: breakdownMap.get("BIAYA_GAJI") || 0, color: "#10b981" }, // emerald-500
+    { label: "Operasional", value: breakdownMap.get("BIAYA_OPERASIONAL") || 0, color: "#f43f5e" }, // rose-500
   ].filter(d => d.value > 0);
 
   // If no expense breakdown found, provide an empty base for the UI so it doesn't break

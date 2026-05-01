@@ -59,8 +59,6 @@ function buildJournalEntryWhere(
 
 function getExpenseLabel(accountCode: string) {
   switch (accountCode) {
-    case "5200":
-      return "bebanKonstruksi";
     case "5300":
       return "bebanMarketing";
     case "5400":
@@ -282,11 +280,12 @@ export default async function LaporanKeuanganPage(props: {
     0,
   );
 
-  const hpp = expenseBalances.get("5100") || 0;
+  const hppUmum = expenseBalances.get("5100") || 0;
+  const bebanKonstruksi = expenseBalances.get("5200") || 0;
+  const hpp = hppUmum + bebanKonstruksi;
   const labaKotor = totalPendapatanLR - hpp;
 
   const expenseBreakdown = {
-    bebanKonstruksi: 0,
     bebanMarketing: 0,
     bebanGaji: 0,
     bebanOperasional: 0,
@@ -313,6 +312,8 @@ export default async function LaporanKeuanganPage(props: {
     pendapatanPenjualan,
     pendapatanLainLain,
     totalPendapatanLR,
+    hppUmum,
+    bebanKonstruksi,
     hpp,
     labaKotor,
     ...expenseBreakdown,

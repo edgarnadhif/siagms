@@ -21,7 +21,7 @@ export default async function ProfilPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 px-4 md:px-0">
         <div>
           <h1 className="page-title dark:text-gray-100">Profil Perusahaan</h1>
-          <p className="card-subtitle text-gray-400 dark:text-gray-400 mt-3">
+          <p className="card-subtitle text-gray-400 dark:text-gray-400 mt-2">
             Pengaturan informasi perusahaan untuk kop laporan & identitas sistem
           </p>
         </div>

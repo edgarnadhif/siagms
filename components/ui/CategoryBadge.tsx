@@ -7,88 +7,60 @@ interface CategoryBadgeProps {
   className?: string;
 }
 
-const categoryConfig: Record<TransactionCategory, { label: string; bg: string; text: string; border: string }> = {
+const categoryConfig: Record<TransactionCategory, { label: string; twClasses: string }> = {
   BOOKING_FEE: {
     label: "Booking Fee",
-    bg: "#FFF7ED",
-    text: "#C2410C",
-    border: "#FED7AA",
+    twClasses: "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20",
   },
   DOWN_PAYMENT: {
     label: "Down Payment",
-    bg: "#FFF7ED",
-    text: "#C2410C",
-    border: "#FED7AA",
+    twClasses: "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20",
   },
   ANGSURAN_KPR: {
     label: "Angsuran KPR",
-    bg: "#F0FDF4",
-    text: "#15803D",
-    border: "#BBF7D0",
+    twClasses: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20",
   },
   PELUNASAN_CASH: {
     label: "Pelunasan Cash",
-    bg: "#FFF7ED",
-    text: "#C2410C",
-    border: "#FED7AA",
+    twClasses: "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20",
   },
   PENCAIRAN_KPR: {
     label: "Pencairan KPR",
-    bg: "#F0FDF4",
-    text: "#15803D",
-    border: "#BBF7D0",
+    twClasses: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20",
   },
   BIAYA_KONSTRUKSI: {
     label: "Biaya Konstruksi",
-    bg: "#F8FAFC",
-    text: "#475569",
-    border: "#E2E8F0",
+    twClasses: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20",
   },
   BIAYA_MARKETING: {
     label: "Biaya Marketing",
-    bg: "#F8FAFC",
-    text: "#475569",
-    border: "#E2E8F0",
+    twClasses: "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
   },
   BIAYA_GAJI: {
     label: "Biaya Gaji",
-    bg: "#F8FAFC",
-    text: "#475569",
-    border: "#E2E8F0",
+    twClasses: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-500/10 dark:text-sky-400 dark:border-sky-500/20",
   },
   BIAYA_OPERASIONAL: {
     label: "Biaya Operasional",
-    bg: "#F8FAFC",
-    text: "#475569",
-    border: "#E2E8F0",
+    twClasses: "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
   },
   LAIN_LAIN: {
     label: "Lain-lain",
-    bg: "#F8FAFC",
-    text: "#475569",
-    border: "#E2E8F0",
+    twClasses: "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
   },
 };
 
 export default function CategoryBadge({ category, size = "md", className = "" }: CategoryBadgeProps) {
   const config = categoryConfig[category] || {
     label: category,
-    bg: "#F8FAFC",
-    text: "#475569",
-    border: "#E2E8F0",
+    twClasses: "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
   };
 
   return (
     <span
-      className={`inline-flex items-center font-semibold uppercase whitespace-nowrap rounded-[6px] ${
-        size === "sm" ? "text-[10px] px-2 py-[1px]" : "text-[11px] px-2.5 py-0.5"
-      } ${className}`}
-      style={{
-        backgroundColor: config.bg,
-        color: config.text,
-        border: `1px solid ${config.border}`,
-        letterSpacing: "0.4px",
-      }}
+      className={`inline-flex items-center rounded-md border font-medium ${
+        size === "sm" ? "px-2.5 py-1 text-[11px]" : "px-2.5 py-1 text-xs"
+      } ${config.twClasses} ${className}`}
     >
       {config.label}
     </span>

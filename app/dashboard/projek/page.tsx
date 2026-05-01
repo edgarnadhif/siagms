@@ -5,6 +5,7 @@ import { ProjectStatus } from "@prisma/client";
 import AddProjectModal from "./AddProjectModal";
 import ProjectFilters from "./ProjectFilters";
 import ProjectGrid from "./ProjectGrid";
+import ProjectToaster from "./ProjectToaster";
 
 const REVENUE_CATEGORIES = [
   "BOOKING_FEE",
@@ -111,33 +112,32 @@ const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
 
   return (
     <div className="text-gray-600 dark:text-gray-300 w-full h-full">
+      <ProjectToaster />
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 lg:mb-3 px-4 md:px-0">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 px-4 md:px-0">
         <div>
-          <h1 className="page-title dark:text-gray-100">Daftar Proyek</h1>
-          <p className="card-subtitle text-gray-400 dark:text-gray-400 mt-3">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Daftar Proyek</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Kelola daftar proyek dan tracking keuangan per proyek
           </p>
         </div>
         <Link
           href="?add=true"
-          className="flex items-center gap-2 px-5 h-10 bg-[#EA6C00] hover:bg-[#C25500] text-white text-sm font-bold rounded-[10px] shadow-lg shadow-orange-500/20 transition-all active:scale-95 ml-auto w-full md:w-auto justify-center md:justify-start"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-200 w-full md:w-auto md:ml-auto"
         >
           <img
             src="/add.svg"
             alt="Add"
-            className="w-5 h-5 invert dark:invert-0"
+            className="w-4 h-4 invert dark:invert-0"
           />
           Tambah Proyek
         </Link>
       </div>
 
       {/* Action Bar (Search) */}
-      <div className="sticky -top-6 z-30 pt-8 pb-4 bg-white dark:bg-[#111827] -mx-6 px-6">
-        <div className="flex flex-col md:flex-row items-stretch gap-3">
-          <div className="flex-1 w-full">
-            <ProjectFilters initialSearch={search} initialStatus={status} />
-          </div>
+      <div className="sticky -top-6 z-30 pt-2 pb-3 bg-white dark:bg-[#111827] -mx-6 px-6">
+        <div className="w-full">
+          <ProjectFilters initialSearch={search} initialStatus={status} />
         </div>
       </div>
 
@@ -146,27 +146,22 @@ const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
         {projects.length > 0 ? (
           <ProjectGrid initialProjects={projects} />
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-gray-400 bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-gray-200 dark:border-slate-700">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-16 w-16 mb-4 opacity-20"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-              />
-            </svg>
-            <p className="text-lg font-medium">
-              Belum ada proyek yang ditemukan
-            </p>
-            <p className="text-sm">
-              Cobalah ubah filter pencarian Anda atau tambahkan proyek baru.
-            </p>
+          <div className="bg-white dark:bg-slate-800 border-[0.5px] border-[#E5E7EB] dark:border-slate-700 rounded-2xl shadow-sm overflow-hidden">
+            <div className="py-55 px-16 text-center">
+              <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800/80 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300">
+                <img
+                  src="/folder.svg"
+                  alt="Proyek"
+                  className="w-10 h-10 opacity-20 grayscale dark:invert"
+                />
+              </div>
+              <p className="font-bold text-gray-900 dark:text-white">
+                Belum ada proyek yang ditemukan
+              </p>
+              <p className="text-sm text-gray-400 mt-1 italic">
+                Cobalah ubah filter pencarian Anda atau tambahkan proyek baru.
+              </p>
+            </div>
           </div>
         )}
       </div>

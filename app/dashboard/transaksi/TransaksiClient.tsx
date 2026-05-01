@@ -8,6 +8,82 @@ import AddTransaksiModal from "./AddTransaksiModal";
 import EditTransaksiModal from "./EditTransaksiModal";
 import CategoryBadge from "@/components/ui/CategoryBadge";
 import { TransactionCategory } from "@prisma/client";
+import { useSearchParams } from "next/navigation";
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+type ToastType = "success" | "error";
+interface Toast {
+  id: number;
+  message: string;
+  type: ToastType;
+}
+
+function ToastContainer({
+  toasts,
+  remove,
+}: {
+  toasts: Toast[];
+  remove: (id: number) => void;
+}) {
+  return (
+    <div className="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none">
+      {toasts.map((t) => (
+        <div
+          key={t.id}
+          className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl text-sm font-semibold text-white min-w-[260px] animate-in slide-in-from-right-5 duration-300 ${
+            t.type === "success" ? "bg-emerald-600" : "bg-red-600"
+          }`}
+        >
+          {t.type === "success" ? (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-4 h-4 shrink-0"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clipRule="evenodd"
+              />
+            </svg>
+          ) : (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-4 h-4 shrink-0"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+          )}
+          <span className="flex-1">{t.message}</span>
+          <button
+            onClick={() => remove(t.id)}
+            className="text-white/70 hover:text-white"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-3.5 h-3.5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 interface Transaction {
   id: string;
@@ -89,16 +165,61 @@ export default function TransaksiClient({
   showAddModal: boolean;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
+
+  // Toast
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const toastId = useRef(0);
+  const showToast = React.useCallback(
+    (message: string, type: ToastType = "success") => {
+      const id = ++toastId.current;
+      setToasts((prev) => [...prev, { id, message, type }]);
+      setTimeout(
+        () => setToasts((prev) => prev.filter((t) => t.id !== id)),
+        4000,
+      );
+    },
+    [],
+  );
+  const removeToast = React.useCallback(
+    (id: number) => setToasts((prev) => prev.filter((t) => t.id !== id)),
+    [],
+  );
+
+  // Read URL toast messages
+  useEffect(() => {
+    const toastMsg = searchParams.get("toast");
+    if (toastMsg === "add_success") {
+      showToast("Transaksi berhasil ditambahkan", "success");
+      window.history.replaceState(null, "", "/dashboard/transaksi");
+    } else if (toastMsg === "edit_success") {
+      showToast("Transaksi berhasil diperbarui", "success");
+      window.history.replaceState(null, "", "/dashboard/transaksi");
+    }
+  }, [searchParams, showToast]);
 
   // Local state for real-time filtering
   const [search, setSearch] = useState(initialSearch || "");
   const [category, setCategory] = useState(initialCategory || "");
   const [projectFilter, setProjectFilter] = useState(
     initialProjectFilter || "",
+  );
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [fromDateFocused, setFromDateFocused] = useState(false);
+  const [toDateFocused, setToDateFocused] = useState(false);
+
+  const hideNativeDateIcon = (
+    <style>{`
+      input[type="date"]::-webkit-calendar-picker-indicator {
+        display: none;
+        -webkit-appearance: none;
+      }
+    `}</style>
   );
 
   const handleDelete = async (id: string) => {
@@ -187,21 +308,29 @@ export default function TransaksiClient({
   const confirmDelete = async () => {
     setIsDeleting(true);
     setDeleteError("");
-
+    
     if (deleteModal.type === "single" && deleteModal.id) {
       const result = await deleteTransaction(deleteModal.id);
-      if (result?.error) setDeleteError(result.error);
+      if (result?.error) {
+        setDeleteError(result.error);
+        showToast(result.error, "error");
+      } else {
+        showToast("Transaksi berhasil dihapus", "error");
+        setDeleteModal({ show: false, type: "single" });
+      }
     } else if (deleteModal.type === "bulk") {
       const result = await deleteTransactions(selectedIds);
       if (result?.error) {
         setDeleteError(result.error);
+        showToast(result.error, "error");
       } else {
+        showToast(`${selectedIds.length} transaksi berhasil dihapus`, "error");
         setSelectedIds([]);
+        setDeleteModal({ show: false, type: "bulk" });
       }
     }
-
+    
     setIsDeleting(false);
-    setDeleteModal({ show: false, type: "single" });
     router.refresh();
   };
 
@@ -215,7 +344,23 @@ export default function TransaksiClient({
       t.reference.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = category ? t.category === category : true;
     const matchesProject = projectFilter ? t.projectId === projectFilter : true;
-    return matchesSearch && matchesCategory && matchesProject;
+    
+    const tDate = new Date(t.date);
+    tDate.setHours(0, 0, 0, 0);
+
+    let matchesDate = true;
+    if (startDate) {
+      const sDate = new Date(startDate);
+      sDate.setHours(0, 0, 0, 0);
+      if (tDate < sDate) matchesDate = false;
+    }
+    if (endDate) {
+      const eDate = new Date(endDate);
+      eDate.setHours(23, 59, 59, 999);
+      if (tDate > eDate) matchesDate = false;
+    }
+
+    return matchesSearch && matchesCategory && matchesProject && matchesDate;
   });
 
   const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
@@ -258,23 +403,25 @@ export default function TransaksiClient({
   };
 
   return (
-    <div className="text-gray-600 dark:text-gray-300 w-full h-full">
+    <>
+      <ToastContainer toasts={toasts} remove={removeToast} />
+      <div className="text-gray-600 dark:text-gray-300 w-full h-full flex flex-col">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 px-4 md:px-0">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5 px-4 md:px-0">
         <div>
           <h1 className="page-title dark:text-gray-100">Transaksi</h1>
-          <p className="card-subtitle text-gray-400 dark:text-gray-400 mt-3">
+          <p className="card-subtitle text-gray-400 dark:text-gray-400 mt-2">
             Kelola semua transaksi keuangan
           </p>
         </div>
         <Link
           href="?add=true"
-          className="flex items-center gap-2 px-5 h-11 bg-[#EA6C00] hover:bg-[#C25500] text-white text-sm font-bold rounded-[10px] shadow-lg shadow-orange-500/20 transition-all active:scale-95 ml-auto w-full md:w-auto justify-center md:justify-start"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-200 w-full md:w-auto md:ml-auto"
         >
           <img
             src="/add.svg"
             alt="Add"
-            className="w-5 h-5 invert dark:invert-0"
+            className="w-4 h-4 invert dark:invert-0"
           />
           Tambah Transaksi
         </Link>
@@ -288,17 +435,19 @@ export default function TransaksiClient({
 
       {/* Main Container */}
       <div className="px-4 md:px-0 pb-10">
-        <div className="sticky -top-6 z-30 pt-4 pb-3 bg-white dark:bg-[#111827] -mx-6 px-6">
-          <div className="flex flex-col md:flex-row items-center bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-[12px] shadow-sm focus-within:ring-2 focus-within:ring-[#EA6C00]/10 focus-within:border-[#EA6C00] transition-all p-1.5 min-h-[56px] md:h-14">
+        <div className="sticky -top-6 z-30 pt-2 pb-3 bg-white dark:bg-[#111827] -mx-6 px-6">
+          <div className="flex flex-col md:flex-row flex-wrap items-center gap-3 w-full">
+            {hideNativeDateIcon}
+            
             {/* Search Input Section */}
-            <div className="flex flex-1 items-center px-3 gap-3 w-full h-full min-h-[44px]">
+            <div className="flex-1 min-w-[240px] h-11 inline-flex items-center gap-3 rounded-xl border-[0.5px] border-[#E5E7EB] dark:border-slate-700 bg-white dark:bg-slate-800 px-3 focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-slate-100 dark:focus-within:border-slate-500 dark:focus-within:ring-slate-800 transition-colors">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
-                strokeWidth={2.5}
+                strokeWidth={2}
                 stroke="currentColor"
-                className="w-4 h-4 text-gray-400 flex-shrink-0"
+                className="w-4 h-4 text-slate-400 flex-shrink-0"
               >
                 <path
                   strokeLinecap="round"
@@ -314,7 +463,7 @@ export default function TransaksiClient({
                   setSearch(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="flex-1 bg-transparent border-none focus:ring-0 outline-none text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 font-medium"
+                className="flex-1 bg-transparent border-none focus:ring-0 outline-none text-sm font-medium text-slate-700 dark:text-slate-200 placeholder:font-normal placeholder:text-slate-400"
               />
               {search && (
                 <button
@@ -323,7 +472,7 @@ export default function TransaksiClient({
                     setSearch("");
                     setCurrentPage(1);
                   }}
-                  className="p-1 text-gray-300 hover:text-gray-500 transition-colors"
+                  className="p-1 text-slate-300 hover:text-slate-500 transition-colors"
                   title="Hapus pencarian"
                 >
                   <svg
@@ -344,22 +493,75 @@ export default function TransaksiClient({
               )}
             </div>
 
-            {/* Divider */}
-            <div className="hidden md:block h-6 w-[1px] bg-gray-100 dark:bg-slate-700 mx-1" />
+            {/* Start Date */}
+            <div className="w-full md:w-[150px] lg:w-[160px] relative">
+              <div className="h-11 inline-flex w-full items-center justify-between rounded-xl border-[0.5px] border-[#E5E7EB] dark:border-slate-700 bg-white dark:bg-slate-800 transition-colors relative">
+                {!startDate && !fromDateFocused && (
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 pointer-events-none">
+                    Dari Tanggal
+                  </span>
+                )}
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  onFocus={() => setFromDateFocused(true)}
+                  onBlur={() => setFromDateFocused(false)}
+                  onClick={(e) => e.currentTarget.showPicker()}
+                  className={`w-full h-11 pl-3 pr-8 border-0 bg-transparent text-sm font-normal focus:ring-0 focus:outline-none outline-none cursor-pointer rounded-xl ${startDate || fromDateFocused ? "text-slate-700 dark:text-slate-200" : "text-transparent"}`}
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-slate-400">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            
+            {/* End Date */}
+            <div className="w-full md:w-[150px] lg:w-[160px] relative">
+              <div className="h-11 inline-flex w-full items-center justify-between rounded-xl border-[0.5px] border-[#E5E7EB] dark:border-slate-700 bg-white dark:bg-slate-800 transition-colors relative">
+                {!endDate && !toDateFocused && (
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 pointer-events-none">
+                    Sampai Tanggal
+                  </span>
+                )}
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  onFocus={() => setToDateFocused(true)}
+                  onBlur={() => setToDateFocused(false)}
+                  onClick={(e) => e.currentTarget.showPicker()}
+                  className={`w-full h-11 pl-3 pr-8 border-0 bg-transparent text-sm font-normal focus:ring-0 focus:outline-none outline-none cursor-pointer rounded-xl ${endDate || toDateFocused ? "text-slate-700 dark:text-slate-200" : "text-transparent"}`}
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-slate-400">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                  </svg>
+                </div>
+              </div>
+            </div>
 
             {/* Category Dropdown */}
-            <div className="relative w-full md:w-auto" ref={catFilterRef}>
+            <div className="w-full md:w-[150px] lg:w-[160px] relative" ref={catFilterRef}>
               <button
                 type="button"
                 onClick={() => setCatDropdownOpen(!catDropdownOpen)}
-                className="flex items-center justify-between md:justify-start gap-2 w-full md:w-auto px-4 py-2 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors whitespace-nowrap"
+                className="w-full h-11 inline-flex items-center justify-between px-3 bg-white dark:bg-slate-800 border-[0.5px] border-[#E5E7EB] dark:border-slate-700 rounded-xl transition-colors"
               >
-                <span>
-                  {category ? category.replace(/_/g, " ") : "Semua Kategori"}
+                <span className="text-sm font-normal text-slate-700 dark:text-slate-200 truncate">
+                  {category ? category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ') : "Semua Kategori"}
                 </span>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${catDropdownOpen ? "rotate-180" : ""}`}
+                  className={`w-4 h-4 text-slate-400 flex-shrink-0 transition-transform duration-200 ${catDropdownOpen ? "rotate-180" : ""}`}
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >
@@ -372,7 +574,7 @@ export default function TransaksiClient({
               </button>
 
               {catDropdownOpen && (
-                <div className="absolute z-50 right-0 mt-3 w-56 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden flex flex-col p-1.5 animate-in fade-in zoom-in-95 duration-200">
+                <div className="absolute z-50 right-0 mt-2 w-56 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-lg overflow-hidden flex flex-col p-1 animate-in fade-in zoom-in-95 duration-200">
                   <button
                     type="button"
                       onClick={() => {
@@ -380,7 +582,7 @@ export default function TransaksiClient({
                         setCurrentPage(1);
                         setCatDropdownOpen(false);
                       }}
-                    className={`text-left px-3 py-2 text-sm font-semibold rounded-md transition-colors ${category === "" ? "bg-[#EA6C00] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"}`}
+                    className={`text-left px-3 py-2 text-sm rounded-md transition-colors ${category === "" ? "bg-slate-50 text-slate-900 font-medium dark:bg-slate-700 dark:text-white" : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50"}`}
                   >
                     Semua Kategori
                   </button>
@@ -403,33 +605,30 @@ export default function TransaksiClient({
                         setCurrentPage(1);
                         setCatDropdownOpen(false);
                       }}
-                      className={`text-left px-3 py-2 text-sm font-semibold rounded-md transition-colors ${category === cat ? "bg-[#EA6C00] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"}`}
+                      className={`text-left px-3 py-2 text-sm rounded-md transition-colors ${category === cat ? "bg-slate-50 text-slate-900 font-medium dark:bg-slate-700 dark:text-white" : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50"}`}
                     >
-                      {cat.replace(/_/g, " ")}
+                      {cat.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')}
                     </button>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Divider */}
-            <div className="hidden md:block h-6 w-[1px] bg-gray-100 dark:bg-slate-700 mx-1" />
-
             {/* Project Dropdown */}
-            <div className="relative w-full md:w-auto" ref={projFilterRef}>
+            <div className="w-full md:w-[150px] lg:w-[160px] relative" ref={projFilterRef}>
               <button
                 type="button"
                 onClick={() => setProjDropdownOpen(!projDropdownOpen)}
-                className="flex items-center justify-between md:justify-start gap-2 w-full md:w-auto px-4 py-2 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors whitespace-nowrap"
+                className="w-full h-11 inline-flex items-center justify-between px-3 bg-white dark:bg-slate-800 border-[0.5px] border-[#E5E7EB] dark:border-slate-700 rounded-xl transition-colors"
               >
-                <span className="truncate max-w-[150px]">
+                <span className="text-sm font-normal text-slate-700 dark:text-slate-200 truncate">
                   {projectFilter
-                    ? projects.find((p) => p.id === projectFilter)?.code
+                    ? projects.find((p) => p.id === projectFilter)?.code || projects.find((p) => p.id === projectFilter)?.name
                     : "Semua Proyek"}
                 </span>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className={`w-3.5 h-3.5 text-gray-400 flex-shrink-0 transition-transform duration-200 ${projDropdownOpen ? "rotate-180" : ""}`}
+                  className={`w-4 h-4 text-slate-400 flex-shrink-0 transition-transform duration-200 ${projDropdownOpen ? "rotate-180" : ""}`}
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >
@@ -442,7 +641,7 @@ export default function TransaksiClient({
               </button>
 
               {projDropdownOpen && (
-                <div className="absolute z-50 right-0 mt-3 w-64 max-h-60 overflow-y-auto bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-xl flex flex-col p-1.5 animate-in fade-in zoom-in-95 duration-200">
+                <div className="absolute z-50 right-0 mt-2 w-64 max-h-60 overflow-y-auto bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-lg flex flex-col p-1 animate-in fade-in zoom-in-95 duration-200">
                   <button
                     type="button"
                     onClick={() => {
@@ -450,7 +649,7 @@ export default function TransaksiClient({
                       setCurrentPage(1);
                       setProjDropdownOpen(false);
                     }}
-                    className={`text-left px-3 py-2 text-sm font-semibold rounded-md transition-colors ${projectFilter === "" ? "bg-[#EA6C00] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"}`}
+                    className={`text-left px-3 py-2 text-sm rounded-md transition-colors ${projectFilter === "" ? "bg-slate-50 text-slate-900 font-medium dark:bg-slate-700 dark:text-white" : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50"}`}
                   >
                     Semua Proyek
                   </button>
@@ -463,7 +662,7 @@ export default function TransaksiClient({
                         setCurrentPage(1);
                         setProjDropdownOpen(false);
                       }}
-                      className={`text-left px-3 py-2 text-sm font-semibold rounded-md transition-colors ${projectFilter === p.id ? "bg-[#EA6C00] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"}`}
+                      className={`text-left px-3 py-2 text-sm rounded-md transition-colors ${projectFilter === p.id ? "bg-slate-50 text-slate-900 font-medium dark:bg-slate-700 dark:text-white" : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50"}`}
                     >
                       {p.code} — {p.name}
                     </button>
@@ -472,47 +671,28 @@ export default function TransaksiClient({
               )}
             </div>
 
-            {/* Circular Search Button */}
-            <button
-              type="submit"
-              className="ml-2 w-11 h-11 bg-[#EA6C00] hover:bg-[#C25500] text-white rounded-full transition-all shadow-md shadow-orange-500/20 flex items-center justify-center group flex-shrink-0 mt-2 md:mt-0"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-5 h-5 group-hover:scale-110 transition-transform"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={3}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-                />
-              </svg>
-            </button>
+
           </div>
         </div>
 
         {/* Selection Bar */}
         {selectedIds.length > 0 && (
-          <div className="mb-4 animate-in fade-in slide-in-from-top-2 duration-300">
-            <div className="flex flex-col md:flex-row items-center justify-between bg-[#FFF0E6] dark:bg-orange-500/10 border border-[#EA6C00] rounded-[10px] p-2.5 md:px-4 md:py-2.5 gap-3 shadow-md shadow-orange-500/5">
+          <div className="mt-2 mb-4 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex flex-col md:flex-row items-center justify-between bg-[#FFF0E6] dark:bg-orange-500/10 border border-[#EA6C00] rounded-xl p-2 md:px-4 md:py-2 gap-3 shadow-sm">
               <div className="text-sm font-medium text-gray-700 dark:text-gray-200">
                 {selectedIds.length} transaksi dipilih
               </div>
               <div className="flex items-center gap-2 w-full md:w-auto">
                 <button
                   onClick={() => setSelectedIds([])}
-                  className="flex-1 md:flex-none px-6 h-11 bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 text-[#374151] dark:text-gray-200 text-sm font-bold rounded-[10px] hover:bg-gray-50 dark:hover:bg-slate-700 transition-all active:scale-95 shadow-sm"
+                  className="flex-1 md:flex-none px-4 h-9 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-semibold rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-95 shadow-sm"
                 >
                   Batalkan Pilihan
                 </button>
                 <button
                   onClick={() => setDeleteModal({ show: true, type: "bulk" })}
                   disabled={isDeleting || isPending}
-                  className="flex-1 md:flex-none px-6 h-11 bg-[#EF4444] hover:bg-red-600 text-white text-sm font-bold rounded-[10px] shadow-lg shadow-red-500/20 transition-all active:scale-95 disabled:opacity-50"
+                  className="flex-1 md:flex-none px-4 h-9 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded-lg shadow-sm shadow-red-500/20 transition-all active:scale-95 disabled:opacity-50"
                 >
                   Hapus Terpilih
                 </button>
@@ -522,24 +702,15 @@ export default function TransaksiClient({
         )}
 
         {/* Table Container */}
-        <div className="bg-white dark:bg-slate-800 border-[0.5px] border-[#E5E7EB] dark:border-slate-700/50 rounded-[14px] shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 border-[0.5px] border-[#E5E7EB] dark:border-slate-700 rounded-2xl shadow-sm overflow-hidden">
           {filteredTransactions.length === 0 ? (
-            <div className="p-16 text-center">
-              <div className="w-16 h-16 bg-gray-50 dark:bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                  className="w-8 h-8"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
-                  />
-                </svg>
+            <div className="py-55 px-16 text-center">
+              <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800/80 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300">
+                <img
+                  src="/credit_card.svg"
+                  alt="Transaksi"
+                  className="w-10 h-10 opacity-20 grayscale dark:invert"
+                />
               </div>
               <p className="font-bold text-gray-900 dark:text-white">
                 Belum ada transaksi
@@ -551,9 +722,9 @@ export default function TransaksiClient({
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[900px] border-collapse">
-                <thead className="bg-[#F9FAFB] dark:bg-slate-700/40">
-                  <tr className="border-b border-[#F3F4F6] dark:border-slate-700/50">
-                    <th className="px-5 py-4 w-[50px] text-center">
+                <thead className="bg-slate-50 dark:bg-slate-800/50">
+                  <tr className="border-b border-slate-100 dark:border-slate-700/50">
+                    <th className="px-5 py-3.5 w-[50px] text-center">
                       <input
                         type="checkbox"
                         checked={
@@ -561,105 +732,82 @@ export default function TransaksiClient({
                           transactions.length > 0
                         }
                         onChange={toggleSelectAll}
-                        className="w-4 h-4 rounded text-[#EA6C00] focus:ring-[#EA6C00] border-gray-300 dark:border-slate-600 dark:bg-slate-700 cursor-pointer accent-[#EA6C00]"
+                        className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-100 dark:border-slate-600 dark:bg-slate-700 cursor-pointer"
                       />
                     </th>
-                    <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-widest text-gray-400 w-[120px]">
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400 w-[120px]">
                       TANGGAL
                     </th>
-                    <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-widest text-gray-400 w-[150px]">
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400 w-[150px]">
                       NO. REFERENSI
                     </th>
-                    <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-widest text-gray-400">
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
                       KETERANGAN
                     </th>
-                    <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-widest text-gray-400 w-[120px]">
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400 w-[120px]">
                       PROYEK
                     </th>
-                    <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-widest text-gray-400 w-[160px]">
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400 w-[160px]">
                       KATEGORI
                     </th>
-                    <th className="px-5 py-4 text-right text-xs font-bold uppercase tracking-widest text-gray-400 w-[160px]">
+                    <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400 w-[160px]">
                       JUMLAH (RP)
                     </th>
-                    <th className="px-5 py-4 text-center text-xs font-bold uppercase tracking-widest text-gray-400 w-[100px]">
+                    <th className="px-5 py-3.5 text-center text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400 w-[100px]">
                       AKSI
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#F3F4F6] dark:divide-white/[0.05]">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
                   {paginatedTransactions.map((trx, idx) => (
                     <tr
                       key={trx.id}
-                      className={`hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors ${selectedIds.includes(trx.id) ? "bg-slate-50/50 dark:bg-slate-700/20" : ""} ${idx === paginatedTransactions.length - 1 ? "border-b-0" : "border-b border-[#F3F4F6] dark:border-slate-700/50"}`}
+                      className={`hover:bg-slate-50/60 dark:hover:bg-slate-700/30 transition-colors ${selectedIds.includes(trx.id) ? "bg-slate-50/60 dark:bg-slate-700/30" : ""} ${idx === paginatedTransactions.length - 1 ? "border-b-0" : "border-b border-slate-100 dark:border-slate-700/50"}`}
                     >
-                      <td className="px-5 py-4 whitespace-nowrap text-center">
+                      <td className="px-5 py-3.5 whitespace-nowrap text-center">
                         <input
                           type="checkbox"
                           checked={selectedIds.includes(trx.id)}
                           onChange={() => toggleSelect(trx.id)}
-                          className="w-4 h-4 rounded text-[#EA6C00] focus:ring-[#EA6C00] border-gray-300 dark:border-slate-600 dark:bg-slate-700 cursor-pointer accent-[#EA6C00]"
+                          className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-100 dark:border-slate-600 dark:bg-slate-700 cursor-pointer"
                         />
                       </td>
-                      <td className="px-5 py-4 whitespace-nowrap text-xs font-medium text-gray-500 dark:text-gray-400">
+                      <td className="px-5 py-3.5 whitespace-nowrap text-sm font-medium text-slate-500 dark:text-slate-400">
                         {formatDate(trx.date)}
                       </td>
-                      <td className="px-5 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
-                            {trx.reference}
-                          </span>
-                          {trx.hasJournal && (
-                            <div
-                              title="Jurnal Otomatis Terbuat"
-                              className="text-green-500 bg-green-50 dark:bg-green-900/30 p-1 rounded-full cursor-help"
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                strokeWidth={3}
-                                stroke="currentColor"
-                                className="w-3.5 h-3.5"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="m4.5 12.75 6 6 9-13.5"
-                                />
-                              </svg>
-                            </div>
-                          )}
-                        </div>
+                      <td className="px-5 py-3.5 whitespace-nowrap">
+                        <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                          {trx.reference}
+                        </span>
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-3.5">
                         <div className="flex flex-col">
-                          <span className="text-sm font-bold text-gray-800 dark:text-gray-200">
+                          <span className="text-sm font-medium text-slate-900 dark:text-white">
                             {trx.description}
                           </span>
                           {trx.note && (
-                            <span className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 italic">
+                            <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 italic">
                               {trx.note}
                             </span>
                           )}
                         </div>
                       </td>
-                      <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-600 dark:text-gray-400">
+                      <td className="px-5 py-3.5 whitespace-nowrap text-sm font-medium text-slate-600 dark:text-slate-400">
                         {trx.projectCode}
                       </td>
-                      <td className="px-5 py-4 whitespace-nowrap">
+                      <td className="px-5 py-3.5 whitespace-nowrap">
                         <CategoryBadge
                           category={trx.category as TransactionCategory}
                         />
                       </td>
-                      <td className="px-5 py-4 whitespace-nowrap text-sm font-bold text-[#EA6C00] text-right">
+                      <td className="px-5 py-3.5 whitespace-nowrap text-sm font-semibold text-slate-900 dark:text-white tabular-nums text-right">
                         {formatRupiah(trx.amount)}
                       </td>
-                      <td className="px-5 py-4 whitespace-nowrap text-center text-gray-400">
-                        <div className="flex items-center justify-center gap-3">
+                      <td className="px-5 py-3.5 whitespace-nowrap text-center">
+                        <div className="flex items-center justify-center gap-1">
                           <button
                             onClick={() => setEditId(trx.id)}
-                            className="p-1.5 hover:text-[#EA6C00] transition-colors rounded-lg hover:bg-white dark:hover:bg-slate-800"
+                            className="w-8 h-8 inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                             title="Edit"
                           >
                             <svg
@@ -686,7 +834,7 @@ export default function TransaksiClient({
                               })
                             }
                             disabled={isDeleting}
-                            className="p-1.5 hover:text-red-500 transition-colors rounded-lg hover:bg-white dark:hover:bg-slate-800 disabled:opacity-50"
+                            className="w-8 h-8 inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 transition-colors disabled:opacity-50"
                             title="Hapus"
                           >
                             <svg
@@ -715,10 +863,10 @@ export default function TransaksiClient({
 
           {/* Pagination UI */}
           {filteredTransactions.length > 0 && (
-            <div className="px-5 py-4 bg-white dark:bg-slate-800 border-t border-[#F3F4F6] dark:border-slate-700/50 flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="text-sm text-gray-500 dark:text-gray-400 order-2 md:order-1">
+            <div className="px-5 py-3.5 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700/50 flex flex-col md:flex-row items-center justify-between gap-4 rounded-b-2xl">
+              <div className="text-sm text-slate-500 dark:text-slate-400 order-2 md:order-1">
                 Total Transaksi:{" "}
-                <span className="font-bold text-gray-900 dark:text-white">
+                <span className="font-semibold text-slate-900 dark:text-white">
                   {filteredTransactions.length}
                 </span>
               </div>
@@ -729,13 +877,13 @@ export default function TransaksiClient({
                     setCurrentPage((prev) => Math.max(1, prev - 1))
                   }
                   disabled={safeCurrentPage === 1}
-                  className="p-2 text-gray-400 hover:text-[#EA6C00] disabled:opacity-30 disabled:hover:text-gray-400 transition-colors"
+                  className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:bg-transparent transition-colors"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
-                    strokeWidth={2.5}
+                    strokeWidth={2}
                     stroke="currentColor"
                     className="w-4 h-4"
                   >
@@ -754,12 +902,12 @@ export default function TransaksiClient({
                       typeof page === "number" && setCurrentPage(page)
                     }
                     disabled={page === "..."}
-                    className={`min-w-[32px] h-8 flex items-center justify-center rounded-lg text-sm font-bold transition-all ${
+                    className={`min-w-[36px] h-9 flex items-center justify-center rounded-lg text-sm font-medium transition-all ${
                       safeCurrentPage === page
-                        ? "bg-[#FFF0E6] text-[#EA6C00]"
+                        ? "bg-orange-50 text-orange-600 border border-orange-200 dark:bg-orange-500/10 dark:border-orange-500/20"
                         : page === "..."
-                          ? "text-gray-400 cursor-default"
-                          : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700"
+                          ? "text-slate-400 cursor-default"
+                          : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700"
                     }`}
                   >
                     {page}
@@ -771,13 +919,13 @@ export default function TransaksiClient({
                     setCurrentPage((prev) => Math.min(totalPages, prev + 1))
                   }
                   disabled={safeCurrentPage === totalPages || totalPages === 0}
-                  className="p-2 text-gray-400 hover:text-[#EA6C00] disabled:opacity-30 disabled:hover:text-gray-400 transition-colors"
+                  className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:bg-transparent transition-colors"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
-                    strokeWidth={2.5}
+                    strokeWidth={2}
                     stroke="currentColor"
                     className="w-4 h-4"
                   >
@@ -791,19 +939,19 @@ export default function TransaksiClient({
               </div>
 
               <div className="flex items-center gap-3 order-3">
-                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-[0.06em]">
                   Show per Page:
                 </span>
                 <div className="relative" ref={itemsPerPageRef}>
                   <button
                     type="button"
                     onClick={() => setItemsPerPageOpen(!itemsPerPageOpen)}
-                    className="flex items-center gap-2 px-3 py-1.5 min-w-[60px] justify-between border border-[#EA6C00] rounded-lg text-sm font-bold text-[#EA6C00] bg-white dark:bg-slate-800 transition-all hover:bg-orange-50 dark:hover:bg-orange-950/20 active:scale-95"
+                    className="flex items-center gap-2 px-3 h-9 min-w-[60px] justify-between border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 transition-all hover:bg-slate-50 dark:hover:bg-slate-700 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900/30 active:scale-95"
                   >
                     <span>{itemsPerPage}</span>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className={`w-3.5 h-3.5 transition-transform duration-200 ${itemsPerPageOpen ? "rotate-180" : ""}`}
+                      className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${itemsPerPageOpen ? "rotate-180" : ""}`}
                       viewBox="0 0 20 20"
                       fill="currentColor"
                     >
@@ -816,7 +964,7 @@ export default function TransaksiClient({
                   </button>
 
                   {itemsPerPageOpen && (
-                    <div className="absolute z-50 bottom-full left-0 mb-2 w-[70px] bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-[10px] shadow-[0_4px_12px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col p-1 animate-in slide-in-from-bottom-2 duration-200">
+                    <div className="absolute z-50 bottom-full right-0 mb-2 w-[70px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[10px] shadow-lg overflow-hidden flex flex-col p-1 animate-in slide-in-from-bottom-2 duration-200">
                       {[5, 10, 20, 50].map((val) => (
                         <button
                           key={val}
@@ -826,10 +974,10 @@ export default function TransaksiClient({
                             setCurrentPage(1);
                             setItemsPerPageOpen(false);
                           }}
-                          className={`text-center py-2 text-sm font-bold rounded-md transition-all ${
+                          className={`text-center py-2 text-sm font-medium rounded-md transition-all ${
                             itemsPerPage === val
-                              ? "bg-[#EA6C00] text-white"
-                              : "text-[#374151] dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"
+                              ? "bg-slate-50 text-slate-900 font-semibold dark:bg-slate-700 dark:text-white"
+                              : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50"
                           }`}
                         >
                           {val}
@@ -847,20 +995,20 @@ export default function TransaksiClient({
       {/* Delete Confirmation Modal */}
       {deleteModal.show && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-800 rounded-[28px] p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200 text-center">
-            <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200 text-center">
+            <div className="flex items-center justify-center w-20 h-20 rounded-full bg-red-50 dark:bg-red-900/20 mx-auto mb-6 shadow-inner">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={2}
                 stroke="currentColor"
-                className="w-8 h-8 text-[#EF4444]"
+                className="w-10 h-10 text-red-500"
               >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+                  d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
                 />
               </svg>
             </div>
@@ -873,20 +1021,20 @@ export default function TransaksiClient({
             <p className="text-gray-500 dark:text-gray-400 mb-8">
               {deleteModal.type === "bulk"
                 ? "Semua transaksi yang dipilih akan dihapus secara permanen dari sistem."
-                : "Transaksi ini akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan."}
+                : "Transaksi ini akan dihapus secara permanen."}
             </p>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="flex gap-3">
               <button
                 onClick={() => setDeleteModal({ show: false, type: "single" })}
-                className="px-6 py-3 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 font-bold rounded-2xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-all active:scale-95"
+                className="flex-1 h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all disabled:opacity-50"
               >
                 Batal
               </button>
               <button
                 onClick={confirmDelete}
                 disabled={isDeleting}
-                className="px-6 py-3 bg-[#EF4444] text-white font-bold rounded-2xl hover:bg-red-600 transition-all active:scale-95 shadow-lg shadow-red-500/20 disabled:opacity-50"
+                className="flex-1 h-12 px-4 rounded-xl bg-red-500 text-sm font-semibold text-white hover:bg-red-600 shadow-sm shadow-red-500/20 transition-all active:scale-[0.98] disabled:opacity-50"
               >
                 {isDeleting ? "Menghapus..." : "Ya, Hapus"}
               </button>
@@ -913,5 +1061,6 @@ export default function TransaksiClient({
         />
       )}
     </div>
+    </>
   );
 }

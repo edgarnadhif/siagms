@@ -89,6 +89,7 @@ export default function ProjectCard({
         setDeleteError(result.error);
       } else {
         setShowDeleteConfirm(false);
+        router.push("/dashboard/projek?toast=delete_success");
         router.refresh();
       }
     } catch {
@@ -100,141 +101,159 @@ export default function ProjectCard({
 
   return (
     <>
-      <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col relative overflow-hidden transition-all duration-150 hover:shadow-md h-full">
-        <div className="flex items-start justify-between gap-4 mb-2">
+      <div className="bg-white border-[0.5px] border-[#E5E7EB] dark:border-slate-700 dark:bg-slate-800 rounded-2xl p-5 shadow-sm flex flex-col relative transition-all duration-150 hover:shadow-md h-full">
+        
+        {/* Header Card */}
+        <div className="flex items-start justify-between gap-4 mb-5">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-lg bg-gray-50 dark:bg-slate-700 flex items-center justify-center border border-gray-100 dark:border-slate-600">
-              <img 
-                src="/house.svg" 
-                alt="Project" 
-                className="w-7 h-7 object-contain"
-                style={{ filter: 'invert(48%) sepia(96%) saturate(2059%) hue-rotate(1deg) brightness(101%) contrast(105%)' }}
-              />
+            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white flex-shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
             </div>
-            <div className="text-[14px] font-black text-black dark:text-white tracking-[0.05em] uppercase">
-              {project.code}
+            <div className="flex flex-col">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white leading-tight line-clamp-1">{project.name}</h3>
+              <div className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                {project.code}
+              </div>
             </div>
           </div>
-          <div className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase border ${
+          <div className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap ${
             project.status === 'AKTIF' 
-              ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20' 
+              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' 
               : project.status === 'SELESAI'
-              ? 'bg-orange-50 text-orange-600 border-orange-100 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20'
+              ? 'bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400'
               : project.status === 'BATAL'
-              ? 'bg-red-50 text-red-600 border-red-100 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20'
-              : 'bg-gray-50 text-gray-900 border-gray-100 dark:bg-slate-700 dark:text-gray-100 dark:border-slate-600'
+              ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400'
+              : 'bg-slate-50 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
           }`}>
             {project.status}
           </div>
         </div>
 
+        {/* Main Info (Description only) */}
         <div className="mb-4">
-          <h3 className="text-xl font-bold text-black dark:text-white leading-tight">{project.name}</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2 leading-relaxed">{project.description || "Deskripsi proyek."}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+            {project.description && project.description.trim() !== "" ? project.description : "Tidak ada deskripsi"}
+          </p>
         </div>
 
-        <div className="grid grid-cols-[1.4fr_1fr] gap-x-2 gap-y-3 text-[13px] text-gray-700 dark:text-gray-400 mb-6 font-medium">
+        {/* Meta Info */}
+        <div className="bg-slate-50 dark:bg-slate-800/40 rounded-2xl px-5 py-4 mb-4 space-y-3">
+          {/* Location - Full Width */}
           <div className="flex items-center gap-2.5">
-            <img src="/location_on.svg" alt="Location" className="w-5 h-5 flex-shrink-0" />
-            <span className="truncate">{project.location || "-"}</span>
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span className="text-sm text-slate-600 dark:text-slate-400 truncate">{project.location || "-"}</span>
           </div>
-          <div className="flex items-center gap-2.5">
-            <img src="/calendar_month.svg" alt="Start" className="w-5 h-5 flex-shrink-0" />
-            <span>Mulai : {formatDate(project.startDate)}</span>
-          </div>
-          <div className="flex items-center gap-2.5">
-            <img src="/calendar_clock.svg" alt="Done" className="w-5 h-5 flex-shrink-0" />
-            <span>Selesai : {formatDate(project.endDate)}</span>
-          </div>
-          <div className="flex items-center gap-2.5">
-            <img src="/target.svg" alt="Target" className="w-5 h-5 flex-shrink-0" />
-            <span>{remainingDays === null ? "Tanpa target" : `Sisa : ${remainingDays} Hari`}</span>
-          </div>
-        </div>
-
-        <div className="bg-gray-50/50 dark:bg-white/[0.02] rounded-3xl border border-gray-100 dark:border-white/5 p-4 mb-3">
-          <div className="grid grid-cols-3 gap-2">
-            <div className="text-center">
-              <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Pendapatan</p>
-              <p className="text-sm font-black text-black dark:text-white mt-2 uppercase">{formatCurrency(totalIncome)}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Pengeluaran</p>
-              <p className="text-sm font-black text-black dark:text-white mt-2 uppercase">{formatCurrency(totalExpense)}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Profit</p>
-              <p className="text-sm font-black text-black dark:text-white mt-2 uppercase">{formatCurrency(profit)}</p>
-            </div>
-          </div>
-        </div>
-        <div className="mb-3 rounded-[20px] border border-gray-100 dark:border-slate-700/60 p-4 bg-white dark:bg-slate-900/30">
-          <p className="text-sm font-bold text-black dark:text-white mb-4">Budget</p>
-          <div className="space-y-3 text-[13px] text-gray-600 dark:text-gray-400 mb-5 font-medium">
-            <div className="flex justify-between"><span>Budget</span><span className="text-black dark:text-white font-semibold">{formatCurrency(budget)}</span></div>
-            <div className="flex justify-between"><span>Terpakai</span><span className="text-black dark:text-white font-semibold">{formatCurrency(usedBudget)}</span></div>
-            <div className="flex justify-between"><span>Sisa Budget</span><span className="text-black dark:text-white font-semibold">{formatCurrency(remainingBudget)}</span></div>
-          </div>
-          <div className="h-2.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
-            <div className="h-full bg-[#EA6C00] dark:bg-[#F97316] rounded-full transition-all duration-500" style={{ width: `${budgetUsedPct}%` }} />
-          </div>
-          <p className="text-[11px] text-right mt-3 font-bold text-gray-800 dark:text-gray-300">{budgetUsedPct}% Terpakai</p>
-        </div>
-
-        <div className="mb-3 rounded-[20px] border border-gray-100 dark:border-slate-700/60 p-4 bg-white dark:bg-slate-900/30">
-          <div className="flex justify-between text-sm text-gray-700 dark:text-gray-300 mb-2 font-bold">
-            <span className="">Unit Terjual</span>
-            <span className="">
-              {soldUnits} / {totalUnits} Unit
-            </span>
-          </div>
-          <div className="h-3 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden mb-3">
-            <div className="h-full bg-[#EA6C00] dark:bg-[#F97316] rounded-full transition-all duration-500" style={{ width: `${progressPct}%` }} />
-          </div>
-          <div className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-400 font-bold">
-            <span>Transaksi : {transactionCount}</span>
-            <span>{progressPct}%</span>
-          </div>
-        </div>
-
-        <div className="mt-auto pt-4 flex justify-end gap-6">
-          <button onClick={() => setShowDeleteConfirm(true)} className="flex items-center gap-2.5 text-xs font-bold text-gray-600 hover:text-red-600 transition-colors">
-            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center">
-               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1v3M4 7h16" />
-               </svg>
-            </div>
-            Hapus
-          </button>
-          <button onClick={() => setShowEditModal(true)} className="flex items-center gap-2.5 text-xs font-bold text-gray-600 hover:text-black transition-colors">
-            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          
+          {/* Dates and Remaining Days */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2.5">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
+              <span className="text-sm text-slate-600 dark:text-slate-400">
+                {formatDate(project.startDate)} <span className="mx-1 text-slate-400">-</span> {formatDate(project.endDate)}
+              </span>
             </div>
+            <div className="inline-flex items-center gap-1.5 rounded-lg bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-600 dark:bg-orange-500/10 dark:text-orange-400 whitespace-nowrap">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {remainingDays === null ? "Tanpa target" : `Sisa ${remainingDays} Hari`}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-auto bg-slate-50 dark:bg-slate-800/40 rounded-2xl p-5 space-y-6">
+          {/* Budget Section */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-slate-900 dark:text-white">Budget</span>
+              <span className="text-sm font-semibold text-slate-900 dark:text-white tabular-nums">{formatCurrency(budget)}</span>
+            </div>
+            <div className="h-2 w-full bg-slate-200/70 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div className="h-full bg-orange-500 rounded-full transition-all duration-500" style={{ width: `${budgetUsedPct}%` }} />
+            </div>
+            <div className="flex items-center justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
+              <span>Terpakai {budgetUsedPct}%</span>
+              <span>Sisa {formatCurrency(remainingBudget)}</span>
+            </div>
+          </div>
+
+
+
+          {/* Unit Terjual Section */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-slate-900 dark:text-white">Progress Unit</span>
+              <span className="text-sm font-semibold text-slate-900 dark:text-white">{soldUnits} / {totalUnits} Unit</span>
+            </div>
+            <div className="h-2 w-full bg-slate-200/70 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${progressPct}%` }} />
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-600 dark:text-slate-400">Total Transaksi</span>
+              <span className="font-semibold text-slate-900 dark:text-white tabular-nums">{transactionCount} Transaksi</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Row */}
+        <div className="pt-4 mt-5 flex items-center justify-end gap-5">
+          <button onClick={() => setShowEditModal(true)} className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
             Edit
           </button>
+          <button onClick={() => setShowDeleteConfirm(true)} className="inline-flex items-center gap-2 text-sm font-medium text-rose-600 hover:text-rose-700 dark:hover:text-rose-400 transition-colors">
+             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1v3M4 7h16" />
+             </svg>
+            Hapus
+          </button>
         </div>
-
       </div>
 
       {showEditModal && <EditProjectModal project={project} onClose={() => setShowEditModal(false)} />}
 
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm shadow-xl p-6 border border-gray-200 dark:border-slate-700">
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 mx-auto mb-4">
-              <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200 text-center border border-gray-100 dark:border-slate-700">
+            <div className="flex items-center justify-center w-20 h-20 rounded-full bg-red-50 dark:bg-red-900/20 mx-auto mb-6 shadow-inner">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+                className="w-10 h-10 text-red-500"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+                />
               </svg>
             </div>
-            <h3 className="text-lg font-bold text-center text-gray-900 dark:text-white mb-2">Hapus Proyek?</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-1">
-              Proyek <span className="font-semibold text-gray-700 dark:text-gray-200">{project.name}</span> akan dihapus permanen.
-            </p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 text-center mb-5">Pastikan tidak ada transaksi terkait sebelum menghapus.</p>
+            
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Hapus Proyek?</h3>
+            
+            <div className="text-center space-y-2 mb-7">
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                Proyek <span className="font-bold text-slate-900 dark:text-white">{project.name}</span> akan dihapus permanen.
+              </p>
+            </div>
 
-            {deleteError && <div className="text-red-500 text-xs font-medium p-2.5 bg-red-50 dark:bg-red-900/30 rounded-lg border border-red-100 dark:border-red-800 mb-4">{deleteError}</div>}
+            {deleteError && (
+              <div className="text-red-500 text-xs font-medium p-3 bg-red-50 dark:bg-red-900/30 rounded-xl border border-red-100 dark:border-red-800 mb-5">
+                {deleteError}
+              </div>
+            )}
 
             <div className="flex gap-3">
               <button
@@ -243,16 +262,23 @@ export default function ProjectCard({
                   setDeleteError("");
                 }}
                 disabled={isDeleting}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-slate-700 dark:text-gray-200 dark:border-slate-600 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
+                className="flex-1 h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
               >
                 Batal
               </button>
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+                className="flex-1 h-12 px-4 rounded-xl bg-red-500 text-sm font-semibold text-white hover:bg-red-600 shadow-sm shadow-red-500/20 transition-all active:scale-[0.98] disabled:opacity-50"
               >
-                {isDeleting ? "Menghapus..." : "Ya, Hapus"}
+                {isDeleting ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Menghapus...</span>
+                  </div>
+                ) : (
+                  "Ya, Hapus"
+                )}
               </button>
             </div>
           </div>

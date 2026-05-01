@@ -47,9 +47,11 @@ export default function EditTransaksiModal({
   const [projOpen, setProjOpen] = useState(false);
   const [selectedProj, setSelectedProj] = useState(transaction.projectId || "");
   const projRef = useRef<HTMLDivElement>(null);
+  const [searchProj, setSearchProj] = useState("");
 
   useEffect(() => {
     if (state?.success) {
+      router.push("/dashboard/transaksi?toast=edit_success");
       router.refresh();
       onClose();
     }
@@ -78,7 +80,7 @@ export default function EditTransaksiModal({
       <div className="bg-white dark:bg-slate-800 rounded-[16px] shadow-2xl w-full max-w-lg overflow-hidden border border-white/20 dark:border-slate-700 animate-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="flex justify-between items-center p-5 border-b border-[#F3F4F6] dark:border-slate-700">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+          <h2 className="text-[18px] font-semibold text-gray-900 dark:text-white leading-tight">
             Edit Transaksi
           </h2>
           <button
@@ -89,7 +91,7 @@ export default function EditTransaksiModal({
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
-              strokeWidth={2.5}
+              strokeWidth={1.5}
               stroke="currentColor"
               className="w-5 h-5"
             >
@@ -108,7 +110,7 @@ export default function EditTransaksiModal({
           <div className="p-6 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
+                <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
                   No. Referensi <span className="text-[#EA6C00]">*</span>
                 </label>
                 <input
@@ -116,11 +118,11 @@ export default function EditTransaksiModal({
                   name="reference"
                   required
                   defaultValue={transaction.reference}
-                  className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all placeholder-gray-400"
+                  className="w-full px-4 h-12 border border-[#E5E7EB] dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all placeholder-gray-400"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
+                <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
                   Tanggal <span className="text-[#EA6C00]">*</span>
                 </label>
                 <input
@@ -130,13 +132,13 @@ export default function EditTransaksiModal({
                   defaultValue={
                     new Date(transaction.date).toISOString().split("T")[0]
                   }
-                  className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all"
+                  className="w-full px-4 h-12 border border-[#E5E7EB] dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
+              <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
                 Keterangan <span className="text-[#EA6C00]">*</span>
               </label>
               <input
@@ -144,12 +146,12 @@ export default function EditTransaksiModal({
                 name="description"
                 required
                 defaultValue={transaction.description}
-                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all placeholder-gray-400"
+                className="w-full px-4 h-12 border border-[#E5E7EB] dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all placeholder-gray-400"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
+              <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
                 Catatan
               </label>
               <input
@@ -157,13 +159,13 @@ export default function EditTransaksiModal({
                 name="note"
                 defaultValue={transaction.note || ""}
                 placeholder="Catatan tambahan (opsional)"
-                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all placeholder-gray-400"
+                className="w-full px-4 h-12 border border-[#E5E7EB] dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all placeholder-gray-400"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="relative" ref={catRef}>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
+                <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
                   Kategori <span className="text-[#EA6C00]">*</span>
                 </label>
                 <input
@@ -175,7 +177,7 @@ export default function EditTransaksiModal({
                 <button
                   type="button"
                   onClick={() => setCatOpen(!catOpen)}
-                  className={`flex justify-between items-center w-full px-4 py-2.5 border rounded-[10px] text-sm transition-all text-left ${
+                  className={`flex justify-between items-center w-full px-4 h-12 border rounded-xl text-sm transition-all text-left ${
                     catOpen
                       ? "border-[#EA6C00] ring-4 ring-[#EA6C00]/10"
                       : "border-[#E5E7EB] dark:border-slate-600"
@@ -200,7 +202,7 @@ export default function EditTransaksiModal({
                   </svg>
                 </button>
                 {catOpen && (
-                  <div className="absolute z-[60] left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-[10px] shadow-xl overflow-hidden py-1">
+                  <div className="absolute z-[60] left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden p-1.5">
                     {CATEGORIES.map((cat) => (
                       <button
                         key={cat.id}
@@ -209,10 +211,10 @@ export default function EditTransaksiModal({
                           setSelectedCat(cat.id);
                           setCatOpen(false);
                         }}
-                        className={`block w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                        className={`block w-full text-left px-4 py-3 text-sm transition-all rounded-xl ${
                           selectedCat === cat.id
-                            ? "bg-[#EA6C00] text-white"
-                            : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"
+                            ? "bg-slate-50 dark:bg-slate-700/50 text-gray-900 dark:text-white font-medium"
+                            : "text-gray-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-slate-700/30 font-medium"
                         }`}
                       >
                         {cat.label}
@@ -222,7 +224,7 @@ export default function EditTransaksiModal({
                 )}
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
+                <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
                   Jumlah (Rp) <span className="text-[#EA6C00]">*</span>
                 </label>
                 <input
@@ -231,60 +233,73 @@ export default function EditTransaksiModal({
                   required
                   min="1"
                   defaultValue={transaction.amount}
-                  className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all"
+                  className="w-full px-4 h-12 border border-[#E5E7EB] dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all"
                 />
               </div>
             </div>
 
             <div className="relative" ref={projRef}>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
+              <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
                 Proyek
               </label>
               <input type="hidden" name="projectId" value={selectedProj} />
-              <button
-                type="button"
-                onClick={() => setProjOpen(!projOpen)}
-                className={`flex justify-between items-center w-full px-4 py-2.5 border rounded-[10px] text-sm transition-all text-left ${
+              <div
+                onClick={() => {
+                  if (!projOpen) {
+                    setProjOpen(true);
+                    setSearchProj("");
+                  } else {
+                    setProjOpen(false);
+                  }
+                }}
+                className={`flex justify-between items-center w-full px-4 h-12 border rounded-xl text-sm transition-all text-left cursor-text ${
                   projOpen
                     ? "border-[#EA6C00] ring-4 ring-[#EA6C00]/10"
                     : "border-[#E5E7EB] dark:border-slate-600"
-                } bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none`}
+                } bg-white dark:bg-slate-700 text-gray-900 dark:text-white`}
               >
-                <span className={selectedProj ? "" : "text-gray-400"}>
-                  {selectedProj ? currentProjLabel : "Tanpa proyek"}
-                </span>
+                {projOpen ? (
+                  <input
+                    autoFocus
+                    type="text"
+                    className="w-full bg-transparent border-none outline-none focus:ring-0 p-0 text-sm placeholder-gray-400 dark:placeholder-gray-500"
+                    placeholder="Ketik untuk mencari..."
+                    value={searchProj}
+                    onChange={(e) => setSearchProj(e.target.value)}
+                  />
+                ) : (
+                  <span className={`truncate pr-2 ${selectedProj ? "" : "text-gray-400"}`}>
+                    {selectedProj ? currentProjLabel : "Tanpa proyek"}
+                  </span>
+                )}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className={`w-4 h-4 transition-transform ${projOpen ? "rotate-180" : ""}`}
+                  className={`w-4 h-4 flex-shrink-0 transition-transform ${projOpen ? "rotate-180" : ""}`}
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
-              </button>
+              </div>
               {projOpen && (
-                <div className="absolute z-[60] left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-[10px] shadow-xl py-1">
+                <div className="absolute z-[60] left-0 right-0 mt-2 max-h-48 overflow-y-auto bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-2xl shadow-xl p-1.5 custom-scrollbar">
+                  
                   <button
                     type="button"
                     onClick={() => {
                       setSelectedProj("");
                       setProjOpen(false);
                     }}
-                    className={`block w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                    className={`block w-full text-left px-4 py-3 text-sm transition-all rounded-xl ${
                       selectedProj === ""
-                        ? "bg-[#EA6C00] text-white"
-                        : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"
+                        ? "bg-slate-50 dark:bg-slate-700/50 text-gray-900 dark:text-white font-medium"
+                        : "text-gray-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-slate-700/30 font-medium"
                     }`}
                   >
                     Tanpa proyek
                   </button>
-                  {projects.map((p) => (
+                  {projects.filter(p => p.name.toLowerCase().includes(searchProj.toLowerCase()) || p.code.toLowerCase().includes(searchProj.toLowerCase())).map((p) => (
                     <button
                       key={p.id}
                       type="button"
@@ -292,10 +307,10 @@ export default function EditTransaksiModal({
                         setSelectedProj(p.id);
                         setProjOpen(false);
                       }}
-                      className={`block w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                      className={`block w-full text-left px-4 py-3 text-sm transition-all rounded-xl ${
                         selectedProj === p.id
-                          ? "bg-[#EA6C00] text-white"
-                          : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"
+                          ? "bg-slate-50 dark:bg-slate-700/50 text-gray-900 dark:text-white font-medium"
+                          : "text-gray-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-slate-700/30 font-medium"
                       }`}
                     >
                       {p.code} — {p.name}

@@ -38,7 +38,7 @@ const rbcLocalizer = dateFnsLocalizer({
 
 // ─── Helpers ────────────────────────────────────────────────────
 function formatRupiah(num: number | undefined | null) {
-  return "Rp. " + (num || 0).toLocaleString("id-ID");
+  return "Rp " + (num || 0).toLocaleString("id-ID");
 }
 
 function formatCompact(num: number) {
@@ -87,17 +87,8 @@ function CashFlowTooltip({
   if (!active || !payload?.length) return null;
 
   return (
-    <div
-      className="rounded-xl border border-[#E5E7EB] bg-white dark:bg-slate-800 dark:border-slate-700 shadow-lg px-3 py-2.5"
-      style={{ fontSize: "12px" }}
-    >
-      <p
-        style={{
-          fontWeight: "bold",
-          color: "#EA6C00",
-          marginBottom: "8px",
-        }}
-      >
+    <div className="rounded-xl border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 shadow-md px-4 py-3 text-sm">
+      <p className="font-semibold text-slate-900 dark:text-slate-100 mb-2">
         {label}
       </p>
 
@@ -109,11 +100,8 @@ function CashFlowTooltip({
         return (
           <p
             key={`${seriesName}-${index}`}
-            style={{
-              color: textColor,
-              margin: "4px 0",
-              fontWeight: isNetLine ? 700 : 600,
-            }}
+            style={{ color: textColor }}
+            className={`my-1 ${isNetLine ? "font-semibold mt-2 pt-2 border-t border-slate-100 dark:border-slate-700/50" : "font-medium"}`}
           >
             {seriesName}: {formatRupiah(Number(item.value || 0))}
           </p>
@@ -233,61 +221,87 @@ function ProjectFilterDropdown({
         };
 
   return (
-    <div className="relative w-full md:w-64" ref={dropdownRef}>
+    <div className="relative w-full md:min-w-[260px] md:w-auto" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-4 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#EA6C00]/20 focus:border-[#EA6C00] text-gray-700 dark:text-gray-200 transition-colors shadow-sm"
-        style={{ borderRadius: "12px" }}
+        className={cn(
+          "w-full flex items-center justify-between px-4 py-3 bg-white border transition-all duration-200 shadow-sm outline-none rounded-xl",
+          isOpen 
+            ? "border-orange-400 ring-2 ring-orange-50" 
+            : "border-gray-200 hover:border-gray-300"
+        )}
       >
-        <span className="truncate pr-2">{selectedItem.label}</span>
+        <span className="text-[15px] font-semibold text-slate-900 truncate pr-2">
+          {selectedItem.label}
+        </span>
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-          viewBox="0 0 20 20"
-          fill="currentColor"
+          className={cn(
+            "w-4 h-4 text-gray-400 transition-transform duration-300 ml-2 flex-shrink-0",
+            isOpen ? "rotate-180" : ""
+          )}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         >
-          <path
-            fillRule="evenodd"
-            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-            clipRule="evenodd"
-          />
+          <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-2 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-lg overflow-hidden flex flex-col max-h-60 overflow-y-auto custom-scrollbar">
-          <button
+        <div 
+          className="absolute left-0 z-50 min-w-full w-max max-w-[420px] mt-1.5 bg-white border border-gray-200 shadow-md shadow-gray-200/60 p-1 flex flex-col gap-0.5 max-h-[300px] overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-200 origin-top-left rounded-xl"
+        >
+          <DropdownItem 
+            label="Semua Proyek (Global)" 
+            isSelected={selectedProject === "all"} 
             onClick={() => {
               onSelect("all");
               setIsOpen(false);
-            }}
-            className={`text-left px-[14px] py-[10px] text-sm font-medium transition-colors ${
-              selectedProject === "all"
-                ? "bg-[#EA6C00] text-white"
-                : "text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/50 dark:hover:text-gray-100"
-            }`}
-          >
-            Semua Proyek (Global)
-          </button>
+            }} 
+          />
           {projects.map((p) => (
-            <button
+            <DropdownItem 
               key={p.id}
+              label={`${p.code} — ${p.name}`} 
+              isSelected={selectedProject === p.id} 
               onClick={() => {
                 onSelect(p.id);
                 setIsOpen(false);
-              }}
-              className={`text-left px-[14px] py-[10px] text-sm font-medium transition-colors ${
-                selectedProject === p.id
-                  ? "bg-[#EA6C00] text-white"
-                  : "text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/50 dark:hover:text-gray-100"
-              }`}
-            >
-              {p.code} — {p.name}
-            </button>
+              }} 
+            />
           ))}
         </div>
       )}
     </div>
+  );
+}
+
+function DropdownItem({ label, isSelected, onClick }: { label: string; isSelected: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "flex items-center justify-between px-3 py-2.5 text-left transition-colors duration-150 rounded-lg cursor-pointer gap-3",
+        isSelected 
+          ? "bg-gray-50 text-slate-900 font-semibold" 
+          : "text-slate-700 font-medium hover:bg-gray-50 hover:text-slate-900"
+      )}
+    >
+      <div className="min-w-0">
+        <span className="text-sm leading-snug line-clamp-2">
+          {label}
+        </span>
+      </div>
+      {isSelected && (
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-orange-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+        </svg>
+      )}
+    </button>
   );
 }
 
@@ -310,7 +324,7 @@ function SummaryCard({
       className={cn(
         "rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden transition-all duration-300 group shadow-sm",
         accent
-          ? "bg-[#18202f] text-white"
+          ? "bg-[#EA6C00] text-white shadow-lg shadow-orange-500/20"
           : "bg-white dark:bg-slate-800 border-[0.5px] border-[#E5E7EB] dark:border-slate-700 text-gray-900 dark:text-gray-100",
       )}
     >
@@ -318,17 +332,17 @@ function SummaryCard({
         <span
           className={cn(
             "card-label",
-            accent ? "!text-slate-100" : "text-gray-500 dark:text-gray-400",
+            accent ? "!text-white" : "text-gray-500 dark:text-gray-400",
           )}
         >
           {title}
         </span>
         <div
           className={cn(
-            "w-8 h-8 rounded-full flex items-center justify-center",
+            "w-10 h-10 rounded-full flex items-center justify-center transition-transform group-hover:scale-110",
             accent
-              ? "bg-[#273549] text-[#EA6C00] dark:text-[#F97316]"
-              : "bg-[#FFF0E6] dark:bg-[#431407] text-[#EA6C00] dark:text-[#F97316]",
+              ? "bg-white/20 text-white"
+              : "bg-slate-100 dark:bg-slate-800/80 text-slate-900 dark:text-white",
           )}
         >
           {icon}
@@ -345,8 +359,8 @@ function SummaryCard({
         </p>
         <p
           className={cn(
-            "card-subtitle mt-1 line-clamp-1 opacity-50 ",
-            accent ? "!text-slate-300" : "text-gray-400 dark:text-gray-500",
+            "card-subtitle mt-1 line-clamp-1",
+            accent ? "!text-white" : "text-gray-400 dark:text-gray-500 opacity-50",
           )}
         >
           {subtitle}
@@ -410,44 +424,24 @@ function MiniToolbar({
     "Desember",
   ];
   return (
-    <div className="flex items-center justify-between mb-2">
+    <div className="flex items-center justify-between mb-3">
       <button
         onClick={() => onNavigate("PREV")}
-        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors text-gray-400 dark:text-gray-400 hover:text-[#EA6C00] dark:hover:text-[#EA6C00]"
+        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
       >
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 19l-7-7 7-7"
-          />
+        <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
         </svg>
       </button>
-      <span className="text-sm font-semibold text-gray-800 dark:text-[#F9FAFB]">
+      <span className="text-base font-semibold text-slate-900 dark:text-[#F9FAFB]">
         {label}
       </span>
       <button
         onClick={() => onNavigate("NEXT")}
-        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors text-gray-400 dark:text-gray-400 hover:text-[#EA6C00] dark:hover:text-[#EA6C00]"
+        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
       >
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 5l7 7-7 7"
-          />
+        <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
         </svg>
       </button>
     </div>
@@ -521,23 +515,26 @@ function MiniCalendar({
       const bg = eventDateMap.get(key);
       const isSelected = key === selKey;
 
+      const isOffRange = date.getMonth() !== selectedDate.getMonth();
+
       return (
         <button
           type="button"
           onClick={() => onSelectDate(date)}
-          className={`relative flex items-center justify-center mx-auto transition-all text-xs font-semibold hover:shadow-xs w-7 h-7 ${
+          className={`relative flex items-center justify-center mx-auto transition-all w-9 h-9 rounded-xl ${
             isSelected
-              ? "mini-cal-selected-day bg-[#EA6C00] text-white rounded-lg"
+              ? "mini-cal-selected-day bg-orange-500 text-white font-semibold shadow-sm"
               : isToday
-                ? "bg-[#FFF0E6] border-2 border-[#EA6C00] text-[#EA6C00] rounded-[8px]"
-                : bg
-                  ? "bg-[#FFF0E6] dark:bg-[rgba(234,108,0,0.15)] text-gray-800 dark:text-[#E5E7EB]! rounded-lg"
-                  : "text-gray-800 dark:text-[#E5E7EB]! rounded-lg"
+                ? "bg-orange-50 text-orange-600 font-semibold dark:bg-orange-500/20"
+                : isOffRange
+                  ? "text-sm font-medium text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  : "text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
           }`}
+          style={isSelected ? { color: "#ffffff" } : undefined}
         >
-          {label}
+          {date.getDate()}
           {bg && (
-            <span className="absolute top-[3px] right-[3px] w-1 h-1 rounded-full bg-[#EA6C00]"></span>
+            <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-orange-500"></span>
           )}
         </button>
       );
@@ -580,10 +577,43 @@ function MiniCalendar({
           toolbar: (props: any) => (
             <MiniToolbar label={props.label} onNavigate={props.onNavigate} />
           ),
-          month: { dateHeader: CustomDateHeader },
+          month: { 
+            dateHeader: CustomDateHeader,
+            header: ({ label }: any) => (
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 py-1.5">
+                {label.slice(0, 3)}
+              </div>
+            )
+          },
         }}
-        style={{ height: 280 }}
+        style={{ height: 300 }}
       />
+      <style jsx global>{`
+        .mini-calendar-widget .rbc-month-row {
+          padding-bottom: 0px;
+        }
+        .mini-calendar-widget .rbc-row-content {
+          z-index: 1;
+        }
+        .mini-calendar-widget .rbc-month-view {
+          border: none;
+        }
+        .mini-calendar-widget .rbc-header {
+          border: none;
+        }
+        .mini-calendar-widget .rbc-day-bg {
+          border: none;
+        }
+        .mini-calendar-widget .rbc-row {
+          column-gap: 4px;
+        }
+        .mini-calendar-widget .rbc-row-segment {
+          margin-bottom: 8px;
+        }
+        .mini-cal-selected-day {
+          color: white !important;
+        }
+      `}</style>
     </div>
   );
 }
@@ -742,8 +772,10 @@ export default function DashboardClient({
     >
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="page-title dark:text-gray-100">Dashboard</h1>
-          <p className="card-subtitle text-gray-400 dark:text-gray-400 mt-3">
+          <h1 className="page-title dark:text-gray-100">
+            Dashboard
+          </h1>
+          <p className="card-subtitle text-gray-400 dark:text-gray-400 mt-2">
             Ringkasan kinerja keuangan dan monitoring proyek
           </p>
         </div>
@@ -767,7 +799,7 @@ export default function DashboardClient({
           accent
           icon={
             <svg
-              className="w-4 h-4"
+              className="w-5 h-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -787,7 +819,7 @@ export default function DashboardClient({
           subtitle="Nilai unit Lunas / Serah Terima"
           icon={
             <svg
-              className="w-4 h-4"
+              className="w-5 h-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -807,7 +839,7 @@ export default function DashboardClient({
           subtitle="HPP + Operasional"
           icon={
             <svg
-              className="w-4 h-4"
+              className="w-5 h-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -827,7 +859,7 @@ export default function DashboardClient({
           subtitle="Tagihan KPR yang belum cair"
           icon={
             <svg
-              className="w-4 h-4"
+              className="w-5 h-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -844,136 +876,187 @@ export default function DashboardClient({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-3 mb-4 lg:mb-3">
-        <Card
-          title="Ringkasan Laba Rugi"
-          action={
-            <Link href="/dashboard/laporan" className={dashboardActionClass}>
-              Lihat Lengkap
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 dark:bg-slate-800 dark:border-slate-700 h-full flex flex-col">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white">Ringkasan Laba Rugi</h3>
+            <Link 
+              href="/dashboard/laporan" 
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors group dark:text-slate-400 dark:hover:text-slate-200"
+            >
+              Lihat detail
+              <svg 
+                className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 text-slate-400 group-hover:text-slate-600" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+              </svg>
             </Link>
-          }
-        >
-          <div className="flex flex-col gap-3 py-2">
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-slate-500 font-medium">
-                Pendapatan Diakui
-              </span>
-              <span className="font-bold text-slate-800 dark:text-slate-200">
-                {formatRupiah(pendapatanDiakui)}
-              </span>
+          </div>
+          
+          <div className="bg-slate-100 dark:bg-slate-800/80 rounded-2xl px-5 py-4 flex flex-col flex-1">
+            <div className="flex-1 flex flex-col justify-start">
+              <div className="flex items-center justify-between py-3">
+                <span className="text-[15px] font-medium text-slate-600 dark:text-slate-400">
+                  Pendapatan Diakui
+                </span>
+                <span className="text-[15px] font-semibold text-slate-900 dark:text-slate-200 tabular-nums">
+                  {formatRupiah(pendapatanDiakui)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-3">
+                <span className="text-[15px] font-medium text-slate-600 dark:text-slate-400">
+                  Total Beban
+                </span>
+                <span className="text-[15px] font-semibold text-slate-900 dark:text-slate-200 tabular-nums">
+                  ({formatRupiah(Math.abs(totalExpenses))})
+                </span>
+              </div>
             </div>
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-slate-500 font-medium">Total Beban</span>
-              <span className="font-bold text-slate-800 dark:text-slate-200">
-                ({formatRupiah(totalExpenses)})
-              </span>
-            </div>
-            <div className="flex justify-between items-center text-base pt-3 border-t border-slate-100 dark:border-slate-700">
-              <span className="font-bold text-slate-800 dark:text-white uppercase tracking-wider text-xs">
+            
+            <div className="border-t border-slate-200 dark:border-slate-700/50 my-3"></div>
+            
+            <div className="flex items-center justify-between py-2">
+              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                 Laba Bersih
               </span>
-              <span
-                className={`font-black ${labaBersih >= 0 ? "text-emerald-600" : "text-red-500"}`}
-              >
+              <span className={cn("text-2xl font-bold tabular-nums", labaBersih >= 0 ? "text-emerald-600" : "text-red-500")}>
                 {formatRupiah(labaBersih)}
               </span>
             </div>
           </div>
-        </Card>
+        </div>
 
-        <Card
-          title="Neraca Singkat"
-          action={
-            <Link
-              href="/dashboard/laporan?tab=neraca"
-              className={dashboardActionClass}
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 dark:bg-slate-800 dark:border-slate-700 h-full flex flex-col">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white">Neraca Singkat</h3>
+            <Link 
+              href="/dashboard/laporan?tab=neraca" 
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors group dark:text-slate-400 dark:hover:text-slate-200"
             >
               Lihat detail
+              <svg 
+                className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 text-slate-400 group-hover:text-slate-600" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+              </svg>
             </Link>
-          }
-        >
-          <div className="flex flex-col gap-4 py-2">
-            <div className="flex justify-between items-center text-[13px]">
-              <span className="text-slate-500 font-medium">Total Aset</span>
-              <span className="font-semibold text-slate-800 dark:text-slate-200">
+          </div>
+          
+          <div className="bg-slate-100 dark:bg-slate-800/80 rounded-2xl px-5 py-4 flex flex-col flex-1">
+            <div className="flex items-center justify-between py-3">
+              <span className="text-[15px] font-medium text-slate-600 dark:text-slate-400">
+                Total Aset
+              </span>
+              <span className="text-[15px] font-semibold text-slate-900 dark:text-slate-200 tabular-nums">
                 {formatRupiah(totalAset || 0)}
               </span>
             </div>
-            <div className="flex justify-between items-center text-[13px]">
-              <span className="text-slate-500 font-medium">
+            <div className="flex items-center justify-between py-3">
+              <span className="text-[15px] font-medium text-slate-600 dark:text-slate-400">
                 Total Kewajiban
               </span>
-              <span className="font-semibold text-slate-800 dark:text-slate-200">
+              <span className="text-[15px] font-semibold text-slate-900 dark:text-slate-200 tabular-nums">
                 {formatRupiah(totalKewajiban || 0)}
               </span>
             </div>
-            <div className="flex justify-between items-center text-[13px]">
-              <span className="text-slate-500 font-medium">Total Ekuitas</span>
-              <span className="font-semibold text-slate-800 dark:text-slate-200">
+            <div className="flex items-center justify-between py-3">
+              <span className="text-[15px] font-medium text-slate-600 dark:text-slate-400">
+                Total Ekuitas
+              </span>
+              <span className="text-[15px] font-semibold text-slate-900 dark:text-slate-200 tabular-nums">
                 {formatRupiah(totalEkuitas || 0)}
               </span>
             </div>
-
-            <div className="pt-4 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
-              <span className="text-[13px] font-medium text-slate-500">
+            <div className="border-t border-slate-200 dark:border-slate-700/50 my-3"></div>
+            
+            <div className="flex items-center justify-between py-1">
+              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                 Status
               </span>
-              {(totalAset || 0) ===
-              (totalKewajiban || 0) + (totalEkuitas || 0) ? (
-                <span className="px-3 py-1 bg-[#F8FAFC] dark:bg-slate-800 text-[#475569] dark:text-slate-300 text-[10px] font-bold rounded-lg border border-[#E2E8F0] dark:border-slate-700 uppercase tracking-wider">
-                  Balance
-                </span>
-              ) : (
-                <span className="px-3 py-1 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-bold rounded-lg border border-red-100 dark:border-red-900/30 uppercase tracking-wider">
-                  Tidak Balance
-                </span>
-              )}
+              <span
+                className={cn(
+                  "px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase",
+                  (totalAset || 0) === (totalKewajiban || 0) + (totalEkuitas || 0)
+                    ? "bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-950/20 dark:border-emerald-900/30"
+                    : "bg-red-50 text-red-600 border border-red-100 dark:bg-red-950/20 dark:border-red-900/30",
+                )}
+              >
+                {(totalAset || 0) === (totalKewajiban || 0) + (totalEkuitas || 0)
+                  ? "BALANCE"
+                  : "UNBALANCED"}
+              </span>
             </div>
           </div>
-        </Card>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-3 mb-4 lg:mb-3">
-        <Card
-          title="Proporsi Pengeluaran"
-          action={
-            <button className={dashboardActionClass}>Detail Biaya</button>
-          }
-        >
-          <div className="flex flex-col items-center gap-6 py-2">
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 dark:bg-slate-800 dark:border-slate-700 h-full flex flex-col">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white">Proporsi Pengeluaran</h3>
+            <button className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors group dark:text-slate-400 dark:hover:text-slate-200">
+              Detail Biaya
+              <svg 
+                className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 text-slate-400 group-hover:text-slate-600" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+          <div className="flex flex-col items-center gap-6 py-2 flex-1">
             <DonutChart data={breakdownData} />
-            <div className="flex-1 w-full space-y-2.5">
+            <div className="flex-1 w-full bg-slate-100 dark:bg-slate-800/80 rounded-2xl px-5 py-4 flex flex-col space-y-3">
               {breakdownData.map((d, i) => (
                 <div
                   key={i}
                   className="flex items-center justify-between group"
                 >
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-3">
                     <div
-                      className="w-2 h-2 rounded-full ring-2 ring-white dark:ring-slate-800"
+                      className="w-2.5 h-2.5 rounded-full"
                       style={{ backgroundColor: d.color }}
                     ></div>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    <span className="text-[15px] font-medium text-slate-600 dark:text-slate-400">
                       {d.label}
                     </span>
                   </div>
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                  <span className="text-[15px] font-semibold text-slate-900 dark:text-slate-200 tabular-nums">
                     {formatRupiah(d.value)}
                   </span>
                 </div>
               ))}
             </div>
           </div>
-        </Card>
+        </div>
 
-        <Card
-          title="Status Stok Unit"
-          action={
-            <Link href="/dashboard/unit" className={dashboardActionClass}>
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 dark:bg-slate-800 dark:border-slate-700 h-full flex flex-col">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white">Status Stok Unit</h3>
+            <Link 
+              href="/dashboard/unit" 
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors group dark:text-slate-400 dark:hover:text-slate-200"
+            >
               Master Unit
+              <svg 
+                className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 text-slate-400 group-hover:text-slate-600" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+              </svg>
             </Link>
-          }
-        >
-          <div className="flex flex-col items-center gap-6 py-2">
+          </div>
+
+          <div className="flex flex-col items-center gap-6 py-2 flex-1">
             <DonutChart
               data={[
                 {
@@ -1000,7 +1083,7 @@ export default function DashboardClient({
               ]}
               valueFormatter={(value) => `${value} Unit`}
             />
-            <div className="flex-1 w-full space-y-2.5">
+            <div className="flex-1 w-full bg-slate-100 dark:bg-slate-800/80 rounded-2xl px-5 py-4 flex flex-col space-y-3">
               {[
                 {
                   label: "Tersedia",
@@ -1024,69 +1107,78 @@ export default function DashboardClient({
                   key={i}
                   className="flex items-center justify-between group"
                 >
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-3">
                     <div
-                      className="w-2 h-2 rounded-full ring-2 ring-white dark:ring-slate-800"
+                      className="w-2.5 h-2.5 rounded-full"
                       style={{ backgroundColor: d.color }}
                     ></div>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    <span className="text-[15px] font-medium text-slate-600 dark:text-slate-400">
                       {d.label}
                     </span>
                   </div>
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                  <span className="text-[15px] font-semibold text-slate-900 dark:text-slate-200 tabular-nums">
                     {d.value} Unit
                   </span>
                 </div>
               ))}
             </div>
           </div>
-        </Card>
+        </div>
 
-        <Card
-          title="Agenda Proyek"
-          action={
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 dark:bg-slate-800 dark:border-slate-700 h-full flex flex-col">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white">Agenda Proyek</h3>
             <Link
               href={`/dashboard/calendar?date=${format(selectedDate, "yyyy-MM-dd")}`}
-              className={dashboardActionClass}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors group dark:text-slate-400 dark:hover:text-slate-200"
             >
               Full Agenda
+              <svg 
+                className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+              </svg>
             </Link>
-          }
-        >
-          <div className="py-2">
-            <MiniCalendar
-              events={calendarEvents}
-              selectedDate={selectedDate}
-              onSelectDate={setSelectedDate}
-              onNavigate={setSelectedDate}
-            />
-            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-[#EA6C00]/10 flex items-center justify-center text-[#EA6C00] shrink-0 font-bold text-xs">
+          </div>
+          <div className="py-2 flex-1 flex flex-col">
+            <div className="bg-slate-100 dark:bg-slate-800/80 rounded-2xl px-5 py-4 flex-1">
+              <MiniCalendar
+                events={calendarEvents}
+                selectedDate={selectedDate}
+                onSelectDate={setSelectedDate}
+                onNavigate={setSelectedDate}
+              />
+            </div>
+            <div className="mt-5">
+              <div className="flex items-start gap-4">
+                <div className="w-11 h-11 rounded-xl bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center text-orange-600 dark:text-orange-500 shrink-0 font-semibold text-sm">
                   {selectedDate.getDate()}
                 </div>
-                <div className="flex-1">
-                  <p className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
+                <div className="flex-1 pt-0.5">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-200">
                     {format(selectedDate, "eeee, dd MMM yyyy", {
                       locale: idLocale,
                     })}
                   </p>
-                  <div className="mt-2 space-y-2">
+                  <div className="mt-2.5 space-y-2">
                     {selectedDateEvents.length > 0 ? (
                       selectedDateEvents.map((evt, idx) => (
                         <div
                           key={idx}
-                          className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-900/50 rounded-lg group"
+                          className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-900/50 rounded-xl group"
                         >
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2.5">
                             <div
-                              className={`w-1.5 h-1.5 rounded-full ${evt.status === "DONE" ? "bg-emerald-500" : "bg-[#EA6C00]"}`}
+                              className={`w-1.5 h-1.5 rounded-full ${evt.status === "DONE" ? "bg-emerald-500" : "bg-orange-500"}`}
                             ></div>
-                            <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400 line-clamp-1">
+                            <span className="text-xs font-medium text-slate-600 dark:text-slate-400 line-clamp-1">
                               {evt.title}
                             </span>
                           </div>
-                          <span className="text-[10px] text-slate-400 font-bold">
+                          <span className="text-[11px] text-slate-400 font-bold">
                             {evt.date
                               ? format(new Date(evt.date), "HH:mm")
                               : "-"}
@@ -1094,7 +1186,7 @@ export default function DashboardClient({
                         </div>
                       ))
                     ) : (
-                      <p className="text-[10px] text-slate-400 italic">
+                      <p className="text-xs text-slate-500 mt-1">
                         Tidak ada agenda hari ini
                       </p>
                     )}
@@ -1103,339 +1195,291 @@ export default function DashboardClient({
               </div>
             </div>
           </div>
-        </Card>
+        </div>
       </div>
 
       <div className="mb-4 lg:mb-3">
-        <Card title="Arus Kas (6 Bulan Terakhir)">
-          <div className="h-[320px] w-full mt-4">
-            {chartsMounted ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart
-                  data={cashFlowData}
-                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={true}
-                    horizontal={true}
-                    stroke="#e2e8f0"
-                    className="dark:stroke-slate-700/50"
-                  />
-                  <XAxis
-                    dataKey="month"
-                    tick={{ fontSize: 11, fill: "#64748b" }}
-                    tickMargin={10}
-                    axisLine={{ stroke: "#cbd5e1" }}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tickFormatter={(val) => formatCompact(val)}
-                    tick={{ fontSize: 11, fill: "#64748b" }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <Tooltip content={<CashFlowTooltip />} />
-                  <Legend
-                    iconType="circle"
-                    wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="masuk"
-                    name="Kas Masuk"
-                    fill="url(#colorMasuk)"
-                    stroke="#22c55e"
-                    strokeWidth={2}
-                    fillOpacity={0.2}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="keluar"
-                    name="Kas Keluar"
-                    fill="url(#colorKeluar)"
-                    stroke="#ef4444"
-                    strokeWidth={2}
-                    fillOpacity={0.2}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="bersih"
-                    name="Arus Bersih (Kumulatif)"
-                    stroke="#1e293b"
-                    strokeWidth={2.5}
-                    strokeDasharray="5 5"
-                    className="dark:stroke-slate-300"
-                    dot={false}
-                    activeDot={{ r: 6 }}
-                  />
-
-                  <defs>
-                    <linearGradient id="colorMasuk" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8} />
-                      <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="colorKeluar" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
-                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                </ComposedChart>
-              </ResponsiveContainer>
-            ) : (
-              <div style={{ height: 320 }} />
-            )}
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 dark:bg-slate-800 dark:border-slate-700 flex flex-col">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-[16px] font-semibold text-slate-900 dark:text-white">Arus Kas (6 Bulan Terakhir)</h3>
           </div>
-        </Card>
+          <div className="bg-slate-100 dark:bg-slate-800/80 rounded-2xl px-4 pt-4 pb-3 flex-1">
+            <div className="h-[320px] w-full">
+              {chartsMounted ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart
+                    data={cashFlowData}
+                    margin={{ top: 16, right: 24, left: 8, bottom: 16 }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      horizontal={true}
+                      stroke="#e2e8f0"
+                      className="dark:stroke-slate-700/50"
+                      strokeOpacity={0.6}
+                    />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: 12, fill: "#64748b" }}
+                      tickMargin={12}
+                      axisLine={{ stroke: "#e2e8f0" }}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      width={52}
+                      tickFormatter={(val) => {
+                        if (val === 0) return "0";
+                        const sign = val < 0 ? "-" : "";
+                        return `${sign}${Math.abs(val) / 1000000} jt`;
+                      }}
+                      tick={{ fontSize: 12, fill: "#64748b" }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickMargin={6}
+                    />
+                    <Tooltip content={<CashFlowTooltip />} />
+                    <Legend
+                      iconType="circle"
+                      wrapperStyle={{ fontSize: "12px", color: "#475569", paddingTop: "20px" }}
+                      iconSize={8}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="masuk"
+                      name="Kas Masuk"
+                      fill="url(#colorMasuk)"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      activeDot={{ r: 4, fill: "#10b981" }}
+                      dot={{ r: 3, fill: "#10b981", strokeWidth: 0 }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="keluar"
+                      name="Kas Keluar"
+                      fill="url(#colorKeluar)"
+                      stroke="#ef4444"
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      activeDot={{ r: 4, fill: "#ef4444" }}
+                      dot={{ r: 3, fill: "#ef4444", strokeWidth: 0 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="bersih"
+                      name="Arus Bersih (Kumulatif)"
+                      stroke="#1e293b"
+                      strokeWidth={2}
+                      strokeDasharray="4 4"
+                      className="dark:stroke-slate-300"
+                      dot={{ r: 3, fill: "#1e293b", strokeWidth: 0 }}
+                      activeDot={{ r: 5, fill: "#1e293b" }}
+                    />
+
+                    <defs>
+                      <linearGradient id="colorMasuk" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.12} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.02} />
+                      </linearGradient>
+                      <linearGradient id="colorKeluar" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.10} />
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                  </ComposedChart>
+                </ResponsiveContainer>
+              ) : (
+                <div style={{ height: 320 }} />
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Transaksi List Grid */}
       <div className="grid grid-cols-1 gap-4 lg:gap-3">
         <div>
-          <Card
-            title="Transaksi Terbaru"
-            action={
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 dark:bg-slate-800 dark:border-slate-700">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-[16px] font-semibold text-slate-900 dark:text-white">Transaksi Terbaru</h3>
               <Link
                 href="/dashboard/transaksi"
-                className={dashboardActionClass}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors group dark:text-slate-400 dark:hover:text-slate-200"
               >
-                Lihat Semua Transaksi
+                Lihat detail
+                <svg className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                </svg>
               </Link>
-            }
-          >
-            {recentTransactions.length === 0 ? (
-              <div className="text-center text-sm text-gray-500 py-10 italic">
-                Belum ada transaksi dicatat.
-              </div>
-            ) : (
-              <div className="overflow-x-auto -mx-5 px-5 mt-2">
-                <table className="w-full min-w-[900px] border-collapse">
-                  <thead className="bg-[#F9FAFB] dark:bg-slate-700/40">
-                    <tr>
-                      <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-widest text-gray-400 w-[120px]">
-                        TANGGAL
-                      </th>
-                      <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-widest text-gray-400 w-[150px]">
-                        NO. REFERENSI
-                      </th>
-                      <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-widest text-gray-400">
-                        KETERANGAN
-                      </th>
-                      <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-widest text-gray-400 w-[120px]">
-                        PROYEK
-                      </th>
-                      <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-widest text-gray-400 w-[160px]">
-                        KATEGORI
-                      </th>
-                      <th className="px-5 py-4 text-right text-xs font-bold uppercase tracking-widest text-gray-400 w-[160px]">
-                        JUMLAH (RP)
-                      </th>
-                      <th className="px-5 py-4 text-center text-xs font-bold uppercase tracking-widest text-gray-400 w-[100px]">
-                        AKSI
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#F3F4F6] dark:divide-white/[0.05]">
-                    {paginatedTransactions.map((trx) => (
-                      <tr
-                        key={trx.id}
-                        className="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors group"
-                      >
-                        <td className="px-5 py-4 whitespace-nowrap text-xs font-medium text-gray-500 dark:text-gray-400">
-                          {formatDate(trx.date)}
-                        </td>
-                        <td className="px-5 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
+            </div>
+
+            <div className="bg-white dark:bg-slate-900/40 rounded-2xl flex flex-col border border-slate-200 dark:border-slate-700/50 overflow-hidden shadow-sm">
+              {recentTransactions.length === 0 ? (
+                <div className="text-center text-sm text-slate-500 py-10 italic">
+                  Belum ada transaksi dicatat.
+                </div>
+              ) : (
+                <div className="overflow-x-auto w-full">
+                  <table className="w-full min-w-[900px] border-collapse">
+                    <thead className="bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700/50">
+                      <tr>
+                        <th className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 w-[120px]">
+                          Tanggal
+                        </th>
+                        <th className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 w-[150px]">
+                          No. Referensi
+                        </th>
+                        <th className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+                          Keterangan
+                        </th>
+                        <th className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 w-[120px]">
+                          Proyek
+                        </th>
+                        <th className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 w-[160px]">
+                          Kategori
+                        </th>
+                        <th className="px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 w-[160px]">
+                          Jumlah (Rp)
+                        </th>
+                        <th className="px-6 py-3.5 text-center text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 w-[100px]">
+                          Aksi
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                      {paginatedTransactions.map((trx) => (
+                        <tr
+                          key={trx.id}
+                          className="bg-white dark:bg-slate-900 hover:bg-slate-50/60 dark:hover:bg-slate-800/80 transition-colors group"
+                        >
+                          <td className="px-6 py-3.5 whitespace-nowrap text-sm font-medium text-slate-500 dark:text-slate-400">
+                            {formatDate(trx.date)}
+                          </td>
+                          <td className="px-6 py-3.5 whitespace-nowrap">
+                            <span className="text-sm font-semibold text-slate-900 dark:text-slate-200">
                               {trx.reference}
                             </span>
-                            {trx.hasJournal && (
-                              <div
-                                title="Jurnal Otomatis Terbuat"
-                                className="text-green-500 bg-green-50 dark:bg-green-900/30 p-1 rounded-full cursor-help"
-                              >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  strokeWidth={3}
-                                  stroke="currentColor"
-                                  className="w-3.5 h-3.5"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="m4.5 12.75 6 6 9-13.5"
-                                  />
-                                </svg>
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-5 py-4">
-                          <div className="flex flex-col">
-                            <span className="text-sm font-bold text-gray-800 dark:text-gray-200">
-                              {trx.description}
-                            </span>
-                            {trx.note && (
-                              <span className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 italic">
-                                {trx.note}
+                          </td>
+                          <td className="px-6 py-3.5">
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium text-slate-900 dark:text-slate-200">
+                                {trx.description}
                               </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-600 dark:text-gray-400">
-                          {trx.projectCode || "-"}
-                        </td>
-                        <td className="px-5 py-4 whitespace-nowrap">
-                          <CategoryBadge
-                            category={trx.category as TransactionCategory}
-                            size="sm"
-                          />
-                        </td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm font-bold text-[#EA6C00] dark:text-[#F97316] text-right">
-                          {formatRupiah(trx.amount)}
-                        </td>
-                        <td className="px-5 py-4 whitespace-nowrap text-center text-gray-400">
-                          <Link
-                            href={`/dashboard/transaksi?search=${encodeURIComponent(trx.reference)}`}
-                            className="inline-flex items-center justify-center p-1.5 hover:text-[#EA6C00] transition-colors rounded-lg hover:bg-white dark:hover:bg-slate-800"
-                            title="Lihat di halaman transaksi"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              strokeWidth={2}
-                              stroke="currentColor"
-                              className="w-4 h-4"
+                              {trx.note && (
+                                <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                  {trx.note}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-3.5 whitespace-nowrap text-sm font-medium text-slate-600 dark:text-slate-400">
+                            {trx.projectCode || "-"}
+                          </td>
+                          <td className="px-6 py-3.5 whitespace-nowrap">
+                            <CategoryBadge
+                              category={trx.category as TransactionCategory}
+                              size="sm"
+                            />
+                          </td>
+                          <td className="px-6 py-3.5 whitespace-nowrap text-sm font-semibold text-slate-900 dark:text-slate-100 text-right tabular-nums">
+                            {formatRupiah(trx.amount)}
+                          </td>
+                          <td className="px-6 py-3.5 whitespace-nowrap text-center">
+                            <Link
+                              href={`/dashboard/transaksi?search=${encodeURIComponent(trx.reference)}`}
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors dark:hover:bg-slate-700 dark:hover:text-slate-300 mx-auto"
+                              title="Lihat di halaman transaksi"
                             >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M17.25 6.75 21 3m0 0h-3.75M21 3v3.75M21 3 10.5 13.5"
-                              />
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M19.5 13.5v4.125A1.875 1.875 0 0 1 17.625 19.5H6.375A1.875 1.875 0 0 1 4.5 17.625V6.375A1.875 1.875 0 0 1 6.375 4.5H10.5"
-                              />
-                            </svg>
-                          </Link>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {/* Pagination UI */}
-            {recentTransactions.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-[#F3F4F6] dark:border-slate-700/50 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="text-sm text-gray-500 dark:text-gray-400 order-2 md:order-1">
-                  Total Transaksi:{" "}
-                  <span className="font-bold text-gray-900 dark:text-white">
-                    {recentTransactions.length}
-                  </span>
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75 21 3m0 0h-3.75M21 3v3.75M21 3 10.5 13.5" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5v4.125A1.875 1.875 0 0 1 17.625 19.5H6.375A1.875 1.875 0 0 1 4.5 17.625V6.375A1.875 1.875 0 0 1 6.375 4.5H10.5" />
+                              </svg>
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
+              )}
 
-                <div className="flex items-center gap-1 order-1 md:order-2">
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="p-2 text-gray-400 hover:text-[#EA6C00] disabled:opacity-30 disabled:hover:text-gray-400 transition-colors"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 h-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 19l-7-7 7-7"
-                      />
-                    </svg>
-                  </button>
+              {/* Pagination UI */}
+              {recentTransactions.length > 0 && (
+                <div className="px-6 py-3.5 border-t border-slate-100 dark:border-slate-700/50 flex flex-col md:flex-row items-center justify-between gap-4 bg-white dark:bg-slate-900/40">
+                  <div className="text-sm text-slate-500 dark:text-slate-400 order-2 md:order-1">
+                    Total Transaksi:{" "}
+                    <span className="font-semibold text-slate-900 dark:text-slate-200">
+                      {recentTransactions.length}
+                    </span>
+                  </div>
 
-                  {getPageNumbers().map((num, idx) =>
-                    num === "..." ? (
-                      <span
-                        key={`dots-${idx}`}
-                        className="px-3 py-1 text-gray-400"
-                      >
-                        ...
-                      </span>
-                    ) : (
-                      <button
-                        key={`page-${num}`}
-                        onClick={() => setCurrentPage(num as number)}
-                        className={`w-8 h-8 rounded-lg text-sm font-bold transition-all ${
-                          currentPage === num
-                            ? "bg-[#FFF0E6] text-[#EA6C00] border border-[#EA6C00]"
-                            : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700"
-                        }`}
-                      >
-                        {num}
-                      </button>
-                    ),
-                  )}
-
-                  <button
-                    onClick={() =>
-                      setCurrentPage((p) => Math.min(totalPages, p + 1))
-                    }
-                    disabled={currentPage === totalPages}
-                    className="p-2 text-gray-400 hover:text-[#EA6C00] disabled:opacity-30 disabled:hover:text-gray-400 transition-colors"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 h-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-3 order-3">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                    Show:
-                  </span>
-                  <div className="relative" ref={itemsPerPageRef}>
+                  <div className="flex items-center gap-1 order-1 md:order-2">
                     <button
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded-lg disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:bg-transparent transition-colors dark:hover:text-slate-200 dark:hover:bg-slate-700"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+
+                    {getPageNumbers().map((num, idx) =>
+                      num === "..." ? (
+                        <span key={`dots-${idx}`} className="px-3 py-1 text-slate-400">
+                          ...
+                        </span>
+                      ) : (
+                        <button
+                          key={`page-${num}`}
+                          onClick={() => setCurrentPage(num as number)}
+                          className={`w-8 h-8 rounded-lg text-sm transition-all ${
+                            currentPage === num
+                              ? "bg-orange-50 text-orange-600 border border-orange-500 font-semibold dark:bg-orange-500/20 dark:border-orange-500/50"
+                              : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 font-medium"
+                          }`}
+                        >
+                          {num}
+                        </button>
+                      ),
+                    )}
+
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded-lg disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:bg-transparent transition-colors dark:hover:text-slate-200 dark:hover:bg-slate-700"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-3 order-3">
+                    <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+                      Show:
+                    </span>
+                    <div className="relative" ref={itemsPerPageRef}>
+                      <button
                       type="button"
                       onClick={() => setItemsPerPageOpen(!itemsPerPageOpen)}
-                      className="flex items-center gap-2 px-2 py-1 min-w-[50px] justify-between border border-[#EA6C00] rounded-lg text-xs font-bold text-[#EA6C00] bg-white dark:bg-slate-800 transition-all active:scale-95"
+                      className="flex items-center gap-2 px-2.5 py-1 min-w-[55px] justify-between border border-slate-200 hover:bg-slate-50 rounded-lg text-sm font-medium text-slate-700 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 transition-colors"
                     >
                       <span>{itemsPerPage}</span>
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className={`w-3 h-3 transition-transform duration-200 ${itemsPerPageOpen ? "rotate-180" : ""}`}
+                        className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${itemsPerPageOpen ? "rotate-180" : ""}`}
                         viewBox="0 0 20 20"
                         fill="currentColor"
                       >
-                        <path
-                          fillRule="evenodd"
-                          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                          clipRule="evenodd"
-                        />
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                       </svg>
                     </button>
 
                     {itemsPerPageOpen && (
-                      <div className="absolute z-50 bottom-full left-0 mb-2 w-[60px] bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-[10px] shadow-lg overflow-hidden flex flex-col p-1 animate-in slide-in-from-bottom-2 duration-200">
+                      <div className="absolute z-50 bottom-full left-0 mb-2 w-full min-w-[60px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden flex flex-col p-1 animate-in slide-in-from-bottom-2 duration-200">
                         {[5, 10, 20].map((val) => (
                           <button
                             key={val}
@@ -1445,10 +1489,10 @@ export default function DashboardClient({
                               setCurrentPage(1);
                               setItemsPerPageOpen(false);
                             }}
-                            className={`text-center py-1.5 text-xs font-bold rounded-md transition-all ${
+                            className={`text-center py-1.5 text-sm font-medium rounded-md transition-colors ${
                               itemsPerPage === val
-                                ? "bg-[#EA6C00] text-white"
-                                : "text-[#374151] dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"
+                                ? "bg-slate-100 text-slate-900 dark:bg-slate-700 dark:text-white"
+                                : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50"
                             }`}
                           >
                             {val}
@@ -1460,7 +1504,8 @@ export default function DashboardClient({
                 </div>
               </div>
             )}
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>

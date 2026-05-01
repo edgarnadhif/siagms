@@ -31,16 +31,21 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     // Auto-generate customerCode
-    const lastCustomer = await prisma.customer.findFirst({
+    const existingCustomers = await prisma.customer.findMany({
       where: { tenantId: auth.tenantId },
-      orderBy: { customerCode: "desc" },
+      select: { customerCode: true },
     });
 
-    let newCode = "CUS-001";
-    if (lastCustomer && lastCustomer.customerCode.startsWith("CUS-")) {
-      const lastNumber = parseInt(lastCustomer.customerCode.split("-")[1], 10);
-      newCode = `CUS-${String(lastNumber + 1).padStart(3, "0")}`;
+    let maxNumber = 0;
+    for (const c of existingCustomers) {
+      if (c.customerCode.startsWith("CUS-")) {
+        const num = parseInt(c.customerCode.split("-")[1], 10);
+        if (!isNaN(num) && num > maxNumber) {
+          maxNumber = num;
+        }
+      }
     }
+    const newCode = `CUS-${String(maxNumber + 1).padStart(3, "0")}`;
 
     const customer = await prisma.customer.create({
       data: {
@@ -53,7 +58,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, data: customer, message: "Berhasil menambah pelanggan" }, { status: 201 });
   } catch (error: any) {
     if (error.code === 'P2002') {
-      return NextResponse.json({ success: false, data: null, message: "NIK sudah terdaftar" }, { status: 400 });
+      const target = error.meta?.target;
+      const isNik = Array.isArray(target) ? target.includes('nik') : (typeof target === 'string' && target.includes('nik'));
+      
+      if (isNik) {
+        return NextResponse.json({ success: false, data: null, message: "NIK sudah terdaftar di sistem" }, { status: 400 });
+      }
+      return NextResponse.json({ success: false, data: null, message: "Terjadi duplikasi kode pelanggan, silakan coba lagi" }, { status: 400 });
     }
     return NextResponse.json({ success: false, data: null, message: error.message }, { status: 500 });
   }

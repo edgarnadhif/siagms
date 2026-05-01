@@ -86,7 +86,7 @@ const inputCls =
 const labelCls =
   "block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5";
 const readonlyCls =
-  "w-full h-11 px-4 rounded-[10px] border border-gray-100 dark:border-slate-700/50 bg-gray-50 dark:bg-slate-800/50 text-sm text-gray-500 dark:text-gray-400 flex items-center";
+  "w-full h-11 px-4 rounded-[10px] border border-gray-100 dark:border-slate-700/50 bg-slate-100 dark:bg-slate-800/80 text-sm text-gray-500 dark:text-gray-400 flex items-center";
 
 const EDITABLE_STATUSES = ["TERSEDIA", "BOOKING"];
 const DELETABLE_STATUSES = ["TERSEDIA"];
@@ -412,21 +412,21 @@ export default function UnitClient({
       <div className="text-gray-600 dark:text-gray-300 w-full h-full">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 px-4 md:px-0">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+            <h1 className="page-title dark:text-gray-100">
               Master Unit
             </h1>
-            <p className="text-sm text-gray-400 dark:text-gray-400 mt-3">
+            <p className="card-subtitle text-gray-400 dark:text-gray-400 mt-2">
               Kelola persediaan unit perumahan
             </p>
           </div>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-5 h-11 bg-[#EA6C00] hover:bg-[#C25500] text-white text-sm font-bold rounded-[10px] shadow-lg shadow-orange-500/20 transition-all active:scale-95 ml-auto w-full md:w-auto justify-center md:justify-start"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-200 w-full md:w-auto md:ml-auto"
           >
             <img
               src="/add.svg"
               alt="Add"
-              className="w-5 h-5 invert dark:invert-0"
+              className="w-4 h-4 invert dark:invert-0"
             />
             Tambah Unit
           </button>
@@ -506,7 +506,7 @@ export default function UnitClient({
                       setProjectDropdownOpen(!projectDropdownOpen);
                       setStatusDropdownOpen(false);
                     }}
-                    className="flex items-center justify-between md:justify-start gap-2 w-full md:w-auto px-4 py-3 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors whitespace-nowrap"
+                    className="flex items-center justify-between md:justify-start gap-2 w-full md:w-auto px-4 py-3 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors whitespace-nowrap"
                   >
                     <span>
                       {projectFilter === "SEMUA"
@@ -534,7 +534,7 @@ export default function UnitClient({
                           setProjectFilter("SEMUA");
                           setProjectDropdownOpen(false);
                         }}
-                        className={`flex items-center px-3 py-2 text-sm font-bold rounded-lg transition-colors ${projectFilter === "SEMUA" ? "bg-[#EA6C00] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"}`}
+                        className={`flex items-center px-3 py-2 text-sm font-bold rounded-lg transition-colors ${projectFilter === "SEMUA" ? "bg-[#EA6C00] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-slate-700/50"}`}
                       >
                         Semua Proyek
                       </button>
@@ -545,7 +545,7 @@ export default function UnitClient({
                             setProjectFilter(p.id);
                             setProjectDropdownOpen(false);
                           }}
-                          className={`flex items-center px-3 py-2 text-sm font-bold rounded-lg transition-colors ${projectFilter === p.id ? "bg-[#EA6C00] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"}`}
+                          className={`flex items-center px-3 py-2 text-sm font-bold rounded-lg transition-colors ${projectFilter === p.id ? "bg-[#EA6C00] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-slate-700/50"}`}
                         >
                           {p.name}
                         </button>
@@ -561,7 +561,7 @@ export default function UnitClient({
                       setStatusDropdownOpen(!statusDropdownOpen);
                       setProjectDropdownOpen(false);
                     }}
-                    className="flex items-center justify-between md:justify-start gap-2 w-full md:w-auto px-4 py-3 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors whitespace-nowrap"
+                    className="flex items-center justify-between md:justify-start gap-2 w-full md:w-auto px-4 py-3 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors whitespace-nowrap"
                   >
                     <span>
                       {statusFilter === "SEMUA" ? "Semua Status" : statusFilter}
@@ -596,7 +596,7 @@ export default function UnitClient({
                             setStatusFilter(s);
                             setStatusDropdownOpen(false);
                           }}
-                          className={`flex items-center px-3 py-2 text-sm font-bold rounded-lg transition-colors ${statusFilter === s ? "bg-[#EA6C00] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"}`}
+                          className={`flex items-center px-3 py-2 text-sm font-bold rounded-lg transition-colors ${statusFilter === s ? "bg-[#EA6C00] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-slate-700/50"}`}
                         >
                           {s}
                         </button>
@@ -942,7 +942,7 @@ export default function UnitClient({
                             className={`text-center py-2 text-sm font-bold rounded-md transition-all ${
                               itemsPerPage === val
                                 ? "bg-[#EA6C00] text-white"
-                                : "text-[#374151] dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"
+                                : "text-[#374151] dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-slate-700/50"
                             }`}
                           >
                             {val}
@@ -1088,7 +1088,7 @@ export default function UnitClient({
                   </div>
                 </div>
               </div>
-              <div className="p-5 border-t border-gray-100 dark:border-slate-700 flex justify-end gap-3 bg-gray-50/50 dark:bg-slate-800/30">
+              <div className="p-5 border-t border-gray-100 dark:border-slate-700 flex justify-end gap-3 bg-slate-100/50 dark:bg-slate-800/30">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
@@ -1152,7 +1152,7 @@ export default function UnitClient({
             <form onSubmit={handleEditUnit} className="overflow-y-auto flex-1">
               <div className="p-6 space-y-5">
                 {/* Read-only section */}
-                <div className="bg-gray-50 dark:bg-slate-900/50 rounded-xl p-4 space-y-3 border border-gray-100 dark:border-slate-700">
+                <div className="bg-slate-100 dark:bg-slate-800/80 rounded-xl p-4 space-y-3 border border-gray-100 dark:border-slate-700">
                   <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-widest">
                     Informasi Read-Only
                   </h3>
@@ -1322,7 +1322,7 @@ export default function UnitClient({
                   </div>
                 </div>
               </div>
-              <div className="p-5 border-t border-gray-100 dark:border-slate-700 flex justify-end gap-3 bg-gray-50/50 dark:bg-slate-800/30">
+              <div className="p-5 border-t border-gray-100 dark:border-slate-700 flex justify-end gap-3 bg-slate-100/50 dark:bg-slate-800/30">
                 <button
                   type="button"
                   onClick={() => setEditUnit(null)}
@@ -1441,60 +1441,51 @@ export default function UnitClient({
 
       {/* ─── DELETE CONFIRM MODAL ─────────────────────────────────────────────── */}
       {deleteUnit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden">
-            <div className="p-6">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-6 h-6 text-red-600"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                    Hapus Unit
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Tindakan ini tidak dapat dibatalkan.
-                  </p>
-                </div>
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-slate-900/50 rounded-xl p-4">
-                Apakah Anda yakin ingin menghapus unit{" "}
-                <span className="font-bold text-[#EA6C00]">
-                  {deleteUnit.unitCode}
-                </span>{" "}
-                (Blok {deleteUnit.blockName} No. {deleteUnit.unitNumber})?
-              </p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200 text-center border border-gray-100 dark:border-slate-700">
+            <div className="flex items-center justify-center w-20 h-20 rounded-full bg-red-50 dark:bg-red-900/20 mx-auto mb-6 shadow-inner">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+                className="w-10 h-10 text-red-500"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+                />
+              </svg>
             </div>
-            <div className="px-6 pb-6 flex justify-end gap-3">
+
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Hapus Unit?
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+              Unit <span className="font-bold text-slate-900 dark:text-white">{deleteUnit.unitCode}</span> akan dihapus permanen.
+            </p>
+
+            <div className="flex gap-3">
               <button
                 onClick={() => setDeleteUnit(null)}
-                className="px-5 h-11 text-sm font-bold text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-[10px] transition-all"
+                className="flex-1 h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all disabled:opacity-50"
               >
                 Batal
               </button>
               <button
                 onClick={handleDeleteUnit}
                 disabled={loading}
-                className="px-6 h-11 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-[10px] shadow-lg shadow-red-500/20 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
+                className="flex-1 h-12 px-4 rounded-xl bg-red-500 text-sm font-semibold text-white hover:bg-red-600 shadow-sm shadow-red-500/20 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Menghapus...
+                    <span>Menghapus...</span>
                   </>
                 ) : (
-                  "Ya, Hapus Unit"
+                  "Ya, Hapus"
                 )}
               </button>
             </div>

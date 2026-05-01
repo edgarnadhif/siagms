@@ -30,6 +30,7 @@ export default function EditProjectModal({
   useEffect(() => {
     if (state?.success) {
       onClose();
+      router.push("/dashboard/projek?toast=edit_success");
       router.refresh();
     }
   }, [state, router, onClose]);
@@ -54,53 +55,76 @@ export default function EditProjectModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[2px] p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-[16px] w-full max-w-lg shadow-2xl overflow-hidden relative border border-gray-100 dark:border-slate-700">
-        <div className="p-8">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-[16px] shadow-2xl w-full max-w-lg overflow-hidden border border-white/20 dark:border-slate-700 max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex justify-between items-center p-5 border-b border-[#F3F4F6] dark:border-slate-700 shrink-0">
+          <h2 className="text-[18px] font-semibold text-gray-900 dark:text-white leading-tight">
             Edit Proyek
           </h2>
+          <button
+            onClick={onClose}
+            className="p-2 text-gray-400 hover:text-[#EA6C00] dark:hover:text-[#EA6C00] transition-colors rounded-full hover:bg-gray-50 dark:hover:bg-slate-700"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="w-5 h-5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
 
-          <form action={formAction} className="space-y-5">
-            {/* Hidden ID */}
-            <input type="hidden" name="id" value={project.id} />
+        {/* Form */}
+        <form action={formAction} className="flex-1 flex flex-col overflow-hidden">
+          {/* Hidden ID */}
+          <input type="hidden" name="id" value={project.id} />
 
-            <div className="grid grid-cols-2 gap-5">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
-                  Kode Proyek *
+                <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
+                  Kode Proyek <span className="text-[#EA6C00]">*</span>
                 </label>
                 <input
                   required
                   type="text"
                   name="code"
                   defaultValue={project.code}
-                  className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all"
+                  className="w-full px-4 h-12 border border-[#E5E7EB] dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all placeholder-gray-400"
                 />
               </div>
 
               <div className="relative" ref={dropdownRef}>
-                <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
-                  Status *
+                <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
+                  Status <span className="text-[#EA6C00]">*</span>
                 </label>
                 <input type="hidden" name="status" value={selectedStatus} />
                 <button
                   type="button"
                   onClick={() => setIsOpen(!isOpen)}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 border rounded-[10px] text-sm transition-all outline-none ${
+                  className={`flex justify-between items-center w-full px-4 h-12 border rounded-xl text-sm transition-all text-left ${
                     isOpen
-                      ? "border-[#EA6C00] ring-[3px] ring-[#EA6C00]/10 bg-white dark:bg-slate-800"
-                      : "border-[#E5E7EB] dark:border-slate-600 bg-transparent"
-                  }`}
+                      ? "border-[#EA6C00] ring-4 ring-[#EA6C00]/10"
+                      : "border-[#E5E7EB] dark:border-slate-600"
+                  } bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none`}
                 >
-                  <span className="font-semibold text-gray-700 dark:text-gray-200">
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
                     {
                       STATUS_OPTIONS.find((opt) => opt.value === selectedStatus)
                         ?.label
                     }
                   </span>
                   <svg
-                    className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                    className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 20 20"
                     fill="currentColor"
@@ -114,7 +138,7 @@ export default function EditProjectModal({
                 </button>
 
                 {isOpen && (
-                  <div className="absolute z-[60] left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-[12px] shadow-xl overflow-hidden p-1.5 animate-in slide-in-from-top-2 duration-200">
+                  <div className="absolute z-[60] left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden p-1.5 max-h-48 overflow-y-auto custom-scrollbar">
                     {STATUS_OPTIONS.map((option) => (
                       <button
                         key={option.value}
@@ -125,15 +149,12 @@ export default function EditProjectModal({
                           );
                           setIsOpen(false);
                         }}
-                        className={`w-full text-left px-3 py-2 text-sm font-semibold rounded-lg transition-colors flex items-center gap-3 ${
+                        className={`block w-full text-left px-4 py-3 text-sm transition-all rounded-xl ${
                           selectedStatus === option.value
-                            ? "bg-[#EA6C00] text-white"
-                            : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"
+                            ? "bg-slate-50 dark:bg-slate-700/50 text-gray-900 dark:text-white font-medium"
+                            : "text-gray-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-slate-700/30 font-medium"
                         }`}
                       >
-                        <div
-                          className={`w-2 h-2 rounded-full ${option.color} ${selectedStatus === option.value ? "bg-white" : ""}`}
-                        />
                         {option.label}
                       </button>
                     ))}
@@ -143,33 +164,21 @@ export default function EditProjectModal({
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
-                Nama Proyek *
+              <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
+                Nama Proyek <span className="text-[#EA6C00]">*</span>
               </label>
               <input
                 required
                 type="text"
                 name="name"
                 defaultValue={project.name}
-                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all"
+                className="w-full px-4 h-12 border border-[#E5E7EB] dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all placeholder-gray-400"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
-                Deskripsi Proyek
-              </label>
-              <textarea
-                name="description"
-                defaultValue={project.description || ""}
-                rows={3}
-                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all resize-none"
-              ></textarea>
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
-                Lokasi *
+              <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
+                Lokasi <span className="text-[#EA6C00]">*</span>
               </label>
               <input
                 required
@@ -177,38 +186,50 @@ export default function EditProjectModal({
                 name="location"
                 defaultValue={project.location || ""}
                 placeholder="Lokasi proyek"
-                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all placeholder-gray-400"
+                className="w-full px-4 h-12 border border-[#E5E7EB] dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all placeholder-gray-400"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
+                Deskripsi Proyek
+              </label>
+              <textarea
+                name="description"
+                defaultValue={project.description || ""}
+                rows={3}
+                className="w-full px-4 py-3 border border-[#E5E7EB] dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all resize-none placeholder-gray-400"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
                   Tanggal Mulai
                 </label>
                 <input
                   type="date"
                   name="startDate"
                   defaultValue={formatDateForInput(project.startDate)}
-                  className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all"
+                  className="w-full px-4 h-12 border border-[#E5E7EB] dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all"
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
                   Target Selesai
                 </label>
                 <input
                   type="date"
                   name="endDate"
                   defaultValue={formatDateForInput(project.endDate)}
-                  className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all"
+                  className="w-full px-4 h-12 border border-[#E5E7EB] dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
-                Budget (Rp) *
+              <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
+                Budget (Rp) <span className="text-[#EA6C00]">*</span>
               </label>
               <input
                 type="number"
@@ -216,35 +237,60 @@ export default function EditProjectModal({
                 min="1000000"
                 required
                 defaultValue={Number(project.budget) || ""}
-                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-transparent text-gray-900 dark:text-gray-100 focus:border-[#EA6C00] focus:ring-[3px] focus:ring-[#EA6C00]/10 outline-none transition-all"
+                placeholder="Minimal Rp 1.000.000"
+                className="w-full px-4 h-12 border border-[#E5E7EB] dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all placeholder-gray-400"
               />
             </div>
 
             {state?.error && (
-              <div className="text-red-500 text-xs font-semibold mt-2 p-3 bg-red-50 dark:bg-red-900/10 rounded-[10px] border border-red-100 dark:border-red-900/20">
-                {state.error}
+              <div className="text-red-600 text-xs font-bold p-3 bg-red-50 dark:bg-red-900/20 rounded-[8px] border border-red-100 dark:border-red-900/30">
+                <div className="flex items-center gap-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                    className="w-4 h-4"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+                    />
+                  </svg>
+                  {state.error}
+                </div>
               </div>
             )}
+          </div>
 
-            <div className="flex justify-end gap-3 pt-6 mt-8 border-t border-gray-100 dark:border-slate-700">
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={isPending}
-                className="px-6 py-2.5 text-sm font-bold text-gray-600 bg-white border border-[#E5E7EB] rounded-[10px] hover:bg-gray-50 transition-all active:scale-95 disabled:opacity-50"
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                disabled={isPending}
-                className="px-8 py-2.5 text-sm font-bold text-white bg-[#EA6C00] hover:bg-[#C25500] rounded-[10px] shadow-lg shadow-orange-500/20 transition-all active:scale-95 disabled:opacity-50"
-              >
-                {isPending ? "Menyimpan..." : "Simpan Perubahan"}
-              </button>
-            </div>
-          </form>
-        </div>
+          {/* Footer */}
+          <div className="flex justify-end gap-3 p-5 border-t border-[#F3F4F6] dark:border-slate-700 bg-white dark:bg-slate-800 shrink-0">
+            <button
+              onClick={onClose}
+              type="button"
+              disabled={isPending}
+              className="px-6 py-2.5 text-sm font-bold text-gray-600 dark:text-slate-300 bg-white dark:bg-slate-700 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] hover:bg-gray-50 dark:hover:bg-slate-600 transition-all disabled:opacity-50"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={isPending}
+              className="px-6 py-2.5 text-sm font-bold text-white bg-[#EA6C00] hover:bg-[#C25500] rounded-[10px] shadow-md shadow-orange-500/20 transition-all active:scale-95 disabled:opacity-50"
+            >
+              {isPending ? (
+                <div className="flex items-center gap-2 text-white">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Menyimpan...
+                </div>
+              ) : (
+                "Simpan Perubahan"
+              )}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

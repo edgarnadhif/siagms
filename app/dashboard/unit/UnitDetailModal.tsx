@@ -117,7 +117,7 @@ function CancelPurchaseModal({ unit, totalBF, onClose, onSuccess }: CancelModalP
           </div>
           <div className="flex-1">
             <h3 className="text-lg font-bold text-red-800 dark:text-red-300">Batalkan Pembelian</h3>
-            <p className="text-sm text-red-600/80 dark:text-red-400/70 mt-0.5">Tindakan ini tidak dapat dibatalkan</p>
+
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
@@ -129,7 +129,7 @@ function CancelPurchaseModal({ unit, totalBF, onClose, onSuccess }: CancelModalP
         <form onSubmit={handleSubmit} className="flex flex-col overflow-y-auto">
           <div className="p-6 space-y-5">
             {/* Ringkasan */}
-            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700 space-y-2.5">
+            <div className="bg-slate-100 dark:bg-slate-800/80 rounded-xl p-4 border border-slate-100 dark:border-slate-700 space-y-2.5">
               <h4 className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Ringkasan Pembatalan</h4>
               <div className="flex justify-between text-sm">
                 <span className="text-slate-500 font-medium">Unit</span>
@@ -548,7 +548,7 @@ export default function UnitDetailModal({ unitId, onClose, onCancelSuccess }: Un
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
         <div className="bg-white dark:bg-slate-800 rounded-[24px] shadow-2xl w-full max-w-4xl overflow-hidden border border-white/20 dark:border-slate-700 max-h-[90vh] flex flex-col">
           {/* Header */}
-          <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50">
+          <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-slate-700 bg-slate-100/50 dark:bg-slate-800/50">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-orange-100 dark:bg-orange-500/20 rounded-2xl flex items-center justify-center text-orange-600">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
@@ -588,7 +588,7 @@ export default function UnitDetailModal({ unitId, onClose, onCancelSuccess }: Un
             {/* Top Info Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Payment Progress */}
-              <div className="md:col-span-2 bg-slate-50 dark:bg-slate-900/50 rounded-3xl p-6 border border-gray-100 dark:border-slate-700">
+              <div className="md:col-span-2 bg-slate-100 dark:bg-slate-800/80 rounded-3xl p-6 border border-gray-100 dark:border-slate-700">
                 <div className="flex justify-between items-end mb-4">
                   <div>
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Status Pembayaran</p>
@@ -704,7 +704,7 @@ export default function UnitDetailModal({ unitId, onClose, onCancelSuccess }: Un
                   <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
                   Riwayat Pembayaran
                 </h3>
-                <div className="bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-gray-100 dark:border-slate-700 overflow-hidden">
+                <div className="bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-gray-100 dark:border-slate-700 overflow-hidden">
                   <div className="divide-y divide-gray-100 dark:divide-slate-700">
                     {unit.transactions.length === 0 ? (
                       <div className="p-10 text-center text-slate-400 text-sm italic">Belum ada catatan transaksi</div>
@@ -764,7 +764,7 @@ export default function UnitDetailModal({ unitId, onClose, onCancelSuccess }: Un
                     )}
                   </div>
                 ) : (
-                  <div className="bg-slate-50 dark:bg-slate-900/40 border border-dashed border-slate-300 dark:border-slate-700 p-5 rounded-3xl text-sm text-slate-400">
+                  <div className="bg-slate-100 dark:bg-slate-800/80 border border-dashed border-slate-300 dark:border-slate-700 p-5 rounded-3xl text-sm text-slate-400">
                     Data akad belum dicatat untuk unit ini.
                   </div>
                 )}
@@ -785,11 +785,11 @@ export default function UnitDetailModal({ unitId, onClose, onCancelSuccess }: Un
                     <p className="text-sm text-emerald-600/80 mt-1">Pendapatan telah diakui dalam sistem akuntansi secara otomatis.</p>
                   </div>
                 ) : !latestAkad && unit.customer?.paymentMethod === "KPR" ? (
-                  <div className="bg-slate-50 dark:bg-slate-900/40 border border-dashed border-slate-300 dark:border-slate-700 p-8 rounded-3xl flex flex-col items-center text-center">
+                  <div className="bg-slate-100 dark:bg-slate-800/80 border border-dashed border-slate-300 dark:border-slate-700 p-8 rounded-3xl flex flex-col items-center text-center">
                     <p className="text-slate-400 text-sm font-medium">Catat data akad KPR terlebih dahulu sebelum proses pencairan dan serah terima.</p>
                   </div>
                 ) : !isFullyPaid ? (
-                  <div className="bg-slate-50 dark:bg-slate-900/40 border border-dashed border-slate-300 dark:border-slate-700 p-8 rounded-3xl flex flex-col items-center text-center">
+                  <div className="bg-slate-100 dark:bg-slate-800/80 border border-dashed border-slate-300 dark:border-slate-700 p-8 rounded-3xl flex flex-col items-center text-center">
                     <p className="text-slate-400 text-sm font-medium">Selesaikan pelunasan 100% untuk mengaktifkan fitur Serah Terima.</p>
                     {canInputPencairan && (
                       <button
@@ -801,7 +801,7 @@ export default function UnitDetailModal({ unitId, onClose, onCancelSuccess }: Un
                     )}
                   </div>
                 ) : stBreakdown.total <= 0 ? (
-                  <div className="bg-slate-50 dark:bg-slate-900/40 border border-dashed border-slate-300 dark:border-slate-700 p-8 rounded-3xl flex flex-col items-center text-center">
+                  <div className="bg-slate-100 dark:bg-slate-800/80 border border-dashed border-slate-300 dark:border-slate-700 p-8 rounded-3xl flex flex-col items-center text-center">
                     <p className="text-slate-400 text-sm font-medium">Belum ada Booking Fee, Down Payment, Pencairan KPR, atau Pelunasan Cash yang bisa diakui saat serah terima.</p>
                   </div>
                 ) : !showSTForm ? (

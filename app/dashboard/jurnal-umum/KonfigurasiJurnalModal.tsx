@@ -131,7 +131,9 @@ export default function KonfigurasiJurnalModal({
   };
 
   const handleReset = () => {
-    setChanges({});
+    if (confirm("Reset semua perubahan ke pengaturan awal?")) {
+      setChanges({});
+    }
   };
 
   return (
@@ -139,154 +141,175 @@ export default function KonfigurasiJurnalModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[90vh] overflow-hidden">
+      <style jsx>{`
+        .subtle-scrollbar::-webkit-scrollbar {
+          width: 5px;
+        }
+        .subtle-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .subtle-scrollbar::-webkit-scrollbar-thumb {
+          background: #e2e8f0;
+          border-radius: 10px;
+        }
+        .dark .subtle-scrollbar::-webkit-scrollbar-thumb {
+          background: #334155;
+        }
+        .subtle-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #cbd5e1;
+        }
+      `}</style>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[90vh] overflow-hidden border border-slate-200 dark:border-slate-700">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200 dark:border-slate-700 flex-shrink-0">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-slate-700 flex-shrink-0 bg-white dark:bg-slate-800 z-10">
           <div className="flex items-center gap-3">
-            <span className="p-2 bg-orange-100 dark:bg-orange-900/30 text-[#EA6C00] rounded-xl">
+            <span className="p-2.5 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-xl">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z" />
               </svg>
             </span>
             <div>
               <h2 className="text-lg font-bold text-slate-800 dark:text-white">Konfigurasi Jurnal Otomatis</h2>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Atur akun debit &amp; kredit untuk setiap kategori transaksi</p>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">Atur akun debit &amp; kredit untuk setiap kategori transaksi</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto pt-8 pb-6 px-6 space-y-6 subtle-scrollbar">
           {/* Toasts */}
           {error && (
-            <div className="flex items-center gap-3 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-xl border border-red-100 dark:border-red-800/50">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 flex-shrink-0">
+            <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 text-sm rounded-2xl border border-red-100 dark:border-red-900/20 shadow-sm animate-in fade-in slide-in-from-top-2">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 flex-shrink-0">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
               </svg>
-              <span className="font-medium flex-1">{error}</span>
-              <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">
+              <span className="font-semibold flex-1">{error}</span>
+              <button onClick={() => setError(null)} className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" /></svg>
               </button>
             </div>
           )}
           {success && (
-            <div className="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-sm rounded-xl border border-emerald-100 dark:border-emerald-800/50">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 flex-shrink-0">
+            <div className="flex items-center gap-3 p-4 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 text-sm rounded-2xl border border-emerald-100 dark:border-emerald-900/20 shadow-sm animate-in fade-in slide-in-from-top-2">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 flex-shrink-0">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
               </svg>
-              <span className="font-medium">{success}</span>
+              <span className="font-semibold">{success}</span>
             </div>
           )}
 
           {/* Content */}
           {loading ? (
-            <div className="flex items-center justify-center py-16 gap-3">
-              <div className="w-7 h-7 border-2 border-orange-200 border-t-[#EA6C00] rounded-full animate-spin" />
-              <span className="text-sm text-gray-400 font-medium">Memuat konfigurasi...</span>
+            <div className="flex flex-col items-center justify-center py-24 gap-4">
+              <div className="w-10 h-10 border-3 border-orange-100 border-t-orange-500 rounded-full animate-spin" />
+              <span className="text-sm text-slate-400 font-semibold tracking-wide">MEMUAT KONFIGURASI...</span>
             </div>
           ) : mappings.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-12 h-12 rounded-full bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center mx-auto mb-3">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-orange-400">
+            <div className="text-center py-16 bg-slate-50 dark:bg-slate-900/30 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700">
+              <div className="w-16 h-16 rounded-full bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-slate-300">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
                 </svg>
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Belum ada konfigurasi.</p>
-              <p className="text-xs text-gray-400 mt-1">Jalankan <code className="text-[#EA6C00]">seedJournalMapping.ts</code> terlebih dahulu.</p>
+              <p className="text-base text-slate-600 dark:text-slate-400 font-bold">Konfigurasi Belum Tersedia</p>
+              <p className="text-sm text-slate-400 mt-2 max-w-xs mx-auto italic">Silakan jalankan sistem inisialisasi mapping jurnal terlebih dahulu.</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-8">
               {Object.entries(CATEGORY_GROUPS).map(([groupName, categories]) => {
                 const groupMappings = mappings.filter((m) => categories.includes(m.category));
                 if (groupMappings.length === 0) return null;
                 const isRevenue = groupName === "Penerimaan";
                 return (
-                  <div key={groupName} className="rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
+                  <div key={groupName} className="rounded-2xl border border-slate-100 dark:border-slate-700 overflow-hidden bg-white dark:bg-slate-800 shadow-sm">
                     {/* Group Header */}
-                    <div className="flex items-center gap-2 px-5 py-3 bg-gray-50 dark:bg-slate-700/50 border-b border-gray-100 dark:border-slate-700">
-                      <span className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full uppercase tracking-wider ${
+                    <div className="flex items-center gap-3 px-6 py-4 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-700">
+                      <span className={`px-3 py-1 text-[10px] font-extrabold rounded-lg uppercase tracking-widest ${
                         isRevenue
-                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
-                          : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                          ? "bg-emerald-500 text-white"
+                          : "bg-rose-500 text-white"
                       }`}>
                         {isRevenue ? "↓ Penerimaan" : "↑ Pengeluaran"}
                       </span>
-                      <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">{groupMappings.length} kategori</span>
+                      <span className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">{groupMappings.length} KATEGORI</span>
                     </div>
 
-                    {/* Table */}
                     <div className="overflow-x-auto">
-                      <table className="w-full min-w-[640px]">
-                        <thead className="bg-[#F9FAFB] dark:bg-slate-800/80 border-b border-gray-100 dark:border-slate-700">
+                      <table className="w-full min-w-[720px] border-collapse">
+                        <thead className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
                           <tr>
-                            <th className="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider w-[170px]">Kategori</th>
-                            <th className="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Akun Debit</th>
-                            <th className="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">Akun Kredit</th>
-                            <th className="px-5 py-3 text-center text-[11px] font-bold text-gray-400 uppercase tracking-wider w-[90px]">Status</th>
+                            <th className="px-6 py-4 text-left text-[11px] font-extrabold text-slate-400 uppercase tracking-widest w-[200px]">Kategori</th>
+                            <th className="px-6 py-4 text-left text-[11px] font-extrabold text-slate-400 uppercase tracking-widest">Akun Debit</th>
+                            <th className="px-6 py-4 text-left text-[11px] font-extrabold text-slate-400 uppercase tracking-widest">Akun Kredit</th>
+                            <th className="px-6 py-4 text-center text-[11px] font-extrabold text-slate-400 uppercase tracking-widest w-[120px]">Jurnal Otomatis</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50 dark:divide-slate-700/50">
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
                           {groupMappings.map((mapping) => {
                             const isChanged = !!changes[mapping.category];
                             return (
                               <tr
                                 key={mapping.id}
-                                className={`transition-colors ${isChanged ? "bg-orange-50/60 dark:bg-orange-900/10" : "hover:bg-slate-50/50 dark:hover:bg-slate-700/20"}`}
+                                className={`transition-colors ${isChanged ? "bg-orange-50/40 dark:bg-orange-900/10" : "hover:bg-slate-50/50 dark:hover:bg-slate-700/20"}`}
                               >
-                                <td className="px-5 py-3 font-bold text-sm text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                                <td className="px-6 py-4 font-semibold text-sm text-slate-800 dark:text-slate-200">
                                   <div className="flex items-center gap-2">
-                                    {CATEGORY_LABELS[mapping.category] || mapping.description}
+                                    <span className="truncate" title={CATEGORY_LABELS[mapping.category] || mapping.description}>
+                                      {CATEGORY_LABELS[mapping.category] || mapping.description}
+                                    </span>
                                     {savingCategory === mapping.category && (
-                                      <div className="w-3 h-3 border-2 border-orange-200 border-t-[#EA6C00] rounded-full animate-spin" />
+                                      <div className="w-3.5 h-3.5 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin flex-shrink-0" />
                                     )}
                                   </div>
                                 </td>
-                                <td className="px-5 py-3">
+                                <td className="px-4 py-3">
                                   <select
                                     value={getValue(mapping, "debitAccountId")}
                                     onChange={(e) => handleChange(mapping.category, "debitAccountId", e.target.value)}
-                                    className="w-full px-3 py-2 border border-[#E5E7EB] dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#EA6C00]/20 focus:border-[#EA6C00] outline-none transition-all"
+                                    className="w-full h-11 px-3 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all cursor-pointer shadow-sm hover:border-slate-300 dark:hover:border-slate-500"
+                                    title={mappingAccounts.find(a => a.id === getValue(mapping, "debitAccountId"))?.name}
                                   >
                                     {mappingAccounts.map((acc) => (
-                                      <option key={acc.id} value={acc.id}>{acc.code} - {acc.name}</option>
+                                      <option key={acc.id} value={acc.id}>{acc.code} — {acc.name}</option>
                                     ))}
                                   </select>
                                 </td>
-                                <td className="px-5 py-3">
+                                <td className="px-4 py-3">
                                   <select
                                     value={getValue(mapping, "creditAccountId")}
                                     onChange={(e) => handleChange(mapping.category, "creditAccountId", e.target.value)}
-                                    className="w-full px-3 py-2 border border-[#E5E7EB] dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#EA6C00]/20 focus:border-[#EA6C00] outline-none transition-all"
+                                    className="w-full h-11 px-3 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all cursor-pointer shadow-sm hover:border-slate-300 dark:hover:border-slate-500"
+                                    title={mappingAccounts.find(a => a.id === getValue(mapping, "creditAccountId"))?.name}
                                   >
                                     {mappingAccounts.map((acc) => (
-                                      <option key={acc.id} value={acc.id}>{acc.code} - {acc.name}</option>
+                                      <option key={acc.id} value={acc.id}>{acc.code} — {acc.name}</option>
                                     ))}
                                   </select>
                                 </td>
-                                <td className="px-5 py-3 text-center">
-                                  <button
-                                    type="button"
-                                    aria-label={isChanged ? "Berubah" : "Aktif"}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                                      isChanged
-                                        ? "bg-amber-400"
-                                        : "bg-emerald-500"
-                                    }`}
-                                  >
-                                    <span
-                                      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${
-                                        isChanged ? "translate-x-1" : "translate-x-6"
+                                <td className="px-6 py-4 text-center">
+                                  <div className="flex justify-center">
+                                    <div
+                                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                                        isChanged
+                                          ? "bg-amber-400"
+                                          : "bg-emerald-500"
                                       }`}
-                                    />
-                                  </button>
+                                    >
+                                      <span
+                                        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform ${
+                                          isChanged ? "translate-x-1" : "translate-x-4.5"
+                                        }`}
+                                      />
+                                    </div>
+                                  </div>
                                 </td>
                               </tr>
                             );
@@ -302,45 +325,50 @@ export default function KonfigurasiJurnalModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 flex-shrink-0">
+        <div className="sticky bottom-0 flex items-center justify-between gap-3 px-6 py-5 border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 z-20 flex-shrink-0">
           <button
             onClick={handleReset}
             disabled={!hasChanges}
-            className="px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-5 py-2.5 text-sm font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:text-slate-700"
           >
-            Reset Default
+            Reset ke Default
           </button>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onClose}
-              type="button"
-              className="px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors"
-            >
-              Tutup
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={!hasChanges || saving}
-              className={`flex items-center gap-2 px-5 py-2 text-sm font-bold rounded-lg transition-all ${
-                hasChanges
-                  ? "bg-[#EA6C00] hover:bg-[#C25500] text-white shadow-md shadow-orange-500/20 active:scale-95"
-                  : "bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"
-              }`}
-            >
-              {saving ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Menyimpan...
-                </>
-              ) : (
-                <>
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                  </svg>
-                  Simpan Semua Perubahan
-                </>
-              )}
-            </button>
+          <div className="flex items-center gap-4">
+            {!hasChanges && (
+              <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider hidden md:block">Belum ada perubahan</span>
+            )}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={onClose}
+                type="button"
+                className="px-5 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-95 shadow-sm"
+              >
+                Tutup
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={!hasChanges || saving}
+                className={`flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-xl transition-all shadow-md active:scale-95 ${
+                  hasChanges
+                    ? "bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20"
+                    : "bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed shadow-none"
+                }`}
+              >
+                {saving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Menyimpan...
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                    Simpan Semua Perubahan
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

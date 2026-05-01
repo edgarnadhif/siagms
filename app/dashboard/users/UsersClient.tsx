@@ -170,23 +170,23 @@ export default function UsersClient({
     <div className="text-gray-600 dark:text-gray-300 w-full h-full pb-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 px-4 md:px-0">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
+          <h1 className="page-title dark:text-gray-100">
             Kelola User
           </h1>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-3">
+          <p className="card-subtitle text-gray-400 dark:text-gray-500 mt-2">
             Kelola akun karyawan
           </p>
         </div>
         <Link
           href="?add=true"
-          className="flex items-center gap-2 px-5 h-11 bg-[#EA6C00] hover:bg-[#C25500] text-white text-sm font-bold rounded-[10px] shadow-lg shadow-orange-500/20 transition-all active:scale-95 ml-auto w-full md:w-auto justify-center md:justify-start"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-200 w-full md:w-auto md:ml-auto"
         >
-          Tambah User
           <img
             src="/add.svg"
             alt="Add"
-            className="w-5 h-5 invert dark:invert-0"
+            className="w-4 h-4 invert dark:invert-0"
           />
+          Tambah User
         </Link>
       </div>
 

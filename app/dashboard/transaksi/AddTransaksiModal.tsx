@@ -107,6 +107,11 @@ export default function AddTransaksiModal({
         }
       : null,
   );
+
+  const [searchProj, setSearchProj] = useState("");
+  const [searchUnit, setSearchUnit] = useState("");
+  const [searchCust, setSearchCust] = useState("");
+
   const isExpenseCategory = [
     "BIAYA_KONSTRUKSI",
     "BIAYA_MARKETING",
@@ -123,7 +128,7 @@ export default function AddTransaksiModal({
 
   useEffect(() => {
     if (state?.success) {
-      router.push("/dashboard/transaksi");
+      router.push("/dashboard/transaksi?toast=add_success");
       router.refresh();
     }
   }, [state, router]);
@@ -219,15 +224,33 @@ export default function AddTransaksiModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-800 rounded-[16px] shadow-2xl w-full max-w-lg overflow-hidden border border-white/20 dark:border-slate-700 max-h-[90vh] flex flex-col">
+      <style jsx>{`
+        .subtle-scrollbar::-webkit-scrollbar {
+          width: 5px;
+        }
+        .subtle-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .subtle-scrollbar::-webkit-scrollbar-thumb {
+          background: #e2e8f0;
+          border-radius: 10px;
+        }
+        .dark .subtle-scrollbar::-webkit-scrollbar-thumb {
+          background: #334155;
+        }
+        .subtle-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #cbd5e1;
+        }
+      `}</style>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-700 max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="flex justify-between items-center p-5 border-b border-[#F3F4F6] dark:border-slate-700 shrink-0">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+        <div className="flex justify-between items-center p-6 border-b border-[#F3F4F6] dark:border-slate-700 shrink-0">
+          <h2 className="text-xl font-bold text-slate-800 dark:text-white tracking-tight">
             Tambah Transaksi
           </h2>
           <button
             onClick={handleClose}
-            className="p-2 text-gray-400 hover:text-[#EA6C00] dark:hover:text-[#EA6C00] transition-colors rounded-full hover:bg-gray-50 dark:hover:bg-slate-700"
+            className="p-2 text-slate-400 hover:text-orange-500 dark:hover:text-orange-500 transition-colors rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -247,12 +270,12 @@ export default function AddTransaksiModal({
         </div>
 
         {/* Form */}
-        <form action={formAction} className="overflow-y-auto">
-          <div className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+        <form action={formAction} className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-6 space-y-6 subtle-scrollbar">
+            <div className="grid grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
-                  No. Referensi <span className="text-[#EA6C00]">*</span>
+                <label className="block text-[13px] font-bold text-slate-800 dark:text-slate-300 mb-2 uppercase tracking-wide">
+                  No. Referensi <span className="text-orange-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -261,25 +284,25 @@ export default function AddTransaksiModal({
                   pattern="[a-zA-Z0-9\-/]{3,}"
                   title="Minimal 3 karakter, Alphanumeric"
                   placeholder="TRX-001"
-                  className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all placeholder-gray-400"
+                  className="w-full px-4 h-12 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all placeholder-slate-400 shadow-sm"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
-                  Tanggal <span className="text-[#EA6C00]">*</span>
+                <label className="block text-[13px] font-bold text-slate-800 dark:text-slate-300 mb-2 uppercase tracking-wide">
+                  Tanggal <span className="text-orange-500">*</span>
                 </label>
                 <input
                   type="date"
                   name="date"
                   required
                   defaultValue={new Date().toISOString().split("T")[0]}
-                  className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all"
+                  className="w-full px-4 h-12 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all shadow-sm"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
+              <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
                 Keterangan <span className="text-[#EA6C00]">*</span>
               </label>
               <input
@@ -297,7 +320,7 @@ export default function AddTransaksiModal({
                     warnBox.style.display = isTest ? "block" : "none";
                 }}
                 placeholder="Deskripsi transaksi"
-                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all placeholder-gray-400"
+                className="w-full px-4 h-12 border border-[#E5E7EB] dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all placeholder-gray-400"
               />
               <p
                 id="test-warning"
@@ -309,20 +332,20 @@ export default function AddTransaksiModal({
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
+              <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
                 Catatan
               </label>
               <input
                 type="text"
                 name="note"
                 placeholder="Catatan tambahan (opsional)"
-                className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all placeholder-gray-400"
+                className="w-full px-4 h-12 border border-[#E5E7EB] dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all placeholder-gray-400"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="relative" ref={catRef}>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
+                <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
                   Kategori <span className="text-[#EA6C00]">*</span>
                 </label>
                 <input
@@ -334,7 +357,7 @@ export default function AddTransaksiModal({
                 <button
                   type="button"
                   onClick={() => setCatOpen(!catOpen)}
-                  className={`flex justify-between items-center w-full px-4 py-2.5 border rounded-[10px] text-sm transition-all text-left ${
+                  className={`flex justify-between items-center w-full px-4 h-12 border rounded-xl text-sm transition-all text-left ${
                     catOpen
                       ? "border-[#EA6C00] ring-4 ring-[#EA6C00]/10"
                       : "border-[#E5E7EB] dark:border-slate-600"
@@ -359,7 +382,7 @@ export default function AddTransaksiModal({
                   </svg>
                 </button>
                 {catOpen && (
-                  <div className="absolute z-[60] left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-[10px] shadow-xl overflow-hidden py-1 max-h-48 overflow-y-auto">
+                  <div className="absolute z-[60] left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden p-1.5 max-h-48 overflow-y-auto">
                     {filteredCategories.map((cat) => (
                       <button
                         key={cat.id}
@@ -368,10 +391,10 @@ export default function AddTransaksiModal({
                           setSelectedCat(cat.id);
                           setCatOpen(false);
                         }}
-                        className={`block w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                        className={`block w-full text-left px-4 py-3 text-sm transition-all rounded-xl ${
                           selectedCat === cat.id
-                            ? "bg-[#EA6C00] text-white"
-                            : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"
+                            ? "bg-slate-50 dark:bg-slate-700/50 text-gray-900 dark:text-white font-medium"
+                            : "text-gray-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-slate-700/30 font-medium"
                         }`}
                       >
                         {cat.label}
@@ -381,7 +404,7 @@ export default function AddTransaksiModal({
                 )}
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
+                <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
                   Jumlah (Rp) <span className="text-[#EA6C00]">*</span>
                 </label>
                 <input
@@ -390,44 +413,55 @@ export default function AddTransaksiModal({
                   required
                   min="1"
                   placeholder="0"
-                  className="w-full px-4 py-2.5 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all placeholder-gray-400"
+                  className="w-full px-4 h-12 border border-[#E5E7EB] dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all placeholder-gray-400"
                 />
               </div>
             </div>
 
             <div className="relative" ref={projRef}>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
-                Proyek{" "}
-                {isExpenseCategory && <span className="text-red-500">*</span>}
+              <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
+                Proyek
               </label>
               <input type="hidden" name="projectId" value={selectedProj} />
-              <button
-                type="button"
-                onClick={() => setProjOpen(!projOpen)}
-                className={`flex justify-between items-center w-full px-4 py-2.5 border rounded-[10px] text-sm transition-all text-left ${
+              <div
+                onClick={() => {
+                  if (!projOpen) {
+                    setProjOpen(true);
+                    setSearchProj("");
+                  } else {
+                    setProjOpen(false);
+                  }
+                }}
+                className={`flex justify-between items-center w-full px-4 h-12 border rounded-xl text-sm transition-all text-left cursor-text ${
                   projOpen
                     ? "border-[#EA6C00] ring-4 ring-[#EA6C00]/10"
                     : "border-[#E5E7EB] dark:border-slate-600"
-                } bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none`}
+                } bg-white dark:bg-slate-700 text-gray-900 dark:text-white`}
               >
-                <span className={selectedProj ? "" : "text-gray-400"}>
-                  {selectedProj ? currentProjLabel : "Tanpa proyek"}
-                </span>
+                {projOpen ? (
+                  <input
+                    autoFocus
+                    type="text"
+                    className="w-full bg-transparent border-none outline-none focus:ring-0 p-0 text-sm placeholder-gray-400 dark:placeholder-gray-500"
+                    placeholder="Ketik untuk mencari..."
+                    value={searchProj}
+                    onChange={(e) => setSearchProj(e.target.value)}
+                  />
+                ) : (
+                  <span className={`truncate pr-2 ${selectedProj ? "" : "text-gray-400"}`}>
+                    {selectedProj ? currentProjLabel : "Tanpa proyek"}
+                  </span>
+                )}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className={`w-4 h-4 transition-transform ${projOpen ? "rotate-180" : ""}`}
+                  className={`w-4 h-4 flex-shrink-0 transition-transform ${projOpen ? "rotate-180" : ""}`}
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
-              </button>
+              </div>
               <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
                 {isExpenseCategory
                   ? "Pilih proyek tujuan pengeluaran"
@@ -436,22 +470,23 @@ export default function AddTransaksiModal({
                     : "Opsional untuk kategori ini"}
               </p>
               {projOpen && (
-                <div className="absolute z-[60] left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-[10px] shadow-xl py-1">
+                <div className="absolute z-[60] left-0 right-0 mt-2 max-h-48 overflow-y-auto bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-2xl shadow-xl p-1.5 custom-scrollbar">
+                  
                   <button
                     type="button"
                     onClick={() => {
                       setSelectedProj("");
                       setProjOpen(false);
                     }}
-                    className={`block w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                    className={`block w-full text-left px-4 py-3 text-sm transition-all rounded-xl ${
                       selectedProj === ""
-                        ? "bg-[#EA6C00] text-white"
-                        : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"
+                        ? "bg-slate-50 dark:bg-slate-700/50 text-gray-900 dark:text-white font-medium"
+                        : "text-gray-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-slate-700/30 font-medium"
                     }`}
                   >
                     Tanpa proyek
                   </button>
-                  {projects.map((p) => (
+                  {projects.filter(p => p.name.toLowerCase().includes(searchProj.toLowerCase()) || p.code.toLowerCase().includes(searchProj.toLowerCase())).map((p) => (
                     <button
                       key={p.id}
                       type="button"
@@ -459,10 +494,10 @@ export default function AddTransaksiModal({
                         setSelectedProj(p.id);
                         setProjOpen(false);
                       }}
-                      className={`block w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                      className={`block w-full text-left px-4 py-3 text-sm transition-all rounded-xl ${
                         selectedProj === p.id
-                          ? "bg-[#EA6C00] text-white"
-                          : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"
+                          ? "bg-slate-50 dark:bg-slate-700/50 text-gray-900 dark:text-white font-medium"
+                          : "text-gray-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-slate-700/30 font-medium"
                       }`}
                     >
                       {p.code} — {p.name}
@@ -473,83 +508,93 @@ export default function AddTransaksiModal({
             </div>
 
             <div className="relative" ref={unitRef}>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
-                Unit{" "}
-                {isIncomeCategory && <span className="text-red-500">*</span>}
+              <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
+                Unit
               </label>
               <input type="hidden" name="unitId" value={selectedUnit} />
-              <button
-                type="button"
-                onClick={() => setUnitOpen(!unitOpen)}
-                className={`flex justify-between items-center w-full px-4 py-2.5 border rounded-[10px] text-sm transition-all text-left ${
+              <div
+                onClick={() => {
+                  if (!unitOpen) {
+                    setUnitOpen(true);
+                    setSearchUnit("");
+                  } else {
+                    setUnitOpen(false);
+                  }
+                }}
+                className={`flex justify-between items-center w-full px-4 h-12 border rounded-xl text-sm transition-all text-left cursor-text ${
                   unitOpen
                     ? "border-[#EA6C00] ring-4 ring-[#EA6C00]/10"
                     : "border-[#E5E7EB] dark:border-slate-600"
-                } bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none shadow-sm focus:shadow-md transition-all`}
+                } bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-sm focus:shadow-md transition-all`}
               >
-                <div className="flex flex-col">
-                  <span
-                    className={
-                      selectedUnit
-                        ? "text-gray-900 dark:text-white font-medium"
-                        : "text-gray-400"
-                    }
-                  >
-                    {selectedUnit ? unitObj?.unitCode : "Pilih Unit"}
-                  </span>
-                  {selectedUnit && (
-                    <span className="text-[11px] text-gray-500 font-normal">
-                      Blok {unitObj?.blockName} No.{unitObj?.unitNumber} —{" "}
-                      {unitObj?.customer?.name || "Tanpa Pelanggan"}
+                {unitOpen ? (
+                  <input
+                    autoFocus
+                    type="text"
+                    className="w-full bg-transparent border-none outline-none focus:ring-0 p-0 text-sm placeholder-gray-400 dark:placeholder-gray-500"
+                    placeholder="Ketik untuk mencari unit..."
+                    value={searchUnit}
+                    onChange={(e) => setSearchUnit(e.target.value)}
+                  />
+                ) : (
+                  <div className="flex flex-col truncate pr-2">
+                    <span className={`truncate ${selectedUnit ? "text-gray-900 dark:text-white font-medium" : "text-gray-400"}`}>
+                      {selectedUnit ? unitObj?.unitCode : "Pilih Unit"}
                     </span>
-                  )}
-                </div>
+                    {selectedUnit && (
+                      <span className="text-[11px] text-gray-500 font-normal truncate">
+                        Blok {unitObj?.blockName} No.{unitObj?.unitNumber} — {unitObj?.customer?.name || "Tanpa Pelanggan"}
+                      </span>
+                    )}
+                  </div>
+                )}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className={`w-4 h-4 transition-transform ${unitOpen ? "rotate-180" : ""}`}
+                  className={`w-4 h-4 flex-shrink-0 transition-transform ${unitOpen ? "rotate-180" : ""}`}
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
-              </button>
+              </div>
               <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
                 {isIncomeCategory
                   ? "Pilih unit terkait pembayaran"
                   : "Opsional untuk kategori ini"}
               </p>
               {unitOpen && (
-                <div className="absolute z-[60] left-0 right-0 mt-1 max-h-80 overflow-y-auto bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-[10px] shadow-xl py-2">
+                <div className="absolute z-[60] left-0 right-0 mt-2 max-h-80 overflow-y-auto bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-2xl shadow-xl p-1.5 custom-scrollbar">
+                  
                   <button
                     type="button"
                     onClick={() => handleSelectUnit("")}
-                    className={`block w-full text-left px-4 py-2.5 text-sm transition-colors text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-700 mb-1`}
+                    className={`block w-full text-left px-4 py-3 text-sm transition-all rounded-xl text-gray-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-slate-700/30 font-medium mb-1`}
                   >
                     Batal Pilih Unit
                   </button>
-                  <div className="px-4 py-1 mb-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-slate-700/30">
-                    Daftar Unit Terjual/Booking
-                  </div>
                   {displayedUnits?.length === 0 ? (
                     <div className="px-4 py-3 text-sm text-center text-gray-500 italic">
                       Tidak ada unit di proyek ini
                     </div>
                   ) : (
-                    displayedUnits?.map((u) => (
+                    displayedUnits?.filter((u) => {
+                      const search = searchUnit.toLowerCase();
+                      return (
+                        u.unitCode.toLowerCase().includes(search) ||
+                        u.blockName.toLowerCase().includes(search) ||
+                        u.unitNumber.toLowerCase().includes(search) ||
+                        (u.customer?.name || "").toLowerCase().includes(search)
+                      );
+                    }).map((u) => (
                       <button
                         key={u.id}
                         type="button"
                         onClick={() => handleSelectUnit(u.id)}
-                        className={`block w-full text-left px-4 py-2.5 transition-colors border-l-4 ${
+                        className={`block w-full text-left px-4 py-3 transition-all rounded-xl ${
                           selectedUnit === u.id
-                            ? "bg-[#FFF0E6] dark:bg-orange-950/30 border-[#EA6C00]"
-                            : "border-transparent hover:bg-gray-50 dark:hover:bg-slate-700"
+                            ? "bg-slate-50 dark:bg-slate-700/50"
+                            : "hover:bg-slate-50 dark:hover:bg-slate-700/30"
                         }`}
                       >
                         <div className="flex flex-col">
@@ -570,78 +615,80 @@ export default function AddTransaksiModal({
             </div>
 
             <div className="relative" ref={custRef}>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">
-                Pelanggan{" "}
-                {isIncomeCategory && <span className="text-red-500">*</span>}
+              <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
+                Pelanggan
               </label>
               <input
                 type="hidden"
                 name="customerId"
                 value={selectedCustomer}
-                required={isIncomeCategory}
               />
-              <button
-                type="button"
-                onClick={() => setCustOpen(!custOpen)}
-                disabled={!!selectedUnit && !!customerInfo}
-                className={`flex justify-between items-center w-full px-4 py-2.5 border rounded-[10px] text-sm transition-all text-left ${
+              <div
+                onClick={() => {
+                  if (!!selectedUnit && !!customerInfo) return;
+                  if (!custOpen) {
+                    setCustOpen(true);
+                    setSearchCust("");
+                  } else {
+                    setCustOpen(false);
+                  }
+                }}
+                className={`flex justify-between items-center w-full px-4 h-12 border rounded-xl text-sm transition-all text-left ${
                   custOpen
                     ? "border-[#EA6C00] ring-4 ring-[#EA6C00]/10"
                     : "border-[#E5E7EB] dark:border-slate-600"
-                } ${!!selectedUnit && !!customerInfo ? "bg-gray-50 dark:bg-slate-700/50 cursor-not-allowed opacity-80" : "bg-white dark:bg-slate-700"} text-gray-900 dark:text-white focus:outline-none shadow-sm`}
+                } ${!!selectedUnit && !!customerInfo ? "bg-gray-50 dark:bg-slate-700/50 cursor-not-allowed opacity-80" : "bg-white dark:bg-slate-700 cursor-text"} text-gray-900 dark:text-white shadow-sm`}
               >
-                <div className="flex flex-col">
-                  <span
-                    className={
-                      selectedCustomer
-                        ? "text-gray-900 dark:text-white font-medium"
-                        : "text-gray-400"
-                    }
-                  >
-                    {selectedCustomer ? customerInfo?.name : "Pilih Pelanggan"}
-                  </span>
-                  {selectedCustomer && (
-                    <span className="text-[11px] text-gray-500 font-normal">
-                      Metode: {customerInfo?.method}
+                {custOpen ? (
+                  <input
+                    autoFocus
+                    type="text"
+                    className="w-full bg-transparent border-none outline-none focus:ring-0 p-0 text-sm placeholder-gray-400 dark:placeholder-gray-500"
+                    placeholder="Ketik untuk mencari pelanggan..."
+                    value={searchCust}
+                    onChange={(e) => setSearchCust(e.target.value)}
+                  />
+                ) : (
+                  <div className="flex flex-col truncate pr-2">
+                    <span className={`truncate ${selectedCustomer ? "text-gray-900 dark:text-white font-medium" : "text-gray-400"}`}>
+                      {selectedCustomer ? customerInfo?.name : "Pilih Pelanggan"}
                     </span>
-                  )}
-                </div>
+                    {selectedCustomer && (
+                      <span className="text-[11px] text-gray-500 font-normal truncate">
+                        Metode: {customerInfo?.method}
+                      </span>
+                    )}
+                  </div>
+                )}
                 {!selectedUnit && (
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className={`w-4 h-4 transition-transform ${custOpen ? "rotate-180" : ""}`}
+                    className={`w-4 h-4 flex-shrink-0 transition-transform ${custOpen ? "rotate-180" : ""}`}
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 )}
-              </button>
+              </div>
               <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
                 {isIncomeCategory
                   ? "Pelanggan akan terisi dari unit, atau pilih manual bila perlu"
                   : "Opsional untuk kategori ini"}
               </p>
               {custOpen && !selectedUnit && (
-                <div className="absolute z-[60] left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-[10px] shadow-xl py-2">
-                  <div className="px-4 py-1 mb-1 text-[11px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-slate-700/30">
-                    Daftar Semua Pelanggan
-                  </div>
-                  {customers?.map((c) => (
+                <div className="absolute z-[60] left-0 right-0 mt-2 max-h-60 overflow-y-auto bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-2xl shadow-xl p-1.5 custom-scrollbar">
+                  
+                  {customers?.filter(c => c.name.toLowerCase().includes(searchCust.toLowerCase()) || (c.customerCode || "").toLowerCase().includes(searchCust.toLowerCase())).map((c) => (
                     <button
                       key={c.id}
                       type="button"
                       onClick={() => handleSelectCustomer(c.id)}
-                      className={`block w-full text-left px-4 py-2 transition-colors border-l-4 ${
+                      className={`block w-full text-left px-4 py-3 transition-all rounded-xl ${
                         selectedCustomer === c.id
-                          ? "bg-[#FFF0E6] dark:bg-orange-950/30 border-[#EA6C00]"
-                          : "border-transparent hover:bg-gray-50 dark:hover:bg-slate-700"
+                          ? "bg-slate-50 dark:bg-slate-700/50"
+                          : "hover:bg-slate-50 dark:hover:bg-slate-700/30"
                       }`}
                     >
                       <div className="flex flex-col">

@@ -921,17 +921,8 @@ async function resolveTransactionRelations(
     }
   }
 
-  if (EXPENSE_PROJECT_CATEGORIES.includes(params.category as (typeof EXPENSE_PROJECT_CATEGORIES)[number]) && !resolvedProjectId) {
-    throw new Error('Proyek wajib diisi untuk transaksi biaya')
-  }
-
-  if (UNIT_REQUIRED_CATEGORIES.includes(params.category as (typeof UNIT_REQUIRED_CATEGORIES)[number]) && !resolvedUnitId) {
-    throw new Error('Unit wajib diisi untuk transaksi penerimaan')
-  }
-
-  if (UNIT_REQUIRED_CATEGORIES.includes(params.category as (typeof UNIT_REQUIRED_CATEGORIES)[number]) && !resolvedCustomerId) {
-    throw new Error('Pelanggan wajib diisi untuk transaksi penerimaan')
-  }
+  // Validation checks for project, unit, and customer requirements have been removed
+  // to allow transactions that do not belong to a specific project, unit, or customer.
 
   return {
     projectId: resolvedProjectId,

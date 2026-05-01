@@ -85,7 +85,13 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
     return NextResponse.json({ success: true, data: customer, message: "Data pelanggan berhasil diperbarui" });
   } catch (error: any) {
     if (error.code === "P2002") {
-      return NextResponse.json({ success: false, data: null, message: "NIK atau Data sudah terdaftar" }, { status: 400 });
+      const target = error.meta?.target;
+      const isNik = Array.isArray(target) ? target.includes('nik') : (typeof target === 'string' && target.includes('nik'));
+      
+      if (isNik) {
+        return NextResponse.json({ success: false, data: null, message: "NIK sudah terdaftar di sistem" }, { status: 400 });
+      }
+      return NextResponse.json({ success: false, data: null, message: "Terjadi duplikasi data unik (Kode/NIK)" }, { status: 400 });
     }
     return NextResponse.json({ success: false, data: null, message: error.message }, { status: 500 });
   }
