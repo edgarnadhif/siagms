@@ -26,6 +26,7 @@ import { format, parse, startOfWeek, getDay } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import CategoryBadge from "@/components/ui/CategoryBadge";
+import AIInsightCard from "@/components/AIInsightCard";
 import { TransactionCategory } from "@prisma/client";
 
 const rbcLocalizer = dateFnsLocalizer({
@@ -162,16 +163,7 @@ function DonutChart({
                 if (!active || !payload?.length) return null;
                 const rawValue = payload[0]?.value;
                 return (
-                  <div
-                    style={{
-                      borderRadius: "12px",
-                      border: "1px solid #e2e8f0",
-                      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                      fontSize: "12px",
-                      backgroundColor: "#fff",
-                      padding: "10px 12px",
-                    }}
-                  >
+                  <div className="rounded-xl border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 shadow-md px-3 py-2.5 text-xs font-semibold text-slate-900 dark:text-slate-100 animate-in fade-in zoom-in-95 duration-150">
                     {valueFormatter(rawValue)}
                   </div>
                 );
@@ -195,7 +187,9 @@ function ProjectFilterDropdown({
   onSelect: (val: string) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -220,20 +214,39 @@ function ProjectFilterDropdown({
             "Unknown Project",
         };
 
+  const filteredProjects = projects.filter((p) =>
+    p.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className="relative w-full md:min-w-[260px] md:w-auto" ref={dropdownRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
+    <div className="relative w-full md:min-w-[280px] md:w-auto" ref={dropdownRef}>
+      <div
+        onClick={() => {
+          setIsOpen(true);
+          setTimeout(() => inputRef.current?.focus(), 10);
+        }}
         className={cn(
-          "w-full flex items-center justify-between px-4 py-3 bg-white border transition-all duration-200 shadow-sm outline-none rounded-xl",
+          "w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-800 border dark:border-slate-700 transition-all duration-200 shadow-sm outline-none rounded-xl cursor-pointer",
           isOpen 
-            ? "border-orange-400 ring-2 ring-orange-50" 
-            : "border-gray-200 hover:border-gray-300"
+            ? "border-slate-400 dark:border-slate-500 ring-4 ring-slate-50 dark:ring-slate-800/50" 
+            : "border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600"
         )}
       >
-        <span className="text-[15px] font-semibold text-slate-900 truncate pr-2">
-          {selectedItem.label}
-        </span>
+        {isOpen ? (
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder="Cari proyek..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-transparent border-none outline-none text-[15px] font-semibold text-slate-900 dark:text-slate-100 placeholder:text-slate-400 p-0"
+            onClick={(e) => e.stopPropagation()}
+          />
+        ) : (
+          <span className="text-[15px] font-semibold text-slate-900 dark:text-slate-100 truncate pr-2">
+            {selectedItem.label}
+          </span>
+        )}
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className={cn(
@@ -249,31 +262,42 @@ function ProjectFilterDropdown({
         >
           <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
-      </button>
+      </div>
 
       {isOpen && (
         <div 
-          className="absolute left-0 z-50 min-w-full w-max max-w-[420px] mt-1.5 bg-white border border-gray-200 shadow-md shadow-gray-200/60 p-1 flex flex-col gap-0.5 max-h-[300px] overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-200 origin-top-left rounded-xl"
+          className="absolute left-0 z-50 min-w-full w-full mt-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-xl p-1 flex flex-col gap-0.5 max-h-[300px] overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-200 origin-top rounded-xl"
         >
-          <DropdownItem 
-            label="Semua Proyek (Global)" 
-            isSelected={selectedProject === "all"} 
-            onClick={() => {
-              onSelect("all");
-              setIsOpen(false);
-            }} 
-          />
-          {projects.map((p) => (
+          {searchQuery === "" && (
             <DropdownItem 
-              key={p.id}
-              label={`${p.code} — ${p.name}`} 
-              isSelected={selectedProject === p.id} 
+              label="Semua Proyek (Global)" 
+              isSelected={selectedProject === "all"} 
               onClick={() => {
-                onSelect(p.id);
+                onSelect("all");
                 setIsOpen(false);
+                setSearchQuery("");
               }} 
             />
-          ))}
+          )}
+          
+          {filteredProjects.length > 0 ? (
+            filteredProjects.map((p) => (
+              <DropdownItem 
+                key={p.id}
+                label={p.name} 
+                isSelected={selectedProject === p.id} 
+                onClick={() => {
+                  onSelect(p.id);
+                  setIsOpen(false);
+                  setSearchQuery("");
+                }} 
+              />
+            ))
+          ) : (
+            <div className="px-4 py-3 text-sm text-slate-400 italic">
+              Proyek tidak ditemukan
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -287,8 +311,8 @@ function DropdownItem({ label, isSelected, onClick }: { label: string; isSelecte
       className={cn(
         "flex items-center justify-between px-3 py-2.5 text-left transition-colors duration-150 rounded-lg cursor-pointer gap-3",
         isSelected 
-          ? "bg-gray-50 text-slate-900 font-semibold" 
-          : "text-slate-700 font-medium hover:bg-gray-50 hover:text-slate-900"
+          ? "bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-slate-100 font-bold" 
+          : "text-slate-600 dark:text-slate-400 font-medium hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-100"
       )}
     >
       <div className="min-w-0">
@@ -296,11 +320,6 @@ function DropdownItem({ label, isSelected, onClick }: { label: string; isSelecte
           {label}
         </span>
       </div>
-      {isSelected && (
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-orange-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-        </svg>
-      )}
     </button>
   );
 }
@@ -635,6 +654,10 @@ export default function DashboardClient({
   projectFilter,
   kasDiterima,
   pendapatanDiakui,
+  bebanKonstruksi,
+  bebanMarketing,
+  bebanGaji,
+  bebanOperasional,
   unitStats,
   piutangKPR,
   totalAset,
@@ -661,6 +684,10 @@ export default function DashboardClient({
   projectFilter: string;
   kasDiterima: number;
   pendapatanDiakui: number;
+  bebanKonstruksi: number;
+  bebanMarketing: number;
+  bebanGaji: number;
+  bebanOperasional: number;
   unitStats: {
     TERSEDIA: number;
     BOOKING: number;
@@ -764,18 +791,44 @@ export default function DashboardClient({
       evtDate.getDate() === selectedDate.getDate()
     );
   });
+  const selectedProject = projects.find((project) => project.id === projectFilter);
+  const neracaBalanced =
+    (totalAset || 0) === (totalKewajiban || 0) + (totalEkuitas || 0);
+  const financialData = {
+    projectName: selectedProject?.name ?? "Semua Proyek",
+    kasDiterima: Number(kasDiterima ?? 0),
+    pendapatanDiakui: Number(pendapatanDiakui ?? 0),
+    totalBeban: Number(totalExpenses ?? 0),
+    labaBersih: Number(labaBersih ?? 0),
+    bebanKonstruksi: Number(bebanKonstruksi ?? 0),
+    bebanMarketing: Number(bebanMarketing ?? 0),
+    bebanGaji: Number(bebanGaji ?? 0),
+    bebanOperasional: Number(bebanOperasional ?? 0),
+    unitTersedia: Number(unitStats.TERSEDIA ?? 0),
+    unitTerjual: Number(
+      (unitStats.BOOKING ?? 0) +
+        (unitStats.INDENT ?? 0) +
+        (unitStats.AKAD ?? 0) +
+        (unitStats.LUNAS ?? 0) +
+        (unitStats.SERAH_TERIMA ?? 0),
+    ),
+    unitSerahTerima: Number(unitStats.SERAH_TERIMA ?? 0),
+    piutangKPR: Number(piutangKPR ?? 0),
+    totalAset: Number(totalAset ?? 0),
+    neracaStatus: neracaBalanced ? "BALANCED" : "TIDAK BALANCED",
+  };
 
   return (
     <div
       suppressHydrationWarning
       className="text-gray-600 dark:text-gray-300 w-full h-full"
     >
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
         <div>
           <h1 className="page-title dark:text-gray-100">
             Dashboard
           </h1>
-          <p className="card-subtitle text-gray-400 dark:text-gray-400 mt-2">
+          <p className="card-subtitle text-slate-500 dark:text-slate-400 mt-2">
             Ringkasan kinerja keuangan dan monitoring proyek
           </p>
         </div>
@@ -817,7 +870,8 @@ export default function DashboardClient({
           title="Pendapatan Diakui"
           value={formatRupiah(pendapatanDiakui)}
           subtitle="Nilai unit Lunas / Serah Terima"
-          icon={
+          icon={<img src="/attach_money.svg" alt="" className="w-5 h-5 object-contain dark:invert dark:brightness-200" />}
+          /* old_icon={
             <svg
               className="w-5 h-5"
               fill="none"
@@ -831,13 +885,14 @@ export default function DashboardClient({
                 d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
               />
             </svg>
-          }
+          }*/
         />
         <SummaryCard
           title="Total Beban/Biaya"
           value={formatRupiah(totalExpenses)}
           subtitle="HPP + Operasional"
-          icon={
+          icon={<img src="/shopping_cart.svg" alt="" className="w-5 h-5 object-contain dark:invert dark:brightness-200" />}
+          /* old_icon={
             <svg
               className="w-5 h-5"
               fill="none"
@@ -851,7 +906,7 @@ export default function DashboardClient({
                 d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"
               />
             </svg>
-          }
+          }*/
         />
         <SummaryCard
           title="Piutang KPR"
@@ -873,6 +928,10 @@ export default function DashboardClient({
             </svg>
           }
         />
+      </div>
+
+      <div className="mb-4 lg:mb-3">
+        <AIInsightCard financialData={financialData} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-3 mb-4 lg:mb-3">
@@ -999,7 +1058,10 @@ export default function DashboardClient({
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 dark:bg-slate-800 dark:border-slate-700 h-full flex flex-col">
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-base font-semibold text-slate-900 dark:text-white">Proporsi Pengeluaran</h3>
-            <button className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors group dark:text-slate-400 dark:hover:text-slate-200">
+            <Link 
+              href={`/dashboard/laporan?tab=laba_rugi${projectFilter !== "all" ? `&project=${projectFilter}` : ""}`}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors group dark:text-slate-400 dark:hover:text-slate-200"
+            >
               Detail Biaya
               <svg 
                 className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 text-slate-400 group-hover:text-slate-600" 
@@ -1009,7 +1071,7 @@ export default function DashboardClient({
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
               </svg>
-            </button>
+            </Link>
           </div>
           <div className="flex flex-col items-center gap-6 py-2 flex-1">
             <DonutChart data={breakdownData} />
@@ -1321,8 +1383,8 @@ export default function DashboardClient({
                   Belum ada transaksi dicatat.
                 </div>
               ) : (
-                <div className="overflow-x-auto w-full">
-                  <table className="w-full min-w-[900px] border-collapse">
+                <div className="overflow-x-auto w-full scrollbar-hide">
+                  <table className="w-full border-collapse">
                     <thead className="bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700/50">
                       <tr>
                         <th className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 w-[120px]">

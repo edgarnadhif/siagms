@@ -550,9 +550,7 @@ export async function permanentlyDeleteTenantUser(userId: number) {
     return { error: 'Anda tidak dapat menghapus akun Anda sendiri' }
   }
 
-  if (targetUser.isActive) {
-    return { error: 'Nonaktifkan user terlebih dahulu sebelum hapus permanen' }
-  }
+
 
   if (targetUser.role === 'ADMIN') {
     const superAdminCount = await countActiveSuperAdmins(auth.tenantId)
@@ -946,6 +944,7 @@ export async function updateTransaction(prevState: any, formData: FormData) {
   const skema_pembayaran = (formData.get('skema_pembayaran') as string) || 'cash'
   const sumber_pembayaran = (formData.get('sumber_pembayaran') as string) || 'pembeli'
   const status_pengakuan = (formData.get('status_pengakuan') as string) || 'diterima'
+  const evidenceUrl = formData.get('evidenceUrl') as string
 
   if (!id || !reference || !dateStr || !description || !category || !amountStr) {
     return { error: 'Semua data wajib diisi' }
@@ -991,6 +990,7 @@ export async function updateTransaction(prevState: any, formData: FormData) {
           projectId: relations.projectId || null,
           unitId: relations.unitId || null,
           customerId: relations.customerId || null,
+          evidenceUrl: evidenceUrl || null,
           skema_pembayaran: skema_pembayaran as any,
           sumber_pembayaran: sumber_pembayaran as any,
           status_pengakuan: status_pengakuan as any,
@@ -1043,6 +1043,7 @@ export async function createTransaction(prevState: any, formData: FormData) {
   const status_pengakuan = (formData.get('status_pengakuan') as string) || 'diterima'
   const unitId = formData.get('unitId') as string
   const customerId = formData.get('customerId') as string
+  const evidenceUrl = formData.get('evidenceUrl') as string
 
   if (!reference || !dateStr || !description || !category || !amountStr) {
     return { error: 'Referensi, Tanggal, Keterangan, Kategori, dan Jumlah wajib diisi' }
@@ -1079,6 +1080,7 @@ export async function createTransaction(prevState: any, formData: FormData) {
           status_pengakuan: status_pengakuan as any,
           unitId: relations.unitId || null,
           customerId: relations.customerId || null,
+          evidenceUrl: evidenceUrl || null,
         }
       })
 

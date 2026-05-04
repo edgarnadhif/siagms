@@ -1,0 +1,27 @@
+Your app (or one of its dependencies) is using an outdated JSX transform. Update to the modern JSX transform for faster performance: https://react.dev/link/new-jsx-transform
+Gemini AI error: Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+    at async POST (app\api\ai-insight\route.ts:122:20)
+  120 | `;
+  121 |
+> 122 |     const result = await model.generateContent(prompt);
+      |                    ^
+  123 |     const text = result.response.text();
+  124 |     const insight = parseJsonResponse(text);
+  125 | {
+  status: 404,
+  statusText: 'Not Found',
+  errorDetails: undefined
+}
+Gemini AI error: Error: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+    at async POST (app\api\ai-insight\route.ts:122:20)
+  120 | `;
+  121 |
+> 122 |     const result = await model.generateContent(prompt);
+      |                    ^
+  123 |     const text = result.response.text();
+  124 |     const insight = parseJsonResponse(text);
+  125 | {
+  status: 404,
+  statusText: 'Not Found',
+  errorDetails: undefined
+}

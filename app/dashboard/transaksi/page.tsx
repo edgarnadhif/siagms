@@ -76,6 +76,7 @@ export default async function TransaksiPage(props: {
     customerName: t.customer?.name || null,
     paymentMethod: t.customer?.paymentMethod || null,
     hasJournal: (t as any).journalEntries?.length > 0,
+    evidenceUrl: t.evidenceUrl,
   }));
 
   return (

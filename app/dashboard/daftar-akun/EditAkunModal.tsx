@@ -18,9 +18,11 @@ interface Account {
 export default function EditAkunModal({
   account,
   onClose,
+  showToast,
 }: {
   account: Account;
   onClose: () => void;
+  showToast?: (message: string, type: "success" | "error") => void;
 }) {
   const [state, formAction, isPending] = useActionState(updateAccount, null);
   const router = useRouter();
@@ -74,20 +76,13 @@ export default function EditAkunModal({
     }
   };
 
-  const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value;
-    setType(val);
-    if (val === "ASET" || val === "BEBAN") setNormalBalance("DEBIT");
-    else if (val === "KEWAJIBAN" || val === "EKUITAS" || val === "PENDAPATAN")
-      setNormalBalance("KREDIT");
-  };
-
   useEffect(() => {
     if (state?.success) {
+      if (showToast) showToast("Perubahan berhasil disimpan", "success");
       onClose();
       router.refresh();
     }
-  }, [state, router, onClose]);
+  }, [state, router, onClose, showToast]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -108,22 +103,22 @@ export default function EditAkunModal({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-700 max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="flex justify-between items-center p-5 border-b border-gray-200 dark:border-slate-700">
-          <h2 className="text-xl font-bold text-slate-800 dark:text-white">
+        <div className="flex justify-between items-center p-6 border-b border-[#F3F4F6] dark:border-slate-700 shrink-0">
+          <h2 className="text-xl font-bold text-slate-800 dark:text-white tracking-tight">
             Edit Akun
           </h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full text-slate-400 hover:text-[#EA6C00] hover:bg-orange-50 dark:hover:bg-slate-700 transition-colors"
+            className="p-2 text-slate-400 hover:text-orange-500 dark:hover:text-orange-500 transition-colors rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
-              strokeWidth={2}
+              strokeWidth={2.5}
               stroke="currentColor"
               className="w-5 h-5"
             >
@@ -137,13 +132,13 @@ export default function EditAkunModal({
         </div>
 
         {/* Form Body */}
-        <form action={formAction}>
+        <form action={formAction} className="flex-1 flex flex-col overflow-hidden">
           <input type="hidden" name="id" value={account.id} />
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+          <div className="flex-1 overflow-y-auto p-6 space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Kode Akun <span className="text-red-500">*</span>
+                <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
+                  Kode Akun <span className="text-[#EA6C00]">*</span>
                 </label>
                 <input
                   type="text"
@@ -153,12 +148,12 @@ export default function EditAkunModal({
                   onChange={handleCodeChange}
                   pattern="^[1-5]\d{3}$"
                   title="Kode harus 4 digit angka (1100 - 5999)"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-[#EA6C00]/20 focus:border-[#EA6C00] outline-none transition-shadow"
+                  className="w-full px-4 h-12 border border-[#E5E7EB] dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all placeholder-gray-400"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Tipe Akun <span className="text-red-500">*</span>
+                <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
+                  Tipe Akun <span className="text-[#EA6C00]">*</span>
                 </label>
                 <input type="hidden" name="type" value={type} />
                 <div className="relative" ref={typeRef}>
@@ -168,7 +163,11 @@ export default function EditAkunModal({
                       setTypeOpen(!typeOpen);
                       setBalanceOpen(false);
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-[#EA6C00]/20 focus:border-[#EA6C00] outline-none transition-shadow flex items-center justify-between"
+                    className={`flex justify-between items-center w-full px-4 h-12 border rounded-xl text-sm transition-all text-left ${
+                      typeOpen
+                        ? "border-[#EA6C00] ring-4 ring-[#EA6C00]/10"
+                        : "border-[#E5E7EB] dark:border-slate-600"
+                    } bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none`}
                   >
                     <span>
                       {
@@ -191,7 +190,7 @@ export default function EditAkunModal({
                   </button>
 
                   {typeOpen && (
-                    <div className="absolute z-50 left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden p-1.5">
+                    <div className="absolute z-[60] left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden p-1.5">
                       {TYPE_OPTIONS.map((option) => (
                         <button
                           key={option.value}
@@ -208,7 +207,7 @@ export default function EditAkunModal({
                             }
                             setTypeOpen(false);
                           }}
-                          className={`w-full text-left px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${type === option.value ? "bg-[#EA6C00] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"}`}
+                          className={`block w-full text-left px-4 py-3 text-sm transition-all rounded-xl ${type === option.value ? "bg-slate-50 dark:bg-slate-700/50 text-gray-900 dark:text-white font-medium" : "text-gray-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-slate-700/30 font-medium"}`}
                         >
                           {option.label}
                         </button>
@@ -219,22 +218,22 @@ export default function EditAkunModal({
               </div>
             </div>
 
-            <div className="mb-5">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Nama Akun <span className="text-red-500">*</span>
+            <div>
+              <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
+                Nama Akun <span className="text-[#EA6C00]">*</span>
               </label>
               <input
                 type="text"
                 name="name"
                 required
                 defaultValue={account.name}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-[#EA6C00]/20 focus:border-[#EA6C00] placeholder-slate-400 outline-none transition-shadow"
+                className="w-full px-4 h-12 border border-[#E5E7EB] dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all placeholder-gray-400"
               />
             </div>
 
-            <div className="mb-5">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Saldo Normal <span className="text-red-500">*</span>
+            <div>
+              <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
+                Saldo Normal <span className="text-[#EA6C00]">*</span>
               </label>
               <input type="hidden" name="normalBalance" value={normalBalance} />
               <div className="relative" ref={balanceRef}>
@@ -244,7 +243,11 @@ export default function EditAkunModal({
                     setBalanceOpen(!balanceOpen);
                     setTypeOpen(false);
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-[#EA6C00]/20 focus:border-[#EA6C00] outline-none transition-shadow flex items-center justify-between"
+                  className={`flex justify-between items-center w-full px-4 h-12 border rounded-xl text-sm transition-all text-left ${
+                    balanceOpen
+                      ? "border-[#EA6C00] ring-4 ring-[#EA6C00]/10"
+                      : "border-[#E5E7EB] dark:border-slate-600"
+                  } bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none`}
                 >
                   <span>
                     {
@@ -268,7 +271,7 @@ export default function EditAkunModal({
                 </button>
 
                 {balanceOpen && (
-                  <div className="absolute z-50 left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden p-1.5">
+                  <div className="absolute z-[60] left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden p-1.5">
                     {BALANCE_OPTIONS.map((option) => (
                       <button
                         key={option.value}
@@ -277,7 +280,7 @@ export default function EditAkunModal({
                           setNormalBalance(option.value);
                           setBalanceOpen(false);
                         }}
-                        className={`w-full text-left px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${normalBalance === option.value ? "bg-[#EA6C00] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"}`}
+                        className={`block w-full text-left px-4 py-3 text-sm transition-all rounded-xl ${normalBalance === option.value ? "bg-slate-50 dark:bg-slate-700/50 text-gray-900 dark:text-white font-medium" : "text-gray-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-slate-700/30 font-medium"}`}
                       >
                         {option.label}
                       </button>
@@ -287,8 +290,8 @@ export default function EditAkunModal({
               </div>
             </div>
 
-            <div className="mb-5">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <div>
+              <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-1.5 leading-[1.5]">
                 Keterangan
               </label>
               <textarea
@@ -296,7 +299,7 @@ export default function EditAkunModal({
                 defaultValue={account.description || ""}
                 placeholder="Deskripsi akun (opsional)"
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-[#EA6C00]/20 focus:border-[#EA6C00] placeholder-slate-400 resize-none outline-none transition-shadow"
+                className="w-full px-4 py-3 min-h-24 border border-[#E5E7EB] dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all placeholder-gray-400 resize-none"
               ></textarea>
             </div>
 
@@ -317,28 +320,35 @@ export default function EditAkunModal({
             </div>
 
             {state?.error && (
-              <div className="mt-4 text-red-500 text-xs font-medium p-2 bg-red-50 dark:bg-red-900/30 rounded border border-red-100 dark:border-red-800">
+              <div className="text-red-600 text-xs font-bold p-3 bg-red-50 dark:bg-red-900/20 rounded-[8px] border border-red-100 dark:border-red-900/30">
                 {state.error}
               </div>
             )}
           </div>
 
           {/* Footer */}
-          <div className="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
+          <div className="flex justify-end gap-3 p-5 border-t border-[#F3F4F6] dark:border-slate-700 bg-white dark:bg-slate-800 shrink-0">
             <button
               onClick={onClose}
               type="button"
               disabled={isPending}
-              className="px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
+              className="px-6 py-2.5 text-sm font-bold text-gray-600 dark:text-slate-300 bg-white dark:bg-slate-700 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] hover:bg-gray-50 dark:hover:bg-slate-600 transition-all disabled:opacity-50"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={isPending}
-              className="px-4 py-2 text-sm font-semibold text-white bg-[#EA6C00] hover:bg-[#C25500] rounded-lg transition-colors shadow-md shadow-orange-500/20 disabled:opacity-50"
+              className="px-6 py-2.5 text-sm font-bold text-white bg-[#EA6C00] hover:bg-[#C25500] rounded-[10px] shadow-md shadow-orange-500/20 transition-all active:scale-95 disabled:opacity-50"
             >
-              {isPending ? "Menyimpan..." : "Simpan Perubahan"}
+              {isPending ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Menyimpan...
+                </div>
+              ) : (
+                "Simpan"
+              )}
             </button>
           </div>
         </form>

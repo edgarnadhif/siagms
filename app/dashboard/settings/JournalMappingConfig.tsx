@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 
 interface AccountOption {
   id: string;
@@ -37,6 +37,119 @@ const CATEGORY_GROUPS = {
   "Penerimaan": ["BOOKING_FEE", "DOWN_PAYMENT", "ANGSURAN_KPR", "PENCAIRAN_KPR", "PELUNASAN_CASH"],
   "Pengeluaran": ["BIAYA_KONSTRUKSI", "BIAYA_MARKETING", "BIAYA_GAJI", "BIAYA_OPERASIONAL", "LAIN_LAIN"],
 };
+
+function AccountSearchDropdown({
+  accounts,
+  value,
+  onChange,
+}: {
+  accounts: AccountOption[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = accounts.find((account) => account.id === value);
+  const filteredAccounts = accounts.filter((account) => {
+    const keyword = search.toLowerCase();
+    return (
+      account.code.toLowerCase().includes(keyword) ||
+      account.name.toLowerCase().includes(keyword)
+    );
+  });
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={ref}>
+      <div
+        onClick={() => {
+          setOpen((prev) => !prev);
+          setSearch("");
+        }}
+        className={`flex justify-between items-center w-full px-4 h-12 border rounded-xl text-sm transition-all text-left cursor-text shadow-sm ${
+          open
+            ? "border-[#EA6C00] ring-4 ring-[#EA6C00]/10"
+            : "border-[#E5E7EB] dark:border-slate-600 hover:border-slate-300"
+        } bg-white dark:bg-slate-700 text-gray-900 dark:text-white`}
+      >
+        {open ? (
+          <input
+            autoFocus
+            type="text"
+            className="w-full bg-transparent border-none outline-none focus:ring-0 p-0 text-sm placeholder-gray-400 dark:placeholder-gray-500"
+            placeholder="Ketik kode atau nama akun..."
+            value={search}
+            onClick={(event) => event.stopPropagation()}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        ) : (
+          <span className={`truncate pr-2 ${selected ? "" : "text-gray-400"}`}>
+            {selected ? `${selected.code} — ${selected.name}` : "Pilih akun..."}
+          </span>
+        )}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className={`w-4 h-4 flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+
+      {open && (
+        <div className="absolute z-[80] left-0 right-0 mt-2 max-h-72 overflow-y-auto bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-2xl shadow-xl p-1.5">
+          {filteredAccounts.length === 0 ? (
+            <div className="px-4 py-3 text-sm text-center text-gray-500 italic">
+              Akun tidak ditemukan
+            </div>
+          ) : (
+            filteredAccounts.map((account) => (
+              <button
+                key={account.id}
+                type="button"
+                onClick={() => {
+                  onChange(account.id);
+                  setOpen(false);
+                  setSearch("");
+                }}
+                className={`block w-full text-left px-4 py-3 transition-all rounded-xl ${
+                  value === account.id
+                    ? "bg-slate-50 dark:bg-slate-700/50"
+                    : "hover:bg-slate-50 dark:hover:bg-slate-700/30"
+                }`}
+              >
+                <span
+                  className={`block text-sm font-bold ${
+                    value === account.id
+                      ? "text-[#EA6C00]"
+                      : "text-gray-700 dark:text-gray-200"
+                  }`}
+                >
+                  {account.code} — {account.name}
+                </span>
+                {!account.isActive && (
+                  <span className="text-[11px] text-gray-400">Nonaktif</span>
+                )}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function JournalMappingConfig({
   accounts: initialAccounts,
@@ -329,7 +442,7 @@ export default function JournalMappingConfig({
 
             {/* Table */}
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[700px]">
+              <table className="w-full min-w-[1080px]">
                 <thead className="bg-[#F9FAFB] dark:bg-slate-800/80 border-b border-gray-100 dark:border-slate-700">
                   <tr>
                     <th className="px-5 py-3 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider w-[200px]">
@@ -375,48 +488,22 @@ export default function JournalMappingConfig({
                           </div>
                         </td>
                         <td className="px-5 py-3">
-                          <select
-                            value={getCurrentValue(
-                              mapping,
-                              "debitAccountId"
-                            )}
-                            onChange={(e) =>
-                              handleChange(
-                                mapping,
-                                "debitAccountId",
-                                e.target.value
-                              )
+                          <AccountSearchDropdown
+                            accounts={accounts}
+                            value={getCurrentValue(mapping, "debitAccountId")}
+                            onChange={(value) =>
+                              handleChange(mapping, "debitAccountId", value)
                             }
-                            className="w-full px-3 py-2 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all"
-                          >
-                            {accounts.map((acc) => (
-                              <option key={acc.id} value={acc.id}>
-                                {acc.code} - {acc.name}
-                              </option>
-                            ))}
-                          </select>
+                          />
                         </td>
                         <td className="px-5 py-3">
-                          <select
-                            value={getCurrentValue(
-                              mapping,
-                              "creditAccountId"
-                            )}
-                            onChange={(e) =>
-                              handleChange(
-                                mapping,
-                                "creditAccountId",
-                                e.target.value
-                              )
+                          <AccountSearchDropdown
+                            accounts={accounts}
+                            value={getCurrentValue(mapping, "creditAccountId")}
+                            onChange={(value) =>
+                              handleChange(mapping, "creditAccountId", value)
                             }
-                            className="w-full px-3 py-2 border border-[#E5E7EB] dark:border-slate-600 rounded-[10px] text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all"
-                          >
-                            {accounts.map((acc) => (
-                              <option key={acc.id} value={acc.id}>
-                                {acc.code} - {acc.name}
-                              </option>
-                            ))}
-                          </select>
+                          />
                         </td>
                         <td className="px-5 py-3 text-center">
                           <div className="flex items-center justify-center gap-2">

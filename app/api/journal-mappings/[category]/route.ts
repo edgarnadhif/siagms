@@ -11,7 +11,7 @@ export async function PUT(
   { params }: { params: Promise<{ category: string }> }
 ) {
   try {
-    const auth = await requireAuth(['SUPER_ADMIN'])
+    const auth = await requireAuth(['ADMIN'])
     const { category } = await params
     const body = await request.json()
     const { debitAccountId, creditAccountId, isActive } = body

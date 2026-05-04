@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useActionState } from "react";
 import { createTransaction } from "@/app/actions";
 import { useRouter, useSearchParams } from "next/navigation";
+import { CldUploadWidget } from "next-cloudinary";
 
 interface Project {
   id: string;
@@ -111,6 +112,7 @@ export default function AddTransaksiModal({
   const [searchProj, setSearchProj] = useState("");
   const [searchUnit, setSearchUnit] = useState("");
   const [searchCust, setSearchCust] = useState("");
+  const [evidenceUrl, setEvidenceUrl] = useState("");
 
   const isExpenseCategory = [
     "BIAYA_KONSTRUKSI",
@@ -271,6 +273,7 @@ export default function AddTransaksiModal({
 
         {/* Form */}
         <form action={formAction} className="flex-1 flex flex-col overflow-hidden">
+          <input type="hidden" name="evidenceUrl" value={evidenceUrl} />
           <div className="flex-1 overflow-y-auto p-6 space-y-6 subtle-scrollbar">
             <div className="grid grid-cols-2 gap-5">
               <div>
@@ -341,6 +344,92 @@ export default function AddTransaksiModal({
                 placeholder="Catatan tambahan (opsional)"
                 className="w-full px-4 h-12 border border-[#E5E7EB] dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-[#EA6C00]/10 focus:border-[#EA6C00] outline-none transition-all placeholder-gray-400"
               />
+            </div>
+
+            <div>
+              <label className="block text-[14px] font-semibold text-gray-700 dark:text-slate-300 mb-2.5 uppercase tracking-wider text-[11px] font-bold">
+                Bukti Pembayaran (Opsional)
+              </label>
+              
+              {evidenceUrl ? (
+                <div className="relative group w-full aspect-video rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm bg-slate-50 dark:bg-slate-900/50">
+                  <img 
+                    src={evidenceUrl} 
+                    alt="Bukti" 
+                    className="w-full h-full object-contain"
+                  />
+                  <div className="absolute top-2 right-2 px-2 py-1 bg-green-500 text-white text-[10px] font-bold rounded-md shadow-lg animate-bounce">
+                    TERUNGGAH!
+                  </div>
+                  <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                    <CldUploadWidget 
+                      uploadPreset="siagms_upload"
+                      options={{
+                        sources: ['local', 'camera'],
+                        multiple: false,
+                        maxFiles: 1,
+                        language: "id",
+                        text: {
+                          id: {
+                            menu: {
+                              files: "File Saya",
+                              camera: "Kamera"
+                            }
+                          }
+                        }
+                      }}
+                      onSuccess={(result: any) => {
+                        setEvidenceUrl(result.info.secure_url);
+                      }}
+                    >
+                      {({ open }) => (
+                        <button
+                          type="button"
+                          onClick={() => open()}
+                          className="px-4 py-2 bg-white text-slate-900 text-sm font-bold rounded-xl hover:bg-slate-50 transition-all shadow-xl"
+                        >
+                          Ganti
+                        </button>
+                      )}
+                    </CldUploadWidget>
+                    <button
+                      type="button"
+                      onClick={() => setEvidenceUrl("")}
+                      className="px-4 py-2 bg-red-500 text-white text-sm font-bold rounded-xl hover:bg-red-600 transition-all shadow-xl"
+                    >
+                      Hapus
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <CldUploadWidget 
+                  uploadPreset="siagms_upload"
+                  options={{
+                    sources: ['local', 'camera'],
+                    multiple: false,
+                    maxFiles: 1
+                  }}
+                  onSuccess={(result: any) => {
+                    setEvidenceUrl(result.info.secure_url);
+                  }}
+                >
+                  {({ open }) => (
+                    <button
+                      type="button"
+                      onClick={() => open()}
+                      className="w-full h-32 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl flex flex-col items-center justify-center gap-2 text-slate-400 hover:text-slate-600 hover:border-slate-300 dark:hover:border-slate-600 transition-all group bg-slate-50/50 dark:bg-slate-900/20"
+                    >
+                      <div className="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm group-hover:scale-110 transition-transform">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15a2.25 2.25 0 0 0 2.25-2.25V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+                        </svg>
+                      </div>
+                      <span className="text-xs font-bold uppercase tracking-wider">Klik untuk upload bukti</span>
+                    </button>
+                  )}
+                </CldUploadWidget>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">

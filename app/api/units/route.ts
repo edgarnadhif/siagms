@@ -62,3 +62,64 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, data: null, message: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const auth = await requireAuth(["ADMIN"]);
+    const body = await request.json();
+    const { ids } = body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json({ success: false, message: "ID tidak valid" }, { status: 400 });
+    }
+
+    // Only allow deleting units with status TERSEDIA and no transactions
+    const units = await prisma.unit.findMany({
+      where: {
+        id: { in: ids },
+        tenantId: auth.tenantId,
+      },
+      include: {
+        transactions: { take: 1 },
+      },
+    });
+
+    const cannotDeleteStatus = units.filter((u) => u.status !== "TERSEDIA");
+    const cannotDeleteTrans = units.filter((u) => u.transactions.length > 0);
+
+    if (cannotDeleteStatus.length > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `${cannotDeleteStatus.length} unit tidak dapat dihapus karena sudah dalam proses transaksi (Booking/Akad/Lunas)`,
+        },
+        { status: 403 }
+      );
+    }
+
+    if (cannotDeleteTrans.length > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `${cannotDeleteTrans.length} unit tidak dapat dihapus karena memiliki riwayat transaksi`,
+        },
+        { status: 403 }
+      );
+    }
+
+    const result = await prisma.unit.deleteMany({
+      where: {
+        id: { in: ids },
+        tenantId: auth.tenantId,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      count: result.count,
+      message: `${result.count} unit berhasil dihapus secara permanen`,
+    });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+  }
+}

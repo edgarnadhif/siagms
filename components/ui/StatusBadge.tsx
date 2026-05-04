@@ -48,11 +48,11 @@ const getStatusConfig = (status: string, variant: StatusVariant) => {
   if (variant === "METODE_PEMBAYARAN") {
     switch (s) {
       case "KPR":
-        return { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE", label: "KPR" };
+        return { bg: "#F8FAFC", text: "#475569", border: "#E2E8F0", label: "KPR" };
       case "CASH":
       case "CASH_KERAS":
       case "CASH_BERTAHAP":
-        return { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0", label: s.replace("_", " ") };
+        return { bg: "#F8FAFC", text: "#475569", border: "#E2E8F0", label: s.replace("_", " ") };
     }
   }
 

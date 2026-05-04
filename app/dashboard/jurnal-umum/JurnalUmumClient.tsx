@@ -90,20 +90,42 @@ export default function JurnalUmumClient({
     type: "single" | "bulk";
     reference?: string;
   }>({ show: false, type: "single" });
+  const [toasts, setToasts] = useState<{ id: number; message: string; type: "success" | "error" }[]>([]);
+
+  const removeToast = useCallback((id: number) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  const showToast = useCallback((message: string, type: "success" | "error") => {
+    const id = Date.now();
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => removeToast(id), 5000);
+  }, [removeToast]);
 
   const confirmDelete = async () => {
     if (deleteModal.type === "single" && deleteModal.reference) {
       setDeletingRef(deleteModal.reference);
-      await deleteJournalEntriesByReference(deleteModal.reference);
+      const result = await deleteJournalEntriesByReference(deleteModal.reference);
+      if (result?.error) {
+        showToast(result.error, "error");
+      } else {
+        showToast("Jurnal berhasil dihapus", "error");
+      }
       setDeletingRef(null);
       setDeleteModal({ show: false, type: "single" });
     } else if (deleteModal.type === "bulk") {
       setDeletingRef("bulk");
-      for (const ref of selectedRefs) {
-        await deleteJournalEntriesByReference(ref);
+      const results = await Promise.all(
+        Array.from(selectedRefs).map((ref) => deleteJournalEntriesByReference(ref)),
+      );
+      const errors = results.filter((r) => r?.error);
+      if (errors.length > 0) {
+        showToast(`${errors.length} jurnal gagal dihapus`, "error");
+      } else {
+        showToast(`${selectedRefs.size} jurnal berhasil dihapus`, "error");
       }
-      setSelectedRefs(new Set());
       setDeletingRef(null);
+      setSelectedRefs(new Set());
       setDeleteModal({ show: false, type: "bulk" });
     }
     router.refresh();
@@ -530,7 +552,8 @@ export default function JurnalUmumClient({
           <div className="bg-white dark:bg-slate-800 border-[0.5px] border-[#E5E7EB] dark:border-slate-700 rounded-2xl shadow-sm overflow-hidden">
 
             {/* Table */}
-            <div className="overflow-x-auto">
+            {/* Table */}
+            <div className="overflow-x-auto scrollbar-hide">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
@@ -752,7 +775,7 @@ export default function JurnalUmumClient({
 
 
       {/* Modals */}
-      {showAddModal && <AddJurnalModal accounts={accounts} projects={projects} />}
+      {showAddModal && <AddJurnalModal accounts={accounts} projects={projects} showToast={showToast} />}
       {showConfigModal && (
         <KonfigurasiJurnalModal
           mappingAccounts={mappingAccounts}
@@ -762,54 +785,102 @@ export default function JurnalUmumClient({
 
       {/* Delete Confirmation Modal */}
       {deleteModal.show && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200 text-center">
-            <div className="flex items-center justify-center w-20 h-20 rounded-full bg-red-50 dark:bg-red-900/20 mx-auto mb-6 shadow-inner">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-                className="w-10 h-10 text-red-500"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
-                />
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl w-full max-w-[400px] overflow-hidden p-8 flex flex-col items-center">
+            <div className="w-20 h-20 rounded-full bg-rose-50 dark:bg-rose-900/20 flex items-center justify-center mb-6">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-10 h-10 text-rose-500">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
               </svg>
             </div>
-
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            <h3 className="text-2xl font-bold text-slate-900 dark:text-white text-center mb-2">
               {deleteModal.type === "bulk"
                 ? `Hapus ${selectedRefs.size} Jurnal?`
                 : "Hapus Jurnal?"}
             </h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-8">
+            <p className="text-slate-500 dark:text-slate-400 text-center mb-8">
               {deleteModal.type === "bulk"
-                ? "Semua jurnal yang dipilih akan dihapus secara permanen dari sistem."
+                ? "Semua jurnal yang dipilih akan dihapus secara permanen."
                 : "Jurnal ini akan dihapus secara permanen."}
             </p>
-
-            <div className="flex gap-3">
+            <div className="flex gap-3 w-full">
               <button
                 onClick={() => setDeleteModal({ show: false, type: "single" })}
-                className="flex-1 h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all disabled:opacity-50"
+                className="flex-1 h-12 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-[0.98]"
               >
                 Batal
               </button>
               <button
                 onClick={confirmDelete}
                 disabled={deletingRef !== null}
-                className="flex-1 h-12 px-4 rounded-xl bg-red-500 text-sm font-semibold text-white hover:bg-red-600 shadow-sm shadow-red-500/20 transition-all active:scale-[0.98] disabled:opacity-50"
+                className="flex-1 h-12 rounded-xl bg-rose-500 text-white font-semibold hover:bg-rose-600 transition-all shadow-lg shadow-rose-500/20 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {deletingRef !== null ? "Menghapus..." : "Ya, Hapus"}
+                {deletingRef !== null ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  "Ya, Hapus"
+                )}
               </button>
             </div>
           </div>
         </div>
       )}
+      {/* Toast Notifications */}
+      <div className="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className={`pointer-events-auto flex items-center gap-3 px-6 py-3.5 rounded-full shadow-2xl text-sm font-semibold text-white min-w-[280px] animate-in slide-in-from-right-5 duration-300 ${
+              t.type === "success" ? "bg-[#00945E]" : "bg-red-600"
+            }`}
+          >
+            {t.type === "success" ? (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-5 h-5 shrink-0"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-5 h-5 shrink-0"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            )}
+            <span className="flex-1">{t.message}</span>
+            <button
+              onClick={() => removeToast(t.id)}
+              className="text-white/70 hover:text-white ml-2 transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-4 h-4"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

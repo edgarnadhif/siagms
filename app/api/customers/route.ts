@@ -69,3 +69,52 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, data: null, message: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const auth = await requireAuth(["ADMIN"]);
+    const body = await request.json();
+    const { ids } = body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json({ success: false, message: "ID tidak valid" }, { status: 400 });
+    }
+
+    // Check for units or transactions for all selected IDs
+    const customers = await prisma.customer.findMany({
+      where: {
+        id: { in: ids },
+        tenantId: auth.tenantId,
+      },
+      include: {
+        unit: true,
+      },
+    });
+
+    const cannotDelete = customers.filter((c) => c.unit);
+    if (cannotDelete.length > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `${cannotDelete.length} pelanggan tidak dapat dihapus karena sudah memiliki unit aktif`,
+        },
+        { status: 403 }
+      );
+    }
+
+    const result = await prisma.customer.deleteMany({
+      where: {
+        id: { in: ids },
+        tenantId: auth.tenantId,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: result,
+      message: `${result.count} pelanggan berhasil dihapus`,
+    });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+  }
+}

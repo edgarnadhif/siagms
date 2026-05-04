@@ -4,7 +4,7 @@ import PelangganClient from "./PelangganClient";
 
 export default async function PelangganPage() {
   const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
-  // Fetch all customers (active & inactive) so client-side toggle works without refetch
+  // Fetch all customers so the client can update the list immediately after delete.
   const customers = await prisma.customer.findMany({
     where: { tenantId: auth.tenantId },
     include: {

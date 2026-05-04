@@ -45,12 +45,9 @@ export default async function DaftarAkunPage(props: {
     grouped[acc.type].push(acc);
   }
 
-  const totalCount = accounts.length;
-
   return (
     <DaftarAkunClient
       grouped={grouped}
-      totalCount={totalCount}
       search={search}
       type={type}
       showAddModal={showAddModal}

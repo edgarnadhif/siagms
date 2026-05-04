@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
+    const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
     const { id } = await context.params;
     const body = await request.json();
     const { customerId } = body;

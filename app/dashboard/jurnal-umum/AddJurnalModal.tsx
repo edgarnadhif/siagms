@@ -20,9 +20,11 @@ interface Project {
 export default function AddJurnalModal({
   accounts,
   projects,
+  showToast,
 }: {
   accounts: Account[];
   projects: Project[];
+  showToast?: (message: string, type: "success" | "error") => void;
 }) {
   const [state, formAction, isPending] = useActionState(createJournalEntries, null);
   const router = useRouter();
@@ -35,10 +37,11 @@ export default function AddJurnalModal({
 
   useEffect(() => {
     if (state?.success) {
+      if (showToast) showToast("Jurnal berhasil ditambahkan", "success");
       router.push("/dashboard/jurnal-umum");
       router.refresh();
     }
-  }, [state, router]);
+  }, [state, router, showToast]);
 
   const handleClose = () => {
     router.push("/dashboard/jurnal-umum");

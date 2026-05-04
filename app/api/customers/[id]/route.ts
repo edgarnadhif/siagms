@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
+    const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
     const { id } = await context.params;
     const customer = await prisma.customer.findFirst({
       where: getTenantWhere(auth.tenantId, { id }),
@@ -25,7 +25,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
 export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
+    const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
     const { id } = await context.params;
     const body = await request.json();
 
@@ -99,7 +99,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireAuth(["SUPER_ADMIN", "AKUNTAN"]);
+    const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
     const { id } = await context.params;
     const body = await request.json();
 
@@ -144,19 +144,10 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   }
 }
 
-export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+export async function DELETE(_request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireAuth(["SUPER_ADMIN"]);
+    const auth = await requireAuth(["ADMIN"]);
     const { id } = await context.params;
-    const { searchParams } = new URL(request.url);
-    const permanent = searchParams.get("permanent") === "true";
-
-    if (!permanent) {
-      return NextResponse.json(
-        { success: false, data: null, message: "Gunakan aksi PATCH untuk nonaktifkan/aktifkan pelanggan" },
-        { status: 400 }
-      );
-    }
 
     const current = await prisma.customer.findFirst({
       where: getTenantWhere(auth.tenantId, { id }),
@@ -169,7 +160,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
 
     if (current.unit) {
       return NextResponse.json(
-        { success: false, data: null, message: "Pelanggan tidak dapat dihapus permanen karena masih memiliki unit aktif" },
+        { success: false, data: null, message: "Pelanggan tidak dapat dihapus karena masih memiliki unit aktif" },
         { status: 403 }
       );
     }
@@ -185,7 +176,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
         {
           success: false,
           data: null,
-          message: "Pelanggan tidak dapat dihapus permanen karena masih memiliki riwayat transaksi/akad/serah terima",
+          message: "Pelanggan tidak dapat dihapus karena masih memiliki riwayat transaksi/akad/serah terima",
         },
         { status: 409 }
       );
@@ -195,7 +186,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
       where: { id },
     });
 
-    return NextResponse.json({ success: true, data: customer, message: "Pelanggan berhasil dihapus permanen" });
+    return NextResponse.json({ success: true, data: customer, message: "Pelanggan berhasil dihapus" });
   } catch (error: any) {
     return NextResponse.json({ success: false, data: null, message: error.message }, { status: 500 });
   }

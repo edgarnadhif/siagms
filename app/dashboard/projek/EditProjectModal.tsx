@@ -286,7 +286,7 @@ export default function EditProjectModal({
                   Menyimpan...
                 </div>
               ) : (
-                "Simpan Perubahan"
+                "Simpan"
               )}
             </button>
           </div>

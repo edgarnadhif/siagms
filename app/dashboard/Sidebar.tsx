@@ -13,7 +13,7 @@ export default function Sidebar({
   user,
 }: {
   role: AppRole;
-  user?: { email: string; role: string } | null;
+  user?: { email: string; role: string; fullName?: string | null } | null;
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const pathname = usePathname();
@@ -106,7 +106,7 @@ export default function Sidebar({
         {
           title: "Master Unit",
           href: "/dashboard/unit",
-          icon: "/folder.svg",
+          icon: "/perumahan.svg",
           roles: ["ADMIN", "AKUNTAN"],
         },
       ],
@@ -121,7 +121,7 @@ export default function Sidebar({
           roles: ["ADMIN"],
         },
         {
-          title: "Pengaturan Perusahaan",
+          title: "Profil Perusahaan",
           href: "/dashboard/settings",
           icon: "/domain.svg",
           roles: ["ADMIN"],
@@ -265,12 +265,12 @@ export default function Sidebar({
             <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-gray-200/50 dark:hover:bg-gray-800 transition-colors">
               {/* Avatar */}
               <div className="w-9 h-9 rounded-full bg-[#FFF0E6] dark:bg-[#431407] text-[#EA6C00] dark:text-[#F97316] font-bold text-sm flex items-center justify-center border-2 border-white dark:border-gray-700 shadow-sm uppercase shrink-0">
-                {user?.email ? user.email.substring(0, 2) : "US"}
+                {user?.fullName ? user.fullName.substring(0, 2) : (user?.email ? user.email.substring(0, 2) : "US")}
               </div>
               {/* Info */}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-gray-900 dark:text-white truncate leading-tight">
-                  {user?.email ? user.email.split("@")[0] : "User"}
+                  {user?.fullName || (user?.email ? user.email.split("@")[0] : "User")}
                 </p>
                 <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1 mt-0.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_4px_#10b981] shrink-0" />
@@ -409,7 +409,7 @@ export default function Sidebar({
               className="w-10 h-10 rounded-full bg-[#FFF0E6] dark:bg-[#431407] text-[#EA6C00] dark:text-[#F97316] font-bold text-sm flex items-center justify-center border-2 border-white dark:border-gray-700 shadow-sm uppercase hover:ring-2 hover:ring-[#EA6C00]/40 transition-all"
               title={user?.email || "User"}
             >
-              {user?.email ? user.email.substring(0, 2) : "US"}
+              {user?.fullName ? user.fullName.substring(0, 2) : (user?.email ? user.email.substring(0, 2) : "US")}
             </button>
 
             {userMenuOpen && (

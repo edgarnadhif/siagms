@@ -114,7 +114,8 @@ const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
 
   const pendapatanDiakui = Number(pendapatanDiakuiAgg._sum.amount || 0);
 
-  const totalBebanAgg = await prisma.transaction.aggregate({
+  const expenseCategoryAgg = await prisma.transaction.groupBy({
+    by: ["category"],
     where: {
       tenantId: auth.tenantId,
       category: {
@@ -125,7 +126,20 @@ const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
     _sum: { amount: true },
   });
 
-  const totalExpenses = Number(totalBebanAgg._sum.amount || 0);
+  const expenseTotalsByCategory = new Map(
+    expenseCategoryAgg.map((group) => [
+      group.category,
+      Number(group._sum.amount || 0),
+    ]),
+  );
+  const bebanKonstruksi = expenseTotalsByCategory.get("BIAYA_KONSTRUKSI") || 0;
+  const bebanMarketing = expenseTotalsByCategory.get("BIAYA_MARKETING") || 0;
+  const bebanGaji = expenseTotalsByCategory.get("BIAYA_GAJI") || 0;
+  const bebanOperasional = expenseTotalsByCategory.get("BIAYA_OPERASIONAL") || 0;
+  const totalExpenses = expenseCategoryAgg.reduce(
+    (sum, group) => sum + Number(group._sum.amount || 0),
+    0,
+  );
   const labaBersih = pendapatanDiakui - totalExpenses;
 
   // Calculate Piutang KPR (Units with status AKAD where method is KPR)
@@ -352,6 +366,10 @@ const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
       totalPelunasan={totalPelunasan}
       kasDiterima={kasDiterima}
       pendapatanDiakui={pendapatanDiakui}
+      bebanKonstruksi={bebanKonstruksi}
+      bebanMarketing={bebanMarketing}
+      bebanGaji={bebanGaji}
+      bebanOperasional={bebanOperasional}
       projectFilter={projectFilter || "all"}
       unitStats={unitStats}
       piutangKPR={piutangKPR}

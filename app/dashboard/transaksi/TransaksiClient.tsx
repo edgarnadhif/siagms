@@ -30,14 +30,14 @@ function ToastContainer({
       {toasts.map((t) => (
         <div
           key={t.id}
-          className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl text-sm font-semibold text-white min-w-[260px] animate-in slide-in-from-right-5 duration-300 ${
-            t.type === "success" ? "bg-emerald-600" : "bg-red-600"
+          className={`pointer-events-auto flex items-center gap-3 px-6 py-3.5 rounded-full shadow-2xl text-sm font-semibold text-white min-w-[280px] animate-in slide-in-from-right-5 duration-300 ${
+            t.type === "success" ? "bg-[#00945E]" : "bg-red-600"
           }`}
         >
           {t.type === "success" ? (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="w-4 h-4 shrink-0"
+              className="w-5 h-5 shrink-0"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -50,7 +50,7 @@ function ToastContainer({
           ) : (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="w-4 h-4 shrink-0"
+              className="w-5 h-5 shrink-0"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -64,11 +64,11 @@ function ToastContainer({
           <span className="flex-1">{t.message}</span>
           <button
             onClick={() => remove(t.id)}
-            className="text-white/70 hover:text-white"
+            className="text-white/70 hover:text-white ml-2 transition-colors"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="w-3.5 h-3.5"
+              className="w-4 h-4"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -97,6 +97,7 @@ interface Transaction {
   projectName: string | null;
   projectId: string | null;
   hasJournal?: boolean;
+  evidenceUrl?: string | null;
 }
 
 interface Project {
@@ -222,36 +223,6 @@ export default function TransaksiClient({
     `}</style>
   );
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus transaksi ini?")) return;
-    setIsDeleting(true);
-    setDeleteError("");
-    const result = await deleteTransaction(id);
-    if (result?.error) {
-      setDeleteError(result.error);
-    }
-    setIsDeleting(false);
-    router.refresh();
-  };
-
-  const handleBulkDelete = async () => {
-    if (
-      !confirm(
-        `Apakah Anda yakin ingin menghapus ${selectedIds.length} transaksi yang dipilih?`,
-      )
-    )
-      return;
-    setIsDeleting(true);
-    setDeleteError("");
-    const result = await deleteTransactions(selectedIds);
-    if (result?.error) {
-      setDeleteError(result.error);
-    } else {
-      setSelectedIds([]);
-    }
-    setIsDeleting(false);
-    router.refresh();
-  };
 
   const toggleSelectAll = () => {
     if (selectedIds.length === transactions.length && transactions.length > 0) {
@@ -282,6 +253,7 @@ export default function TransaksiClient({
   const catFilterRef = useRef<HTMLDivElement>(null);
   const projFilterRef = useRef<HTMLDivElement>(null);
   const itemsPerPageRef = useRef<HTMLDivElement>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -720,8 +692,8 @@ export default function TransaksiClient({
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px] border-collapse">
+            <div className="overflow-x-auto scrollbar-hide">
+              <table className="w-full border-collapse">
                 <thead className="bg-slate-50 dark:bg-slate-800/50">
                   <tr className="border-b border-slate-100 dark:border-slate-700/50">
                     <th className="px-5 py-3.5 w-[50px] text-center">
@@ -752,6 +724,9 @@ export default function TransaksiClient({
                     </th>
                     <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400 w-[160px]">
                       JUMLAH (RP)
+                    </th>
+                    <th className="px-5 py-3.5 text-center text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400 w-[80px]">
+                      BUKTI
                     </th>
                     <th className="px-5 py-3.5 text-center text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400 w-[100px]">
                       AKSI
@@ -802,6 +777,21 @@ export default function TransaksiClient({
                       </td>
                       <td className="px-5 py-3.5 whitespace-nowrap text-sm font-semibold text-slate-900 dark:text-white tabular-nums text-right">
                         {formatRupiah(trx.amount)}
+                      </td>
+                      <td className="px-5 py-3.5 whitespace-nowrap text-center">
+                        {trx.evidenceUrl ? (
+                          <button 
+                            onClick={() => setPreviewImage(trx.evidenceUrl!)}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-orange-500 transition-all group"
+                            title="Lihat Bukti"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 group-hover:scale-110 transition-transform">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                            </svg>
+                          </button>
+                        ) : (
+                          <span className="text-[10px] font-bold text-slate-300 dark:text-slate-600 uppercase tracking-tighter">No File</span>
+                        )}
                       </td>
                       <td className="px-5 py-3.5 whitespace-nowrap text-center">
                         <div className="flex items-center justify-center gap-1">
@@ -994,49 +984,40 @@ export default function TransaksiClient({
 
       {/* Delete Confirmation Modal */}
       {deleteModal.show && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200 text-center">
-            <div className="flex items-center justify-center w-20 h-20 rounded-full bg-red-50 dark:bg-red-900/20 mx-auto mb-6 shadow-inner">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-                className="w-10 h-10 text-red-500"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
-                />
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl w-full max-w-[400px] overflow-hidden p-8 flex flex-col items-center">
+            <div className="w-20 h-20 rounded-full bg-rose-50 dark:bg-rose-900/20 flex items-center justify-center mb-6">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-10 h-10 text-rose-500">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
               </svg>
             </div>
-
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            <h3 className="text-2xl font-bold text-slate-900 dark:text-white text-center mb-2">
               {deleteModal.type === "bulk"
                 ? `Hapus ${selectedIds.length} Transaksi?`
                 : "Hapus Transaksi?"}
             </h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-8">
+            <p className="text-slate-500 dark:text-slate-400 text-center mb-8">
               {deleteModal.type === "bulk"
-                ? "Semua transaksi yang dipilih akan dihapus secara permanen dari sistem."
+                ? "Semua transaksi yang dipilih akan dihapus secara permanen."
                 : "Transaksi ini akan dihapus secara permanen."}
             </p>
-
-            <div className="flex gap-3">
+            <div className="flex gap-3 w-full">
               <button
                 onClick={() => setDeleteModal({ show: false, type: "single" })}
-                className="flex-1 h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all disabled:opacity-50"
+                className="flex-1 h-12 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-[0.98]"
               >
                 Batal
               </button>
               <button
                 onClick={confirmDelete}
                 disabled={isDeleting}
-                className="flex-1 h-12 px-4 rounded-xl bg-red-500 text-sm font-semibold text-white hover:bg-red-600 shadow-sm shadow-red-500/20 transition-all active:scale-[0.98] disabled:opacity-50"
+                className="flex-1 h-12 rounded-xl bg-rose-500 text-white font-semibold hover:bg-rose-600 transition-all shadow-lg shadow-rose-500/20 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isDeleting ? "Menghapus..." : "Ya, Hapus"}
+                {isDeleting ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  "Ya, Hapus"
+                )}
               </button>
             </div>
           </div>
@@ -1059,6 +1040,48 @@ export default function TransaksiClient({
           transaction={transactions.find((t) => t.id === editId)}
           onClose={() => setEditId(null)}
         />
+      )}
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div 
+          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-300"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div 
+            className="relative max-w-4xl w-full max-h-[90vh] bg-white dark:bg-slate-800 rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="absolute top-4 right-4 z-10">
+              <button 
+                onClick={() => setPreviewImage(null)}
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 text-white backdrop-blur-md transition-all"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-2 bg-slate-50 dark:bg-slate-900/50">
+              <img 
+                src={previewImage} 
+                alt="Bukti Pembayaran" 
+                className="w-full h-full object-contain rounded-2xl max-h-[85vh]"
+              />
+            </div>
+            <div className="p-4 flex items-center justify-between border-t border-slate-100 dark:border-slate-700">
+              <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">Bukti Pembayaran</span>
+              <a 
+                href={previewImage} 
+                download 
+                target="_blank"
+                className="text-xs font-bold text-orange-500 hover:text-orange-600 uppercase tracking-wider"
+              >
+                Buka di Tab Baru
+              </a>
+            </div>
+          </div>
+        </div>
       )}
     </div>
     </>

@@ -26,5 +26,5 @@ export default async function UnitPage() {
 
   const serializedUnits = JSON.parse(JSON.stringify(units));
 
-  return <UnitClient initialData={serializedUnits} projects={projects} customers={customers} />;
+  return <UnitClient initialData={serializedUnits} projects={projects} customers={customers} currentRole={auth.role as any} />;
 }

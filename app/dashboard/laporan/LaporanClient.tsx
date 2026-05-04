@@ -141,6 +141,32 @@ export default function LaporanClient({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Auto-filter when selection changes
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    let changed = false;
+
+    if (selectedFromDate !== (fromDate || "")) {
+      if (selectedFromDate) params.set("from", selectedFromDate);
+      else params.delete("from");
+      changed = true;
+    }
+    if (selectedToDate !== (toDate || "")) {
+      if (selectedToDate) params.set("to", selectedToDate);
+      else params.delete("to");
+      changed = true;
+    }
+    if (selectedProject !== (projectFilter || "")) {
+      if (selectedProject) params.set("project", selectedProject);
+      else params.delete("project");
+      changed = true;
+    }
+
+    if (changed) {
+      router.replace(`${pathname}?${params.toString()}`);
+    }
+  }, [selectedFromDate, selectedToDate, selectedProject, fromDate, toDate, projectFilter, pathname, router, searchParams]);
+
   const hideNativeDateIcon = `
     <style>
       input.custom-date::-webkit-calendar-picker-indicator {
@@ -267,26 +293,37 @@ export default function LaporanClient({
       y += 7;
     };
 
-    const companyLineY = y;
-    writeCenter(companyName, 18, "bold");
-
     if (logoDataUrl) {
-      const logoWidth = 14;
-      const logoHeight = 14;
-      // Place logo on the left side of header, aligned with company-name row.
+      const logoWidth = 12;
+      const logoHeight = 12;
       pdf.addImage(
         logoDataUrl,
         "PNG",
-        left,
-        companyLineY - 5,
+        (pageWidth - logoWidth) / 2,
+        y - 5,
         logoWidth,
         logoHeight,
       );
+      y += 10;
     }
 
-    writeCenter(reportTitle, 14, "bold");
-    writeCenter(`Periode: ${periodLabel}`, 11, "normal");
+    writeCenter(companyName, 14, "bold");
+    writeCenter(periodLabel, 10, "normal");
+    
+    if (selectedProject) {
+      const projName = projects.find(p => p.id === selectedProject)?.name || "";
+      pdf.setFontSize(8);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(100, 116, 139); // text-slate-400
+      pdf.text(`PROYEK: ${projName.toUpperCase()}`, pageWidth / 2, y - 2, { align: "center" });
+      pdf.setTextColor(0, 0, 0); // reset
+      y += 2;
+    }
+
+    y += 4;
+    writeCenter(reportTitle, 16, "bold");
     y += 2;
+    pdf.setDrawColor(229, 231, 235); // border-gray-200
     pdf.line(left, y, right, y);
     y += 10;
 
@@ -485,10 +522,12 @@ export default function LaporanClient({
 
   return (
     <div className="text-gray-600 dark:text-gray-300 w-full h-full printable-area">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 px-4 md:px-0">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-4 px-4 md:px-0">
         <div>
-          <h1 className="page-title dark:text-gray-100">Laporan Keuangan</h1>
-          <p className="card-subtitle text-gray-400 dark:text-gray-400 mt-2">
+          <h1 className="page-title dark:text-gray-100">
+            Laporan Keuangan
+          </h1>
+          <p className="card-subtitle text-slate-500 dark:text-slate-400 mt-2">
             Laporan Laba Rugi, Neraca & Arus Kas
           </p>
         </div>
@@ -497,14 +536,13 @@ export default function LaporanClient({
             onClick={() => {
               void handleExportPDF();
             }}
-            className="px-5 h-10 bg-[#EA6C00] hover:bg-[#C25500] text-white rounded-xl text-xs font-bold shadow-md shadow-orange-500/20 transition-all flex items-center gap-2 active:scale-95"
+            className="px-5 h-11 bg-[#EA6C00] hover:bg-[#C25500] text-white rounded-xl text-xs font-bold shadow-md shadow-orange-500/20 transition-all flex items-center gap-2 active:scale-95"
           >
-            Cetak PDF
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
-              strokeWidth={2}
+              strokeWidth={2.5}
               stroke="currentColor"
               className="w-4 h-4"
             >
@@ -514,198 +552,180 @@ export default function LaporanClient({
                 d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.75 12 3 3m0 0 3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
               />
             </svg>
+            Cetak PDF
           </button>
         </div>
       </div>
 
-      <div className="sticky -top-6 z-30 pt-8 pb-4 bg-white dark:bg-[#111827] -mx-6 px-6 no-print mb-6">
-        <form
-          onSubmit={handleFilterChange}
-          className="bg-white dark:bg-slate-800 rounded-xl border border-[#E5E7EB] dark:border-slate-700 p-1.5 min-h-14 md:h-14 shadow-sm relative focus-within:ring-2 focus-within:ring-[#EA6C00]/10 focus-within:border-[#EA6C00] transition-all"
-        >
-          <div dangerouslySetInnerHTML={{ __html: hideNativeDateIcon }} />
-          <div className="flex flex-col md:flex-row items-center">
-            <div className="flex-1 w-full relative group">
-              {!selectedFromDate && !fromDateFocused && (
-                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-700 dark:text-gray-200 pointer-events-none">
-                  Dari Tanggal
-                </span>
-              )}
-              <input
-                type="date"
-                name="from"
-                value={selectedFromDate}
-                onChange={(e) => setSelectedFromDate(e.target.value)}
-                onFocus={() => setFromDateFocused(true)}
-                onBlur={() => setFromDateFocused(false)}
-                onClick={(e) => e.currentTarget.showPicker()}
-                className={`custom-date w-full h-11 pl-5 pr-12 border-0 bg-transparent text-sm font-bold focus:ring-0 cursor-pointer rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors ${selectedFromDate || fromDateFocused ? "text-gray-700 dark:text-gray-200" : "text-transparent"}`}
-              />
-              <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none">
-                <img
-                  src="/calendar_month.svg"
-                  alt=""
-                  className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity"
-                />
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* LEFT SIDEBAR: Summary & Info */}
+        <div className="w-full lg:w-[320px] space-y-5 no-print lg:sticky lg:top-6 self-start">
+          {/* 1. Filter Toolbar Card */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border-[0.5px] border-slate-200 dark:border-slate-700 p-5 shadow-sm space-y-4">
+            <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Filter Laporan</h4>
+            <form onSubmit={handleFilterChange} className="space-y-3">
+              <div dangerouslySetInnerHTML={{ __html: hideNativeDateIcon }} />
+              
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-500 ml-1">Dari Tanggal</label>
+                <div className="relative group">
+                  <input
+                    type="date"
+                    name="from"
+                    value={selectedFromDate}
+                    onChange={(e) => setSelectedFromDate(e.target.value)}
+                    onClick={(e) => e.currentTarget.showPicker()}
+                    className="custom-date w-full h-11 pl-3 pr-10 border-[0.5px] border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 rounded-xl text-sm font-medium focus:ring-2 focus:ring-slate-500/20 focus:border-slate-500 outline-none transition-all"
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div className="hidden md:block w-px h-6 bg-gray-100 dark:bg-slate-700 mx-1" />
-
-            <div className="flex-1 w-full relative group">
-              {!selectedToDate && !toDateFocused && (
-                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-700 dark:text-gray-200 pointer-events-none">
-                  Sampai Tanggal
-                </span>
-              )}
-              <input
-                type="date"
-                name="to"
-                value={selectedToDate}
-                onChange={(e) => setSelectedToDate(e.target.value)}
-                onFocus={() => setToDateFocused(true)}
-                onBlur={() => setToDateFocused(false)}
-                onClick={(e) => e.currentTarget.showPicker()}
-                className={`custom-date w-full h-11 pl-5 pr-12 border-0 bg-transparent text-sm font-bold focus:ring-0 cursor-pointer rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors ${selectedToDate || toDateFocused ? "text-gray-700 dark:text-gray-200" : "text-transparent"}`}
-              />
-              <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none">
-                <img
-                  src="/calendar_month.svg"
-                  alt=""
-                  className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity"
-                />
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-500 ml-1">Sampai Tanggal</label>
+                <div className="relative group">
+                  <input
+                    type="date"
+                    name="to"
+                    value={selectedToDate}
+                    onChange={(e) => setSelectedToDate(e.target.value)}
+                    onClick={(e) => e.currentTarget.showPicker()}
+                    className="custom-date w-full h-11 pl-3 pr-10 border-[0.5px] border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 rounded-xl text-sm font-medium focus:ring-2 focus:ring-slate-500/20 focus:border-slate-500 outline-none transition-all"
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div className="hidden md:block w-px h-6 bg-gray-100 dark:bg-slate-700 mx-1" />
-
-            <div className="flex-1 w-full relative" ref={projectDropdownRef}>
-              <button
-                type="button"
-                onClick={() => setProjectDropdownOpen(!projectDropdownOpen)}
-                className="w-full h-11 pl-5 pr-10 border-0 bg-transparent text-sm font-bold text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-left"
-              >
-                {selectedProject
-                  ? projects.find((p) => p.id === selectedProject)?.name ||
-                    "Semua Proyek"
-                  : "Semua Proyek"}
-              </button>
-              <svg
-                className={`w-4 h-4 text-gray-300 absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none transition-transform ${projectDropdownOpen ? "rotate-180" : ""}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2.5"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-              {projectDropdownOpen && (
-                <div className="absolute z-50 right-0 mt-3 w-full min-w-[260px] bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden flex flex-col p-1.5">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-500 ml-1">Proyek</label>
+                <div className="relative" ref={projectDropdownRef}>
                   <button
                     type="button"
-                    onClick={() => {
-                      setSelectedProject("");
-                      setProjectDropdownOpen(false);
-                    }}
-                    className={`text-left px-3 py-2.5 text-sm font-bold rounded-lg transition-colors ${selectedProject === "" ? "bg-[#EA6C00] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"}`}
+                    onClick={() => setProjectDropdownOpen(!projectDropdownOpen)}
+                    className="w-full h-11 flex items-center justify-between px-3 border-[0.5px] border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200"
                   >
-                    Semua Proyek
+                    <span className="truncate">{selectedProject ? projects.find(p => p.id === selectedProject)?.name : "Semua Proyek"}</span>
+                    <svg className={`w-4 h-4 transition-transform ${projectDropdownOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" /></svg>
                   </button>
-                  {projects.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedProject(p.id);
-                        setProjectDropdownOpen(false);
-                      }}
-                      className={`text-left px-3 py-2.5 text-sm font-bold rounded-lg transition-colors ${selectedProject === p.id ? "bg-[#EA6C00] text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50"}`}
-                    >
-                      {p.code} - {p.name}
-                    </button>
-                  ))}
+                  {projectDropdownOpen && (
+                    <div className="absolute z-50 left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-xl p-1 overflow-hidden">
+                      <button type="button" onClick={() => { setSelectedProject(""); setProjectDropdownOpen(false); }} className={`w-full text-left px-3 py-2 text-sm rounded-lg ${selectedProject === "" ? "bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white font-bold" : "hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-600 dark:text-slate-400"}`}>Semua Proyek</button>
+                      {projects.map(p => (
+                        <button key={p.id} type="button" onClick={() => { setSelectedProject(p.id); setProjectDropdownOpen(false); }} className={`w-full text-left px-3 py-2 text-sm rounded-lg ${selectedProject === p.id ? "bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white font-bold" : "hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-600 dark:text-slate-400"}`}>{p.name}</button>
+                      ))}
+                    </div>
+                  )}
                 </div>
+              </div>
+            </form>
+          </div>
+
+          {/* 2. Segmented Switcher */}
+          <div className="bg-slate-100 dark:bg-slate-900/50 p-1.5 rounded-2xl flex flex-col gap-1">
+            {[
+              { id: "laba_rugi", label: "Laba Rugi", icon: <img src="/laba_rugi.svg" alt="" className="w-4 h-4 object-contain dark:invert dark:brightness-200" /> },
+              { id: "neraca", label: "Neraca", icon: <img src="/balance.svg" alt="" className="w-4 h-4 object-contain dark:invert dark:brightness-200" /> },
+              { id: "arus_kas", label: "Arus Kas", icon: <img src="/money.svg" alt="" className="w-4 h-4 object-contain dark:invert dark:brightness-200" /> }
+            ].map((tab) => (
+              <Link
+                key={tab.id}
+                href={`?tab=${tab.id}${fromDate ? `&from=${fromDate}` : ""}${toDate ? `&to=${toDate}` : ""}${projectFilter ? `&project=${projectFilter}` : ""}`}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+                  activeTab === tab.id
+                    ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm border-[0.5px] border-slate-200 dark:border-slate-700"
+                    : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/30"
+                }`}
+              >
+                <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
+                  {tab.icon}
+                </div>
+                {tab.label}
+              </Link>
+            ))}
+          </div>
+
+          {/* 3. Summary Stats (Quick View) */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border-[0.5px] border-slate-200 dark:border-slate-700 p-5 shadow-sm space-y-4">
+            <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Ringkasan Angka</h4>
+            <div className="space-y-4">
+              {activeTab === "laba_rugi" && (
+                <>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-0.5">Laba Bersih</p>
+                    <p className={`text-lg font-black ${labaRugiData.labaBersih >= 0 ? "text-emerald-600" : "text-red-600"}`}>{formatRupiah(labaRugiData.labaBersih)}</p>
+                  </div>
+                  <div className="pt-3 border-t border-slate-50 dark:border-slate-700/50">
+                    <p className="text-xs text-slate-500 mb-0.5">Total Pendapatan</p>
+                    <p className="text-base font-bold text-slate-700 dark:text-slate-200">{formatRupiah(labaRugiData.totalPendapatanLR)}</p>
+                  </div>
+                </>
+              )}
+              {activeTab === "neraca" && (
+                <>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-0.5">Total Aset</p>
+                    <p className="text-lg font-black text-slate-900 dark:text-white">{formatRupiah(neracaData.totalAset)}</p>
+                  </div>
+                  <div className="pt-3 border-t border-slate-50 dark:border-slate-700/50 flex justify-between items-center">
+                    <p className="text-xs text-slate-500">Status Balance</p>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-black ${isNeracaBalanced ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>{isNeracaBalanced ? "OK" : "DIFFER"}</span>
+                  </div>
+                </>
+              )}
+              {activeTab === "arus_kas" && (
+                <>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-0.5">Saldo Kas Akhir</p>
+                    <p className="text-lg font-black text-blue-600 dark:text-blue-400">{formatRupiah(arusKasData.saldoAkhir)}</p>
+                  </div>
+                  <div className="pt-3 border-t border-slate-50 dark:border-slate-700/50">
+                    <p className="text-xs text-slate-500 mb-0.5">Arus Kas Operasi</p>
+                    <p className={`text-base font-bold ${arusKasData.kasBersihOperasi >= 0 ? "text-emerald-600" : "text-red-600"}`}>{formatRupiah(arusKasData.kasBersihOperasi)}</p>
+                  </div>
+                </>
               )}
             </div>
-
-            <div className="pl-2 pr-1">
-              <button
-                type="submit"
-                className="w-9 h-9 bg-[#EA6C00] text-white rounded-full shadow-lg shadow-orange-500/20 flex items-center justify-center shrink-0 hover:bg-[#C25500] hover:scale-105 active:scale-95 transition-all"
-                title="Terapkan Filter"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={3}
-                  stroke="currentColor"
-                  className="w-4.5 h-4.5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-                  />
-                </svg>
-              </button>
-            </div>
           </div>
-        </form>
-      </div>
 
-      <div className="flex flex-wrap items-center gap-1.5 mb-8 no-print px-4 md:px-0">
-        {["laba_rugi", "neraca", "arus_kas"].map((tab) => (
-          <Link
-            key={tab}
-            href={`?tab=${tab}${fromDate ? `&from=${fromDate}` : ""}${toDate ? `&to=${toDate}` : ""}${projectFilter ? `&project=${projectFilter}` : ""}`}
-            className={`px-6 h-11 flex items-center justify-center text-xs font-black uppercase tracking-widest rounded-full transition-all ${
-              activeTab === tab
-                ? "bg-[#EA6C00] text-white shadow-lg shadow-orange-500/20"
-                : "bg-white dark:bg-slate-800 text-gray-400 hover:text-gray-900 dark:hover:text-white border border-transparent hover:border-gray-200 dark:hover:border-slate-700"
-            }`}
-          >
-            {tab.replace("_", " ")}
-          </Link>
-        ))}
-      </div>
-
-      <div
-        ref={reportRef}
-        className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden p-8 w-full max-w-[210mm] mx-auto"
-        style={{ minHeight: "330mm" }}
-      >
-        <div className="mb-8 border-b border-gray-200 pb-6">
-          <div className="flex items-start gap-3">
-            <div className="w-12 shrink-0 pt-1">
-              <img
-                src="/Icon.svg"
-                alt="Logo"
-                className="w-10 h-10 object-contain"
-              />
-            </div>
-            <div className="flex-1 text-center -ml-12">
-              <h2 className="text-3xl font-bold text-slate-900 dark:text-white leading-tight">
-                {companyName}
-              </h2>
-              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mt-1 leading-tight">
-                {reportTitle}
-              </h3>
-              <p className="text-base font-medium text-slate-900 dark:text-white mt-2">
-                Periode: {periodLabel}
-              </p>
-            </div>
-          </div>
         </div>
+
+        {/* RIGHT CONTENT: Report Preview */}
+        <div className="flex-1 min-w-0">
+          <div
+            ref={reportRef}
+            className="bg-white dark:bg-slate-800 rounded-2xl border-[0.5px] border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden p-8 lg:p-12 w-full animate-in fade-in slide-in-from-bottom-4 duration-500 relative"
+          >
+            {/* Header Laporan (dalam kartu) */}
+            <div className="mb-10 border-b border-gray-100 dark:border-slate-700 pb-8 text-center">
+              <div className="flex flex-col items-center gap-3 mb-5">
+                <img src="/Icon.svg" alt="Logo" className="w-12 h-12 object-contain" />
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">{companyName}</h2>
+                  <p className="text-[13px] font-medium text-slate-500 mt-0.5">
+                    {periodLabel}
+                    {selectedProject && (
+                      <span className="block text-slate-400 font-bold mt-0.5 uppercase tracking-wider text-[9px]">
+                        Proyek: {projects.find(p => p.id === selectedProject)?.name}
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">{reportTitle}</h3>
+            </div>
 
         {/* LABA RUGI */}
         {activeTab === "laba_rugi" && (
-          <div className="max-w-4xl mx-auto text-sm space-y-4">
-            <div className="font-bold border-b-2 border-slate-900 dark:border-slate-200 pb-2 text-slate-900 dark:text-slate-100">
+          <div className="text-sm space-y-4">
+            <div id="lr-pendapatan" className="font-bold border-b-2 border-slate-900 dark:border-slate-200 pb-2 text-slate-900 dark:text-slate-100">
               PENDAPATAN
             </div>
             <div className="flex justify-between pl-4 text-slate-700 dark:text-slate-300">
@@ -721,7 +741,7 @@ export default function LaporanClient({
               <span>{formatRupiah(labaRugiData.totalPendapatanLR)}</span>
             </div>
 
-            <div className="font-bold border-b-2 border-slate-900 dark:border-slate-200 pb-2 pt-4 text-slate-900 dark:text-slate-100">
+            <div id="lr-hpp" className="font-bold border-b-2 border-slate-900 dark:border-slate-200 pb-2 pt-4 text-slate-900 dark:text-slate-100">
               HARGA POKOK PENJUALAN
             </div>
             <div className="flex justify-between pl-4 text-slate-700 dark:text-slate-300 pt-2">
@@ -737,12 +757,12 @@ export default function LaporanClient({
               <span>({formatRupiah(labaRugiData.hpp)})</span>
             </div>
 
-            <div className="flex justify-between font-black text-[#EA6C00] text-base border-b-2 border-slate-900 dark:border-slate-200 pb-2">
+            <div className="flex justify-between font-black text-slate-900 dark:text-white text-base border-b-2 border-slate-900 dark:border-slate-200 pb-2">
               <span>LABA KOTOR</span>
               <span>{formatRupiah(labaRugiData.labaKotor)}</span>
             </div>
 
-            <div className="font-bold border-b-2 border-slate-900 dark:border-slate-200 pb-2 pt-4 text-slate-900 dark:text-slate-100">
+            <div id="lr-beban" className="font-bold border-b-2 border-slate-900 dark:border-slate-200 pb-2 pt-4 text-slate-900 dark:text-slate-100">
               BEBAN OPERASIONAL
             </div>
             <div className="flex justify-between pl-4 text-slate-700 dark:text-slate-300 pt-2">
@@ -777,10 +797,10 @@ export default function LaporanClient({
 
         {/* NERACA */}
         {activeTab === "neraca" && (
-          <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 text-sm">
+          <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-10 text-sm">
             {/* LSS Aset */}
             <div className="space-y-4">
-              <div className="font-black text-slate-900 dark:text-white border-b-4 border-slate-800 dark:border-slate-200 pb-2 text-lg">
+              <div id="n-aset" className="font-black text-slate-900 dark:text-white border-b-4 border-slate-800 dark:border-slate-200 pb-2 text-lg">
                 ASET
               </div>
               <div className="flex justify-between pl-2 text-slate-700 dark:text-slate-300">
@@ -819,7 +839,7 @@ export default function LaporanClient({
 
             {/* RSS Kewa & Eku */}
             <div className="space-y-4">
-              <div className="font-black text-slate-900 dark:text-white border-b-4 border-slate-800 dark:border-slate-200 pb-2 text-lg">
+              <div id="n-kewajiban" className="font-black text-slate-900 dark:text-white border-b-4 border-slate-800 dark:border-slate-200 pb-2 text-lg">
                 KEWAJIBAN
               </div>
               <div className="flex justify-between pl-2 text-slate-700 dark:text-slate-300">
@@ -843,7 +863,7 @@ export default function LaporanClient({
                 <span>{formatRupiah(neracaData.totalKewajiban)}</span>
               </div>
 
-              <div className="font-black text-slate-900 dark:text-white border-b-4 border-slate-800 dark:border-slate-200 pb-2 text-lg pt-4">
+              <div id="n-ekuitas" className="font-black text-slate-900 dark:text-white border-b-4 border-slate-800 dark:border-slate-200 pb-2 text-lg pt-4">
                 EKUITAS
               </div>
               <div className="flex justify-between pl-2 text-slate-700 dark:text-slate-300">
@@ -884,8 +904,8 @@ export default function LaporanClient({
 
         {/* ARUS KAS */}
         {activeTab === "arus_kas" && (
-          <div className="max-w-4xl mx-auto text-sm space-y-4">
-            <div className="font-bold border-b-2 border-slate-900 dark:border-slate-200 pb-2 text-slate-900 dark:text-slate-100">
+          <div className="text-sm space-y-4">
+            <div id="ak-operasi" className="font-bold border-b-2 border-slate-900 dark:border-slate-200 pb-2 text-slate-900 dark:text-slate-100">
               AKTIVITAS OPERASI
             </div>
             <div className="font-semibold text-slate-800 dark:text-slate-200 mt-2">
@@ -951,7 +971,7 @@ export default function LaporanClient({
               <span>{formatRupiah(arusKasData.kasBersihOperasi)}</span>
             </div>
 
-            <div className="font-bold border-b-2 border-slate-900 dark:border-slate-200 pb-2 pt-4 text-slate-900 dark:text-slate-100">
+            <div id="ak-investasi" className="font-bold border-b-2 border-slate-900 dark:border-slate-200 pb-2 pt-4 text-slate-900 dark:text-slate-100">
               AKTIVITAS INVESTASI
             </div>
             <div className="flex justify-between font-bold text-slate-900 dark:text-white border-t border-slate-200 pt-2 pb-4 mt-2">
@@ -987,12 +1007,15 @@ export default function LaporanClient({
               <span>KENAIKAN/PENURUNAN KAS</span>
               <span>{formatRupiah(arusKasData.kasBersihOperasi)}</span>
             </div>
-            <div className="flex justify-between font-black text-lg border-t-2 border-slate-900 dark:border-slate-200 pt-3 mt-2 text-[#EA6C00]">
+            <div className="flex justify-between font-black text-lg border-t-2 border-slate-900 dark:border-slate-200 pt-3 mt-2 text-slate-900 dark:text-white">
               <span>SALDO KAS AKHIR PERIODE</span>
               <span>{formatRupiah(arusKasData.saldoAkhir)}</span>
             </div>
           </div>
         )}
+       
+          </div>
+        </div>
       </div>
 
       <style
