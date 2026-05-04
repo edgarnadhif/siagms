@@ -88,6 +88,12 @@ export default async function LaporanKeuanganPage(props: {
     toDate,
     projectFilter,
   );
+  const neracaEntryWhere = buildJournalEntryWhere(
+    auth.tenantId,
+    "",
+    toDate,
+    projectFilter,
+  );
 
   const openingDate = fromDate ? new Date(fromDate) : null;
   const projectEntryWhere = buildProjectEntryWhere(projectFilter);
@@ -97,6 +103,7 @@ export default async function LaporanKeuanganPage(props: {
 
   const [
     entries,
+    neracaEntries,
     expenseAccounts,
     openingCashEntries,
     cashLedgerBalance,
@@ -122,11 +129,24 @@ export default async function LaporanKeuanganPage(props: {
       },
       orderBy: [{ date: "asc" }, { createdAt: "asc" }],
     }),
+    prisma.journalEntry.findMany({
+      where: neracaEntryWhere,
+      include: {
+        account: {
+          select: {
+            code: true,
+            name: true,
+            type: true,
+            normalBalance: true,
+          },
+        },
+      },
+      orderBy: [{ date: "asc" }, { createdAt: "asc" }],
+    }),
     prisma.account.findMany({
       where: {
         tenantId: auth.tenantId,
         type: "BEBAN",
-        code: { startsWith: "5" },
         isActive: true,
       },
       select: {
@@ -176,6 +196,7 @@ export default async function LaporanKeuanganPage(props: {
   const balances = new Map<string, number>();
   const revenueBalances = new Map<string, number>();
   const expenseBalances = new Map<string, number>();
+  let neracaLabaBerjalan = 0;
 
   const cashFlowData = {
     bookingFee: 0,
@@ -196,24 +217,15 @@ export default async function LaporanKeuanganPage(props: {
     const accountCode = entry.account.code;
     const debit = Number(entry.debit);
     const credit = Number(entry.credit);
-    const signedBalance =
-      entry.account.normalBalance === "DEBIT"
-        ? debit - credit
-        : credit - debit;
 
-    balances.set(accountCode, (balances.get(accountCode) || 0) + signedBalance);
-
-    if (
-      entry.account.type === "PENDAPATAN" &&
-      accountCode.startsWith("4")
-    ) {
+    if (entry.account.type === "PENDAPATAN") {
       revenueBalances.set(
         accountCode,
         (revenueBalances.get(accountCode) || 0) + (credit - debit),
       );
     }
 
-    if (entry.account.type === "BEBAN" && accountCode.startsWith("5")) {
+    if (entry.account.type === "BEBAN") {
       expenseBalances.set(
         accountCode,
         (expenseBalances.get(accountCode) || 0) + (debit - credit),
@@ -266,6 +278,22 @@ export default async function LaporanKeuanganPage(props: {
     }
   }
 
+  for (const entry of neracaEntries) {
+    const accountCode = entry.account.code;
+    const debit = Number(entry.debit);
+    const credit = Number(entry.credit);
+    const signedBalance =
+      entry.account.normalBalance === "DEBIT"
+        ? debit - credit
+        : credit - debit;
+
+    balances.set(accountCode, (balances.get(accountCode) || 0) + signedBalance);
+
+    if (entry.account.type === "PENDAPATAN" || entry.account.type === "BEBAN") {
+      neracaLabaBerjalan += credit - debit;
+    }
+  }
+
   const sumByPrefix = (prefix: string) =>
     Array.from(balances.entries())
       .filter(([code]) => code.startsWith(prefix))
@@ -293,13 +321,17 @@ export default async function LaporanKeuanganPage(props: {
   };
 
   for (const account of expenseAccounts) {
+    const amount = expenseBalances.get(account.code) || 0;
     const key = getExpenseLabel(account.code);
 
-    if (!key) {
+    if (key) {
+      expenseBreakdown[key] += amount;
       continue;
     }
 
-    expenseBreakdown[key] = expenseBalances.get(account.code) || 0;
+    if (account.code !== "5100" && account.code !== "5200") {
+      expenseBreakdown.bebanLainLain += amount;
+    }
   }
 
   const totalBebanOperasional = Object.values(expenseBreakdown).reduce(
@@ -337,11 +369,11 @@ export default async function LaporanKeuanganPage(props: {
     totalKewajiban: sumByPrefix("2"),
     modalDisetor: balances.get("3100") || 0,
     labaDitahan: balances.get("3200") || 0,
-    labaBersih: totalPendapatanLR - sumByPrefix("5"),
+    labaBersih: neracaLabaBerjalan,
     totalEkuitas:
       (balances.get("3100") || 0) +
       (balances.get("3200") || 0) +
-      (totalPendapatanLR - sumByPrefix("5")),
+      neracaLabaBerjalan,
   };
 
   const saldoAwal = openingCashEntries.reduce((sum, entry) => {

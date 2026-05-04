@@ -168,6 +168,7 @@ export default function UsersClient({
   }, [users]);
 
   const updateSearchParams = (nextValues: Record<string, string>) => {
+    setCurrentPage(1);
     const params = new URLSearchParams(window.location.search);
     Object.entries(nextValues).forEach(([key, value]) => {
       if (value) params.set(key, value);
@@ -194,10 +195,6 @@ export default function UsersClient({
     }
     return pages;
   };
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, roleFilter]);
 
   const allSelected = users.length > 0 && users.every((user) => selectedIds.includes(user.id));
 

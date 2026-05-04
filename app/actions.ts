@@ -919,8 +919,19 @@ async function resolveTransactionRelations(
     }
   }
 
-  // Validation checks for project, unit, and customer requirements have been removed
-  // to allow transactions that do not belong to a specific project, unit, or customer.
+  if ((UNIT_REQUIRED_CATEGORIES as readonly string[]).includes(params.category)) {
+    if (!resolvedUnitId) {
+      throw new Error('Unit wajib dipilih untuk transaksi penerimaan')
+    }
+
+    if (!resolvedCustomerId) {
+      throw new Error('Pelanggan wajib dipilih untuk transaksi penerimaan')
+    }
+  }
+
+  if ((EXPENSE_PROJECT_CATEGORIES as readonly string[]).includes(params.category) && !resolvedProjectId) {
+    throw new Error('Proyek wajib dipilih untuk transaksi pengeluaran')
+  }
 
   return {
     projectId: resolvedProjectId,
@@ -1207,6 +1218,7 @@ const ACCOUNTS_TEMPLATE = {
   bebanMarketing:   { code: '5300', name: 'Beban Marketing & Penjualan',       type: 'BEBAN',      normalBalance: 'DEBIT'  },
   bebanGaji:        { code: '5400', name: 'Beban Gaji & Upah',                 type: 'BEBAN',      normalBalance: 'DEBIT'  },
   bebanOperasional: { code: '5500', name: 'Beban Operasional Kantor',          type: 'BEBAN',      normalBalance: 'DEBIT'  },
+  bebanLainLain:    { code: '5600', name: 'Beban Lain-lain',                   type: 'BEBAN',      normalBalance: 'DEBIT'  },
 };
 
 async function ensureAccount(db: DbClient, tenantId: string, templateKey: keyof typeof ACCOUNTS_TEMPLATE) {
@@ -1327,8 +1339,8 @@ async function createAutoJournal(db: DbClient, trans: any) {
         break;
       }
       case 'LAIN_LAIN': {
-        const bOps = await ensureAccount(db, tenantId, 'bebanOperasional');
-        entries.push({ accountId: bOps.id, debit: amount, credit: 0 });
+        const bLain = await ensureAccount(db, tenantId, 'bebanLainLain');
+        entries.push({ accountId: bLain.id, debit: amount, credit: 0 });
         entries.push({ accountId: bank.id, debit: 0, credit: amount });
         break;
       }

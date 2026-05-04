@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -113,6 +113,21 @@ function CashFlowTooltip({
 }
 
 // ─── Chart Components ─────────────────────────────────────
+const subscribeToClientMount = (onStoreChange: () => void) => {
+  onStoreChange();
+  return () => {};
+};
+const getClientMountedSnapshot = () => true;
+const getServerMountedSnapshot = () => false;
+
+function useClientMounted() {
+  return useSyncExternalStore(
+    subscribeToClientMount,
+    getClientMountedSnapshot,
+    getServerMountedSnapshot,
+  );
+}
+
 function DonutChart({
   data,
   size = 160,
@@ -129,8 +144,7 @@ function DonutChart({
   const chartData =
     total > 0 ? data : [{ label: "Belum Ada", value: 1, color: "#FFF0E6" }];
 
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useClientMounted();
 
   if (!mounted) {
     return <div style={{ width: size, height: size }} />;
@@ -725,8 +739,7 @@ export default function DashboardClient({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const [chartsMounted, setChartsMounted] = useState(false);
-  useEffect(() => setChartsMounted(true), []);
+  const chartsMounted = useClientMounted();
 
   const totalPages = Math.ceil(recentTransactions.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
