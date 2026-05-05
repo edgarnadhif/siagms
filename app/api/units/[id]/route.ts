@@ -38,7 +38,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
           orderBy: { tanggalBatal: "desc" },
         });
       }
-    } catch (e) {
+    } catch {
       // Table may not exist yet or field mismatch — ignore
     }
 

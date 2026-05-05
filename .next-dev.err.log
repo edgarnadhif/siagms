@@ -25,3 +25,48 @@ Gemini AI error: Error: [GoogleGenerativeAI Error]: Error fetching from https://
   statusText: 'Not Found',
   errorDetails: undefined
 }
+Error: Route "/dashboard/calendar" used `searchParams.date`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at CalendarPage (app\dashboard\calendar\page.tsx:13:23)
+  11 |   searchParams?: { date?: string };
+  12 | }) {
+> 13 |   const initialDate = searchParams?.date;
+     |                       ^
+  14 |
+  15 |   return (
+  16 |     <div className="space-y-4">
+Error: Route "/dashboard/calendar" used `searchParams.date`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at CalendarPage (app\dashboard\calendar\page.tsx:13:23)
+  11 |   searchParams?: { date?: string };
+  12 | }) {
+> 13 |   const initialDate = searchParams?.date;
+     |                       ^
+  14 |
+  15 |   return (
+  16 |     <div className="space-y-4">
+Error: Route "/dashboard/calendar" used `searchParams.date`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at CalendarPage (app\dashboard\calendar\page.tsx:13:23)
+  11 |   searchParams?: { date?: string };
+  12 | }) {
+> 13 |   const initialDate = searchParams?.date;
+     |                       ^
+  14 |
+  15 |   return (
+  16 |     <div className="space-y-4">
+Error: Route "/dashboard/calendar" used `searchParams.date`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at CalendarPage (app\dashboard\calendar\page.tsx:13:23)
+  11 |   searchParams?: { date?: string };
+  12 | }) {
+> 13 |   const initialDate = searchParams?.date;
+     |                       ^
+  14 |
+  15 |   return (
+  16 |     <div className="space-y-4">
+Error: Route "/dashboard/calendar" used `searchParams.date`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at CalendarPage (app\dashboard\calendar\page.tsx:13:23)
+  11 |   searchParams?: { date?: string };
+  12 | }) {
+> 13 |   const initialDate = searchParams?.date;
+     |                       ^
+  14 |
+  15 |   return (
+  16 |     <div className="space-y-4">

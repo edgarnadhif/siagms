@@ -4,7 +4,6 @@ import { useState } from "react";
 import { deleteProject } from "@/app/actions";
 import { useRouter } from "next/navigation";
 import EditProjectModal from "./EditProjectModal";
-import StatusBadge from "@/components/ui/StatusBadge";
 
 interface ProjectCardProps {
   project: ProjectCardProject;
@@ -32,7 +31,6 @@ export interface ProjectCardProject {
 export default function ProjectCard({
   project,
   transactionCount = 0,
-  totalIncome = 0,
   totalExpense = 0,
 }: ProjectCardProps) {
   const [showEditModal, setShowEditModal] = useState(false);
@@ -41,7 +39,6 @@ export default function ProjectCard({
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
 
-  const profit = totalIncome - totalExpense;
   const units = project.units || [];
   const totalUnits = units.length;
   const soldUnits = units.filter((unit) => unit.status !== "TERSEDIA").length;
@@ -55,15 +52,6 @@ export default function ProjectCard({
 
   const targetDate = project.endDate ? new Date(project.endDate) : null;
   const remainingDays = targetDate ? differenceInDays(targetDate, new Date()) : null;
-
-
-
-  const getBudgetBarColor = () => {
-    if (budgetUsedPct > 90) return "from-red-500 to-red-600";
-    if (budgetUsedPct >= 70) return "from-amber-400 to-amber-500";
-    return "from-emerald-400 to-emerald-500";
-  };
-
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("id-ID", {
       style: "currency",

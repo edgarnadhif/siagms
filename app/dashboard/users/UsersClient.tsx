@@ -163,9 +163,7 @@ export default function UsersClient({
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   };
 
-  const totals = useMemo(() => {
-    return { total: users.length, active: users.filter((user) => user.isActive).length };
-  }, [users]);
+
 
   const updateSearchParams = (nextValues: Record<string, string>) => {
     setCurrentPage(1);
@@ -284,22 +282,7 @@ export default function UsersClient({
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 px-4 md:px-0">
-        {[
-          ["Total User", totals.total, "text-gray-900 text-black dark:text-white"],
-          ["User Aktif", totals.active, "text-emerald-600 dark:text-emerald-400"],
-        ].map(([label, value, color]) => (
-          <div
-            key={label}
-            className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4"
-          >
-            <p className="text-xs uppercase font-semibold tracking-[0.18em] text-orange-600">
-              {label}
-            </p>
-            <p className={`mt-2 text-3xl font-bold ${color}`}>{value}</p>
-          </div>
-        ))}
-      </div>
+
 
       <div className="sticky -top-6 z-30 pt-2 pb-3 bg-white dark:bg-[#111827] -mx-6 px-6">
         <div className="flex flex-col md:flex-row flex-wrap items-center gap-3 w-full">

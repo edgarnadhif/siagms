@@ -170,7 +170,7 @@ export default function TransaksiClient({
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [isPending, startTransition] = useTransition();
+  const [isPending] = useTransition();
 
   // Toast
   const [toasts, setToasts] = useState<Toast[]>([]);

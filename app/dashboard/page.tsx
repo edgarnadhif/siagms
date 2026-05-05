@@ -173,30 +173,6 @@ const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
     return sum + (Number(entry.debit) - Number(entry.credit));
   }, 0);
 
-  const kewajibanPerAkun = entries
-    .filter((entry) => entry.account.type === "KEWAJIBAN")
-    .reduce((map, entry) => {
-      const code = entry.account.code;
-      const current = map.get(code) || { totalDebit: 0, totalCredit: 0, saldo: 0 };
-      current.totalDebit += Number(entry.debit);
-      current.totalCredit += Number(entry.credit);
-      current.saldo = current.totalCredit - current.totalDebit;
-      map.set(code, current);
-      return map;
-    }, new Map<string, { totalDebit: number; totalCredit: number; saldo: number }>());
-
-  console.log(
-    "[Dashboard Neraca Debug] Kewajiban raw:",
-    JSON.stringify(
-      Array.from(kewajibanPerAkun.entries()).map(([code, value]) => ({
-        code,
-        totalDebit: value.totalDebit,
-        totalCredit: value.totalCredit,
-        saldo: value.saldo,
-      }))
-    )
-  );
-
   const totalKewajiban = entries.reduce((sum, entry) => {
     if (entry.account.type !== "KEWAJIBAN") return sum;
     return sum + (Number(entry.credit) - Number(entry.debit));
@@ -293,7 +269,6 @@ const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
   });
 
   let kasDiterima = 0;
-  let pendapatanDiakuiTx = 0;
   let totalBookingFee = 0;
   let totalDownPayment = 0;
   let totalPelunasan = 0;
@@ -301,9 +276,6 @@ const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
   for (const group of txAgg) {
     const sumAmt = Number(group._sum.amount || 0);
     kasDiterima += sumAmt;
-    if (group.status_pengakuan === 'diakui') {
-      pendapatanDiakuiTx += sumAmt;
-    }
     if (group.category === 'BOOKING_FEE') totalBookingFee += sumAmt;
     if (group.category === 'DOWN_PAYMENT') totalDownPayment += sumAmt;
     if (['PELUNASAN_CASH', 'PENCAIRAN_KPR', 'ANGSURAN_KPR'].includes(group.category)) totalPelunasan += sumAmt;

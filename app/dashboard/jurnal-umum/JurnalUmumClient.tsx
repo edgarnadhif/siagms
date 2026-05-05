@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { deleteJournalEntriesByReference } from "@/app/actions";
 import AddJurnalModal from "./AddJurnalModal";
-import StatusBadge from "@/components/ui/StatusBadge";
 import KonfigurasiJurnalModal from "./KonfigurasiJurnalModal";
 
 interface JournalGroup {
@@ -81,8 +80,8 @@ export default function JurnalUmumClient({
   const [deletingRef, setDeletingRef] = useState<string | null>(null);
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [expandedRefs, setExpandedRefs] = useState<Set<string>>(new Set());
-  const [quickPeriod, setQuickPeriod] = useState<string>("");
-  const [typeFilter, setTypeFilter] = useState<string>("");
+  const quickPeriod = "";
+  const typeFilter = "";
   const [selectedRefs, setSelectedRefs] = useState<Set<string>>(new Set());
 
   const [deleteModal, setDeleteModal] = useState<{
@@ -146,11 +145,6 @@ export default function JurnalUmumClient({
       else next.add(ref);
       return next;
     });
-  };
-
-  const formatMonthLabel = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
   };
 
   const getQuickDateRange = (period: string): { start: Date | null; end: Date | null } => {
@@ -250,18 +244,6 @@ export default function JurnalUmumClient({
     startIndex + itemsPerPage,
   );
 
-  // Group by month
-  const groupedByMonth = paginatedJournals.reduce<Record<string, typeof paginatedJournals>>((acc, j) => {
-    const key = formatMonthLabel(j.date);
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(j);
-    return acc;
-  }, {});
-
-  // Summary
-  const totalDebitFiltered = filteredJournals.reduce((s, j) => s + j.totalDebit, 0);
-  const totalEntries = filteredJournals.length;
-
   // Checkbox helpers
   const allOnPageSelected = paginatedJournals.length > 0 && paginatedJournals.every((j) => selectedRefs.has(j.reference));
   const toggleSelectAll = () => {
@@ -273,7 +255,12 @@ export default function JurnalUmumClient({
     });
   };
   const toggleSelect = (ref: string) => {
-    setSelectedRefs((prev) => { const next = new Set(prev); next.has(ref) ? next.delete(ref) : next.add(ref); return next; });
+    setSelectedRefs((prev) => {
+      const next = new Set(prev);
+      if (next.has(ref)) next.delete(ref);
+      else next.add(ref);
+      return next;
+    });
   };
 
   const getPageNumbers = () => {

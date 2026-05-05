@@ -123,8 +123,6 @@ export default function LaporanClient({
   const [selectedFromDate, setSelectedFromDate] = useState(fromDate || "");
   const [selectedToDate, setSelectedToDate] = useState(toDate || "");
   const [selectedProject, setSelectedProject] = useState(projectFilter || "");
-  const [fromDateFocused, setFromDateFocused] = useState(false);
-  const [toDateFocused, setToDateFocused] = useState(false);
   const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
 
   useEffect(() => {

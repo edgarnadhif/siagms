@@ -84,7 +84,6 @@ function formatDateShort(dateStr: string) {
 // Main component
 // ─────────────────────────────────────────────────────────────────────────────
 export default function BukuBesarClient({
-  companyName,
   allAccounts,
   projects,
   ledgerAccounts,

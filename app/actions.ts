@@ -880,7 +880,7 @@ async function resolveTransactionRelations(
   const selectedProjectId = params.projectId || params.fallbackProjectId || null
 
   let resolvedProjectId = selectedProjectId
-  let resolvedUnitId = selectedUnitId
+  const resolvedUnitId = selectedUnitId
   let resolvedCustomerId = selectedCustomerId
 
   if (resolvedUnitId) {
@@ -969,7 +969,7 @@ export async function updateTransaction(prevState: any, formData: FormData) {
   }
 
   try {
-    const transaction = await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx) => {
       const existingTransaction = await tx.transaction.findFirst({
         where: { id, tenantId: auth.tenantId },
         select: { id: true, unitId: true, customerId: true, projectId: true },
