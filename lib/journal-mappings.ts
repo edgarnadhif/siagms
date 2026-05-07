@@ -1,6 +1,6 @@
-import type { Prisma } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 
-type DbClient = Prisma.TransactionClient;
+type DbClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
 
 type AccountTemplate = {
   code: string;

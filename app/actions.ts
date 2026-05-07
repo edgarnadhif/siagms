@@ -1,7 +1,6 @@
 'use server'
 
 import { prisma } from '@/lib/db'
-import { Prisma } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { redirect } from 'next/navigation'
 import { createSession, deleteSession } from '@/lib/session'
@@ -20,7 +19,7 @@ function slugifyTenantName(value: string) {
     .replace(/^-+|-+$/g, '')
 }
 
-type DbClient = Prisma.TransactionClient | typeof prisma
+type DbClient = Omit<typeof prisma, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'> | typeof prisma
 
 const REVENUE_PROJECT_CATEGORIES = ['BOOKING_FEE', 'DOWN_PAYMENT', 'PENCAIRAN_KPR', 'PELUNASAN_CASH'] as const
 const UNIT_REQUIRED_CATEGORIES = ['BOOKING_FEE', 'DOWN_PAYMENT', 'PENCAIRAN_KPR', 'PELUNASAN_CASH'] as const

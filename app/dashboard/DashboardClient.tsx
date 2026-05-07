@@ -591,6 +591,16 @@ function MiniCalendar({
       : new Date(new Date(e.date).getTime() + 3600000),
   }));
 
+  const mounted = useClientMounted();
+
+  if (!mounted) {
+    return (
+      <div className="mini-calendar-widget" style={{ height: 300 }}>
+        <div className="w-full h-full rounded-2xl bg-slate-50 dark:bg-slate-800/50 animate-pulse"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="mini-calendar-widget">
       <BigCalendar
