@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 function toWhatsAppNumber(rawPhone: string | null | undefined) {
   if (!rawPhone) return "";
 
