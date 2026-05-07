@@ -953,11 +953,11 @@ export default function DashboardClient({
         />
       </div>
 
-      <div className="mb-4 lg:mb-3">
+      <div suppressHydrationWarning className="mb-4 lg:mb-3">
         <AIInsightCard financialData={financialData} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-3 mb-4 lg:mb-3">
+      <div suppressHydrationWarning className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-3 mb-4 lg:mb-3">
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 dark:bg-slate-800 dark:border-slate-700 h-full flex flex-col">
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-base font-semibold text-slate-900 dark:text-white">Ringkasan Laba Rugi</h3>
@@ -1077,7 +1077,7 @@ export default function DashboardClient({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-3 mb-4 lg:mb-3">
+      <div suppressHydrationWarning className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-3 mb-4 lg:mb-3">
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 dark:bg-slate-800 dark:border-slate-700 h-full flex flex-col">
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-base font-semibold text-slate-900 dark:text-white">Proporsi Pengeluaran</h3>
@@ -1283,7 +1283,7 @@ export default function DashboardClient({
         </div>
       </div>
 
-      <div className="mb-4 lg:mb-3">
+      <div suppressHydrationWarning className="mb-4 lg:mb-3">
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 dark:bg-slate-800 dark:border-slate-700 flex flex-col">
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-[16px] font-semibold text-slate-900 dark:text-white">Arus Kas (6 Bulan Terakhir)</h3>
@@ -1384,7 +1384,7 @@ export default function DashboardClient({
       </div>
 
       {/* Transaksi List Grid */}
-      <div className="grid grid-cols-1 gap-4 lg:gap-3">
+      <div suppressHydrationWarning className="grid grid-cols-1 gap-4 lg:gap-3">
         <div>
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 dark:bg-slate-800 dark:border-slate-700">
             <div className="flex items-center justify-between mb-5">
