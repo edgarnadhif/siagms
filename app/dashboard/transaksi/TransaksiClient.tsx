@@ -124,7 +124,7 @@ interface UnitOption {
 }
 
 function formatRupiah(num: number) {
-  return "Rp " + num.toLocaleString("id-ID");
+  return "Rp " + num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
 function formatDate(dateStr: string) {
@@ -143,7 +143,8 @@ function formatDate(dateStr: string) {
     "Nov",
     "Dec",
   ];
-  return `${d.getDate().toString().padStart(2, "0")} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  // Use UTC to ensure consistency between server and client rendering
+  return `${d.getUTCDate().toString().padStart(2, "0")} ${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
 
 export default function TransaksiClient({
@@ -318,18 +319,19 @@ export default function TransaksiClient({
     const matchesProject = projectFilter ? t.projectId === projectFilter : true;
     
     const tDate = new Date(t.date);
-    tDate.setHours(0, 0, 0, 0);
+    // Use UTC for date filtering to match the formatting and avoid timezone shifts during hydration
+    const normalizedTDate = new Date(Date.UTC(tDate.getUTCFullYear(), tDate.getUTCMonth(), tDate.getUTCDate()));
 
     let matchesDate = true;
     if (startDate) {
       const sDate = new Date(startDate);
-      sDate.setHours(0, 0, 0, 0);
-      if (tDate < sDate) matchesDate = false;
+      const normalizedSDate = new Date(Date.UTC(sDate.getUTCFullYear(), sDate.getUTCMonth(), sDate.getUTCDate()));
+      if (normalizedTDate < normalizedSDate) matchesDate = false;
     }
     if (endDate) {
       const eDate = new Date(endDate);
-      eDate.setHours(23, 59, 59, 999);
-      if (tDate > eDate) matchesDate = false;
+      const normalizedEDate = new Date(Date.UTC(eDate.getUTCFullYear(), eDate.getUTCMonth(), eDate.getUTCDate(), 23, 59, 59, 999));
+      if (normalizedTDate > normalizedEDate) matchesDate = false;
     }
 
     return matchesSearch && matchesCategory && matchesProject && matchesDate;
@@ -377,7 +379,7 @@ export default function TransaksiClient({
   return (
     <>
       <ToastContainer toasts={toasts} remove={removeToast} />
-      <div className="text-gray-600 dark:text-gray-300 w-full h-full flex flex-col">
+      <div suppressHydrationWarning className="text-gray-600 dark:text-gray-300 w-full h-full flex flex-col">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5 px-4 md:px-0">
         <div>
@@ -466,8 +468,8 @@ export default function TransaksiClient({
             </div>
 
             {/* Start Date */}
-            <div className="w-full md:w-[150px] lg:w-[160px] relative">
-              <div className="h-11 inline-flex w-full items-center justify-between rounded-xl border-[0.5px] border-[#E5E7EB] dark:border-slate-700 bg-white dark:bg-slate-800 transition-colors relative">
+            <div suppressHydrationWarning className="w-full md:w-[150px] lg:w-[160px] relative">
+              <div suppressHydrationWarning className="h-11 inline-flex w-full items-center justify-between rounded-xl border-[0.5px] border-[#E5E7EB] dark:border-slate-700 bg-white dark:bg-slate-800 transition-colors relative">
                 {!startDate && !fromDateFocused && (
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 pointer-events-none">
                     Dari Tanggal
@@ -494,8 +496,8 @@ export default function TransaksiClient({
             </div>
             
             {/* End Date */}
-            <div className="w-full md:w-[150px] lg:w-[160px] relative">
-              <div className="h-11 inline-flex w-full items-center justify-between rounded-xl border-[0.5px] border-[#E5E7EB] dark:border-slate-700 bg-white dark:bg-slate-800 transition-colors relative">
+            <div suppressHydrationWarning className="w-full md:w-[150px] lg:w-[160px] relative">
+              <div suppressHydrationWarning className="h-11 inline-flex w-full items-center justify-between rounded-xl border-[0.5px] border-[#E5E7EB] dark:border-slate-700 bg-white dark:bg-slate-800 transition-colors relative">
                 {!endDate && !toDateFocused && (
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 pointer-events-none">
                     Sampai Tanggal
@@ -674,7 +676,7 @@ export default function TransaksiClient({
         )}
 
         {/* Table Container */}
-        <div className="bg-white dark:bg-slate-800 border-[0.5px] border-[#E5E7EB] dark:border-slate-700 rounded-2xl shadow-sm overflow-hidden">
+        <div suppressHydrationWarning className="bg-white dark:bg-slate-800 border-[0.5px] border-[#E5E7EB] dark:border-slate-700 rounded-2xl shadow-sm overflow-hidden">
           {filteredTransactions.length === 0 ? (
             <div className="py-55 px-16 text-center">
               <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800/80 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300">
