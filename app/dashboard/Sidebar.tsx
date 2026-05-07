@@ -87,6 +87,12 @@ export default function Sidebar({
           roles: ["ADMIN", "AKUNTAN"],
         },
         {
+          title: "Neraca Saldo",
+          href: "/dashboard/neraca-saldo",
+          icon: "/balance.svg",
+          roles: ["ADMIN", "AKUNTAN"],
+        },
+        {
           title: "Laporan Keuangan",
           href: "/dashboard/laporan",
           icon: "/finance_mode.svg",
