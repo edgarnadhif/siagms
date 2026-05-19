@@ -17,6 +17,14 @@ const LABA_RUGI_BEBAN_CATEGORIES = [
   "LAIN_LAIN",
 ] as const;
 
+function formatDateOnly(date: Date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
 export default async function DashboardPage(props: {
   searchParams?: Promise<{ project?: string }>;
 }) {
@@ -324,6 +332,7 @@ const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
 
   return (
     <DashboardClient
+      initialSelectedDate={formatDateOnly(new Date())}
       totalRevenue={totalRevenue}
       totalExpenses={totalExpenses}
       totalBudget={totalBudget}

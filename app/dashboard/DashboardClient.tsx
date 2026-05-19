@@ -69,6 +69,16 @@ function formatDate(dateStr: string | null) {
   return `${d.getDate().toString().padStart(2, "0")} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+function parseDateOnly(dateStr: string) {
+  const [year, month, day] = dateStr.split("-").map(Number);
+
+  if (!year || !month || !day) {
+    return new Date(0);
+  }
+
+  return new Date(year, month - 1, day);
+}
+
 function cn(...classes: (string | boolean | undefined)[]) {
   return classes.filter(Boolean).join(" ");
 }
@@ -663,6 +673,7 @@ function MiniCalendar({
 
 // ─── Main Client Page ─────────────────────────────────────────────
 export default function DashboardClient({
+  initialSelectedDate,
   totalRevenue,
   totalExpenses,
   totalBudget,
@@ -724,13 +735,16 @@ export default function DashboardClient({
   totalAset?: number;
   totalKewajiban?: number;
   totalEkuitas?: number;
+  initialSelectedDate: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(() =>
+    parseDateOnly(initialSelectedDate),
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [itemsPerPageOpen, setItemsPerPageOpen] = useState(false);
