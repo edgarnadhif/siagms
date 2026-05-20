@@ -146,7 +146,6 @@ export default function AIInsightCard({
             <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
               AI Financial Insight
             </h3>
-            <p className="text-xs text-slate-400">Powered by Google Gemini</p>
           </div>
         </div>
 

@@ -390,6 +390,7 @@ export default function NeracaSaldoClient({
       `,
         }}
       />
+      <br></br>
     </div>
   );
 }

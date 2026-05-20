@@ -908,42 +908,12 @@ export default function DashboardClient({
           value={formatRupiah(pendapatanDiakui)}
           subtitle="Nilai unit Lunas / Serah Terima"
           icon={<img src="/attach_money.svg" alt="" className="w-5 h-5 object-contain dark:invert dark:brightness-200" />}
-          /* old_icon={
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-              />
-            </svg>
-          }*/
         />
         <SummaryCard
           title="Total Beban/Biaya"
           value={formatRupiah(totalExpenses)}
           subtitle="HPP + Operasional"
           icon={<img src="/shopping_cart.svg" alt="" className="w-5 h-5 object-contain dark:invert dark:brightness-200" />}
-          /* old_icon={
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"
-              />
-            </svg>
-          }*/
         />
         <SummaryCard
           title="Piutang KPR"
@@ -966,11 +936,6 @@ export default function DashboardClient({
           }
         />
       </div>
-
-      <div suppressHydrationWarning className="mb-4 lg:mb-3">
-        <AIInsightCard financialData={financialData} />
-      </div>
-
       <div suppressHydrationWarning className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-3 mb-4 lg:mb-3">
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 dark:bg-slate-800 dark:border-slate-700 h-full flex flex-col">
           <div className="flex items-center justify-between mb-5">
@@ -1099,7 +1064,7 @@ export default function DashboardClient({
               href={`/dashboard/laporan?tab=laba_rugi${projectFilter !== "all" ? `&project=${projectFilter}` : ""}`}
               className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors group dark:text-slate-400 dark:hover:text-slate-200"
             >
-              Detail Biaya
+              Lihat detail
               <svg 
                 className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 text-slate-400 group-hover:text-slate-600" 
                 fill="none" 
@@ -1143,7 +1108,7 @@ export default function DashboardClient({
               href="/dashboard/unit" 
               className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors group dark:text-slate-400 dark:hover:text-slate-200"
             >
-              Master Unit
+              Kelola unit
               <svg 
                 className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 text-slate-400 group-hover:text-slate-600" 
                 fill="none" 
@@ -1226,12 +1191,12 @@ export default function DashboardClient({
 
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 dark:bg-slate-800 dark:border-slate-700 h-full flex flex-col">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-slate-900 dark:text-white">Agenda Proyek</h3>
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white">Kalender</h3>
             <Link
               href={`/dashboard/calendar?date=${format(selectedDate, "yyyy-MM-dd")}`}
               className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors group dark:text-slate-400 dark:hover:text-slate-200"
             >
-              Full Agenda
+              Lihat detail
               <svg 
                 className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" 
                 fill="none" 
@@ -1296,318 +1261,10 @@ export default function DashboardClient({
           </div>
         </div>
       </div>
-
-      <div suppressHydrationWarning className="mb-4 lg:mb-3">
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 dark:bg-slate-800 dark:border-slate-700 flex flex-col">
-          <div className="flex items-center justify-between mb-5">
-            <h3 className="text-[16px] font-semibold text-slate-900 dark:text-white">Arus Kas (6 Bulan Terakhir)</h3>
-          </div>
-          <div className="bg-slate-100 dark:bg-slate-800/80 rounded-2xl px-4 pt-4 pb-3 flex-1">
-            <div className="h-[320px] w-full">
-              {chartsMounted ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart
-                    data={cashFlowData}
-                    margin={{ top: 16, right: 24, left: 8, bottom: 16 }}
-                  >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      vertical={false}
-                      horizontal={true}
-                      stroke="#e2e8f0"
-                      className="dark:stroke-slate-700/50"
-                      strokeOpacity={0.6}
-                    />
-                    <XAxis
-                      dataKey="month"
-                      tick={{ fontSize: 12, fill: "#64748b" }}
-                      tickMargin={12}
-                      axisLine={{ stroke: "#e2e8f0" }}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      width={52}
-                      tickFormatter={(val) => {
-                        if (val === 0) return "0";
-                        const sign = val < 0 ? "-" : "";
-                        return `${sign}${Math.abs(val) / 1000000} jt`;
-                      }}
-                      tick={{ fontSize: 12, fill: "#64748b" }}
-                      axisLine={false}
-                      tickLine={false}
-                      tickMargin={6}
-                    />
-                    <Tooltip content={<CashFlowTooltip />} />
-                    <Legend
-                      iconType="circle"
-                      wrapperStyle={{ fontSize: "12px", color: "#475569", paddingTop: "20px" }}
-                      iconSize={8}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="masuk"
-                      name="Kas Masuk"
-                      fill="url(#colorMasuk)"
-                      stroke="#10b981"
-                      strokeWidth={2}
-                      fillOpacity={1}
-                      activeDot={{ r: 4, fill: "#10b981" }}
-                      dot={{ r: 3, fill: "#10b981", strokeWidth: 0 }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="keluar"
-                      name="Kas Keluar"
-                      fill="url(#colorKeluar)"
-                      stroke="#ef4444"
-                      strokeWidth={2}
-                      fillOpacity={1}
-                      activeDot={{ r: 4, fill: "#ef4444" }}
-                      dot={{ r: 3, fill: "#ef4444", strokeWidth: 0 }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="bersih"
-                      name="Arus Bersih (Kumulatif)"
-                      stroke="#1e293b"
-                      strokeWidth={2}
-                      strokeDasharray="4 4"
-                      className="dark:stroke-slate-300"
-                      dot={{ r: 3, fill: "#1e293b", strokeWidth: 0 }}
-                      activeDot={{ r: 5, fill: "#1e293b" }}
-                    />
-
-                    <defs>
-                      <linearGradient id="colorMasuk" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.12} />
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.02} />
-                      </linearGradient>
-                      <linearGradient id="colorKeluar" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.10} />
-                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0.02} />
-                      </linearGradient>
-                    </defs>
-                  </ComposedChart>
-                </ResponsiveContainer>
-              ) : (
-                <div style={{ height: 320 }} />
-              )}
-            </div>
-          </div>
-        </div>
+ <div suppressHydrationWarning className="mb-4 lg:mb-3">
+        <AIInsightCard financialData={financialData} />
       </div>
-
-      {/* Transaksi List Grid */}
-      <div suppressHydrationWarning className="grid grid-cols-1 gap-4 lg:gap-3">
-        <div>
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 dark:bg-slate-800 dark:border-slate-700">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-[16px] font-semibold text-slate-900 dark:text-white">Transaksi Terbaru</h3>
-              <Link
-                href="/dashboard/transaksi"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors group dark:text-slate-400 dark:hover:text-slate-200"
-              >
-                Lihat detail
-                <svg className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900/40 rounded-2xl flex flex-col border border-slate-200 dark:border-slate-700/50 overflow-hidden shadow-sm">
-              {recentTransactions.length === 0 ? (
-                <div className="text-center text-sm text-slate-500 py-10 italic">
-                  Belum ada transaksi dicatat.
-                </div>
-              ) : (
-                <div className="overflow-x-auto w-full scrollbar-hide">
-                  <table className="w-full border-collapse">
-                    <thead className="bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700/50">
-                      <tr>
-                        <th className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 w-[120px]">
-                          Tanggal
-                        </th>
-                        <th className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 w-[150px]">
-                          No. Referensi
-                        </th>
-                        <th className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
-                          Keterangan
-                        </th>
-                        <th className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 w-[120px]">
-                          Proyek
-                        </th>
-                        <th className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 w-[160px]">
-                          Kategori
-                        </th>
-                        <th className="px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 w-[160px]">
-                          Jumlah (Rp)
-                        </th>
-                        <th className="px-6 py-3.5 text-center text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 w-[100px]">
-                          Aksi
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
-                      {paginatedTransactions.map((trx) => (
-                        <tr
-                          key={trx.id}
-                          className="bg-white dark:bg-slate-900 hover:bg-slate-50/60 dark:hover:bg-slate-800/80 transition-colors group"
-                        >
-                          <td className="px-6 py-3.5 whitespace-nowrap text-sm font-medium text-slate-500 dark:text-slate-400">
-                            {formatDate(trx.date)}
-                          </td>
-                          <td className="px-6 py-3.5 whitespace-nowrap">
-                            <span className="text-sm font-semibold text-slate-900 dark:text-slate-200">
-                              {trx.reference}
-                            </span>
-                          </td>
-                          <td className="px-6 py-3.5">
-                            <div className="flex flex-col">
-                              <span className="text-sm font-medium text-slate-900 dark:text-slate-200">
-                                {trx.description}
-                              </span>
-                              {trx.note && (
-                                <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                  {trx.note}
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-6 py-3.5 whitespace-nowrap text-sm font-medium text-slate-600 dark:text-slate-400">
-                            {trx.projectCode || "-"}
-                          </td>
-                          <td className="px-6 py-3.5 whitespace-nowrap">
-                            <CategoryBadge
-                              category={trx.category as TransactionCategory}
-                              size="sm"
-                            />
-                          </td>
-                          <td className="px-6 py-3.5 whitespace-nowrap text-sm font-semibold text-slate-900 dark:text-slate-100 text-right tabular-nums">
-                            {formatRupiah(trx.amount)}
-                          </td>
-                          <td className="px-6 py-3.5 whitespace-nowrap text-center">
-                            <Link
-                              href={`/dashboard/transaksi?search=${encodeURIComponent(trx.reference)}`}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors dark:hover:bg-slate-700 dark:hover:text-slate-300 mx-auto"
-                              title="Lihat di halaman transaksi"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75 21 3m0 0h-3.75M21 3v3.75M21 3 10.5 13.5" />
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5v4.125A1.875 1.875 0 0 1 17.625 19.5H6.375A1.875 1.875 0 0 1 4.5 17.625V6.375A1.875 1.875 0 0 1 6.375 4.5H10.5" />
-                              </svg>
-                            </Link>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {/* Pagination UI */}
-              {recentTransactions.length > 0 && (
-                <div className="px-6 py-3.5 border-t border-slate-100 dark:border-slate-700/50 flex flex-col md:flex-row items-center justify-between gap-4 bg-white dark:bg-slate-900/40">
-                  <div className="text-sm text-slate-500 dark:text-slate-400 order-2 md:order-1">
-                    Total Transaksi:{" "}
-                    <span className="font-semibold text-slate-900 dark:text-slate-200">
-                      {recentTransactions.length}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-1 order-1 md:order-2">
-                    <button
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                      className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded-lg disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:bg-transparent transition-colors dark:hover:text-slate-200 dark:hover:bg-slate-700"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
-                    </button>
-
-                    {getPageNumbers().map((num, idx) =>
-                      num === "..." ? (
-                        <span key={`dots-${idx}`} className="px-3 py-1 text-slate-400">
-                          ...
-                        </span>
-                      ) : (
-                        <button
-                          key={`page-${num}`}
-                          onClick={() => setCurrentPage(num as number)}
-                          className={`w-8 h-8 rounded-lg text-sm transition-all ${
-                            currentPage === num
-                              ? "bg-orange-50 text-orange-600 border border-orange-500 font-semibold dark:bg-orange-500/20 dark:border-orange-500/50"
-                              : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 font-medium"
-                          }`}
-                        >
-                          {num}
-                        </button>
-                      ),
-                    )}
-
-                    <button
-                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                      className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded-lg disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:bg-transparent transition-colors dark:hover:text-slate-200 dark:hover:bg-slate-700"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-3 order-3">
-                    <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">
-                      Show:
-                    </span>
-                    <div className="relative" ref={itemsPerPageRef}>
-                      <button
-                      type="button"
-                      onClick={() => setItemsPerPageOpen(!itemsPerPageOpen)}
-                      className="flex items-center gap-2 px-2.5 py-1 min-w-[55px] justify-between border border-slate-200 hover:bg-slate-50 rounded-lg text-sm font-medium text-slate-700 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 transition-colors"
-                    >
-                      <span>{itemsPerPage}</span>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${itemsPerPageOpen ? "rotate-180" : ""}`}
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-
-                    {itemsPerPageOpen && (
-                      <div className="absolute z-50 bottom-full left-0 mb-2 w-full min-w-[60px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden flex flex-col p-1 animate-in slide-in-from-bottom-2 duration-200">
-                        {[5, 10, 20].map((val) => (
-                          <button
-                            key={val}
-                            type="button"
-                            onClick={() => {
-                              setItemsPerPage(val);
-                              setCurrentPage(1);
-                              setItemsPerPageOpen(false);
-                            }}
-                            className={`text-center py-1.5 text-sm font-medium rounded-md transition-colors ${
-                              itemsPerPage === val
-                                ? "bg-slate-100 text-slate-900 dark:bg-slate-700 dark:text-white"
-                                : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50"
-                            }`}
-                          >
-                            {val}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-            </div>
-          </div>
-        </div>
-        <br />
-      </div>
+      <br></br>
     </div>
   );
 }

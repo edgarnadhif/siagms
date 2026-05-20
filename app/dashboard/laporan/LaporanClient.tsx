@@ -1029,6 +1029,7 @@ export default function LaporanClient({
       `,
         }}
       />
+      <br />
     </div>
   );
 }
