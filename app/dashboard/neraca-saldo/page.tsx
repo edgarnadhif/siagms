@@ -19,6 +19,7 @@ function buildProjectEntryWhere(projectId: string): Prisma.JournalEntryWhereInpu
 
   return {
     OR: [
+      { projectId },
       { unit: { is: { projectId } } },
       { transaction: { is: { unit: { projectId } } } },
       { transaction: { is: { projectId, unitId: null } } },

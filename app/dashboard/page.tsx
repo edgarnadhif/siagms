@@ -37,6 +37,7 @@ const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
     ...(projectFilter
       ? {
           OR: [
+            { projectId: projectFilter },
             { unit: { is: { projectId: projectFilter } } },
             { transaction: { is: { unit: { projectId: projectFilter } } } },
             { transaction: { is: { projectId: projectFilter, unitId: null } } },
@@ -53,17 +54,16 @@ const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
   });
 
   const totalRevenue = 0;
-  let modalDisetor = 0;
-  let labaDitahan = 0;
+  let totalEkuitasAkun = 0;
 
   for (const entry of entries) {
-    const code = entry.account.code;
     const debit = Number(entry.debit);
     const credit = Number(entry.credit);
     const netCredit = credit - debit;
 
-    if (code === "3100") modalDisetor += netCredit;
-    if (code === "3200") labaDitahan += netCredit;
+    if (entry.account.type === "EKUITAS") {
+      totalEkuitasAkun += netCredit;
+    }
   }
 
   // 1.5 Calculate Total Budget
@@ -134,7 +134,7 @@ const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
     _sum: { amount: true },
   });
 
-  const expenseTotalsByCategory = new Map(
+  const expenseTotalsByCategory = new Map<string, number>(
     expenseCategoryAgg.map((group) => [
       group.category,
       Number(group._sum.amount || 0),
@@ -186,7 +186,16 @@ const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
     return sum + (Number(entry.credit) - Number(entry.debit));
   }, 0);
 
-  const totalEkuitas = modalDisetor + labaDitahan + labaBersih;
+  let neracaLabaBerjalan = 0;
+  for (const entry of entries) {
+    if (entry.account.type === "PENDAPATAN" || entry.account.type === "BEBAN") {
+      const debit = Number(entry.debit);
+      const credit = Number(entry.credit);
+      neracaLabaBerjalan += credit - debit;
+    }
+  }
+
+  const totalEkuitas = totalEkuitasAkun + neracaLabaBerjalan;
 
   // 2. Transaksi Terbaru (Limit to 50 for breakdown table processing)
   const transactions = await prisma.transaction.findMany({
