@@ -43,6 +43,73 @@ function parseJsonResponse(text: string) {
   }
 }
 
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getErrorStatus(error: unknown) {
+  if (typeof error === "object" && error !== null && "status" in error) {
+    const status = (error as { status?: unknown }).status;
+
+    if (typeof status === "number") {
+      return status;
+    }
+  }
+
+  return undefined;
+}
+
+function isRetryableGeminiError(error: unknown) {
+  const status = getErrorStatus(error);
+
+  if (status === 429 || status === 500 || status === 502 || status === 503 || status === 504) {
+    return true;
+  }
+
+  const message = error instanceof Error ? error.message.toLowerCase() : "";
+
+  return (
+    message.includes("high demand") ||
+    message.includes("service unavailable") ||
+    message.includes("fetch failed")
+  );
+}
+
+function getGeminiModels() {
+  return Array.from(
+    new Set([
+      process.env.GEMINI_MODEL,
+      "gemini-2.5-flash",
+      "gemini-2.0-flash",
+    ].filter(Boolean)),
+  ) as string[];
+}
+
+async function generateContentWithFallback(genAI: GoogleGenerativeAI, prompt: string) {
+  const models = getGeminiModels();
+  let lastError: unknown;
+
+  for (const modelName of models) {
+    const model = genAI.getGenerativeModel({ model: modelName });
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        return await model.generateContent(prompt);
+      } catch (error) {
+        lastError = error;
+
+        if (!isRetryableGeminiError(error) || attempt === 2) {
+          break;
+        }
+
+        await wait(600 * 2 ** attempt);
+      }
+    }
+  }
+
+  throw lastError;
+}
+
 export async function POST(req: Request) {
   try {
     const { financialData } = (await req.json()) as {
@@ -70,10 +137,6 @@ export async function POST(req: Request) {
     }
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
-    });
 
     const prompt = `
 Kamu adalah asisten keuangan profesional untuk
@@ -119,7 +182,7 @@ tanpa teks tambahan, tanpa markdown, tanpa backtick:
 }
 `;
 
-    const result = await model.generateContent(prompt);
+    const result = await generateContentWithFallback(genAI, prompt);
     const text = result.response.text();
     const insight = parseJsonResponse(text);
 
@@ -129,6 +192,16 @@ tanpa teks tambahan, tanpa markdown, tanpa backtick:
     });
   } catch (error) {
     console.error("Gemini AI error:", error);
+
+    if (isRetryableGeminiError(error)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Layanan AI sedang sibuk. Coba analisis ulang beberapa saat lagi.",
+        },
+        { status: 503 },
+      );
+    }
 
     return NextResponse.json(
       {

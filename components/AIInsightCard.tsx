@@ -61,23 +61,33 @@ function SectionIcon({ type }: { type: "summary" | "warning" | "good" | "idea" }
   );
 }
 
+function BulletIcon({ tone }: { tone: string }) {
+  const bulletColor = tone.includes("yellow")
+    ? "bg-yellow-500"
+    : tone.includes("green")
+      ? "bg-green-500"
+      : tone.includes("blue")
+        ? "bg-blue-500"
+        : "bg-orange-500";
+
+  return <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${bulletColor}`} />;
+}
+
 function InsightSection({
   title,
   items,
   children,
   tone,
-  icon,
 }: {
   title: string;
   items?: string[];
   children?: React.ReactNode;
   tone: string;
-  icon: "summary" | "warning" | "good" | "idea";
+  icon?: "summary" | "warning" | "good" | "idea";
 }) {
   return (
     <div className={`rounded-xl border p-3 ${tone}`}>
-      <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide">
-        <SectionIcon type={icon} />
+      <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide">
         {title}
       </p>
       {children}
@@ -85,7 +95,7 @@ function InsightSection({
         <ul className="space-y-1.5">
           {items.map((item, index) => (
             <li key={`${title}-${index}`} className="flex items-start gap-1.5 text-sm leading-relaxed text-gray-700 dark:text-slate-300">
-              <span className="mt-0.5 shrink-0">-</span>
+              <BulletIcon tone={tone} />
               <span>{item}</span>
             </li>
           ))}
@@ -138,9 +148,10 @@ export default function AIInsightCard({
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400">
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.75 9 6m5.25-2.25L15 6M5.25 8.25h13.5M6.75 21h10.5A2.25 2.25 0 0 0 19.5 18.75v-8.25a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 10.5v8.25A2.25 2.25 0 0 0 6.75 21Zm3-7.5h.01m4.49 0h.01M9.75 17.25h4.5" />
-            </svg>
+            <span
+              aria-hidden="true"
+              className="h-5 w-5 bg-current [mask:url(/brain.svg)_center/contain_no-repeat] [-webkit-mask:url(/brain.svg)_center/contain_no-repeat]"
+            />
           </div>
           <div>
             <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
@@ -175,7 +186,15 @@ export default function AIInsightCard({
 
       {loading && (
         <div className="rounded-xl bg-slate-50 px-4 py-8 text-center text-slate-500 dark:bg-slate-900/40 dark:text-slate-400">
-          <div className="mx-auto mb-3 h-8 w-8 animate-pulse rounded-full bg-orange-100 dark:bg-orange-500/20" />
+          <div className="relative mx-auto mb-3 flex h-11 w-11 items-center justify-center">
+            <span className="absolute h-11 w-11 animate-ping rounded-full bg-orange-200/60 dark:bg-orange-500/20" />
+            <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 text-orange-600 ring-4 ring-orange-50 dark:bg-orange-500/20 dark:text-orange-400 dark:ring-orange-500/10">
+              <span
+                aria-hidden="true"
+                className="h-5 w-5 animate-pulse bg-current [mask:url(/brain.svg)_center/contain_no-repeat] [-webkit-mask:url(/brain.svg)_center/contain_no-repeat]"
+              />
+            </span>
+          </div>
           <p className="text-sm">AI sedang menganalisis data keuangan...</p>
           <p className="mt-1 text-xs text-slate-400">Mohon tunggu beberapa saat</p>
         </div>
