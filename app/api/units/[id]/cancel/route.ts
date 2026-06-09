@@ -67,7 +67,7 @@ export async function POST(
         transactions: {
           where: {
             tenantId: auth.tenantId,
-            category: { in: ["BOOKING_FEE", "DOWN_PAYMENT", "PENCAIRAN_KPR", "PELUNASAN_CASH"] },
+            category: { in: ["BOOKING_FEE", "DOWN_PAYMENT", "PENCAIRAN_KPR", "PELUNASAN_CASH", "ANGSURAN_KPR"] },
           },
         },
       },
@@ -98,17 +98,25 @@ export async function POST(
       );
     }
 
-    // Total pendapatan yang sudah masuk (BF + DP) — dicatat sebagai BF hangus
-    const totalBF = unit.transactions.reduce(
-      (sum, t) => sum + Number(t.amount),
-      0
-    );
+    // Hitung Booking Fee yang hangus dan DP/lainnya yang direfund
+    let bookingFeeAmount = 0;
+    let refundAmount = 0;
+
+    unit.transactions.forEach((t) => {
+      const amt = Number(t.amount);
+      if (t.category === "BOOKING_FEE") {
+        bookingFeeAmount += amt;
+      } else {
+        refundAmount += amt;
+      }
+    });
+
+    const totalBF = bookingFeeAmount;
+    const totalRefund = refundAmount;
 
     // ── Prisma Transaction ──────────────────────────────────────────────
     const result = await prisma.$transaction(async (tx) => {
       // 1. Ensure accounts exist
-      //    Debit  2100 Pendapatan Diterima di Muka
-      //    Kredit 4200 Pendapatan Lain-lain
       const accPendapatanMuka = await ensureAccountByCode(
         auth.tenantId,
         "2100",
@@ -123,58 +131,84 @@ export async function POST(
         "PENDAPATAN",
         "KREDIT"
       );
+      const accBank = await ensureAccountByCode(
+        auth.tenantId,
+        "1200",
+        "Bank",
+        "ASET",
+        "DEBIT"
+      );
 
-      // 2a. Delete auto-journal entries linked to BF transactions of this unit
-      await tx.journalEntry.deleteMany({
-        where: {
-          transactionId: {
-            in: unit.transactions.map((t) => t.id),
-          },
-          tenantId: auth.tenantId,
-        },
-      });
-
-      // 2b. Delete the BF transactions themselves (they belong to the cancelled buyer)
-      if (unit.transactions.length > 0) {
-        await tx.transaction.deleteMany({
-          where: {
-            id: { in: unit.transactions.map((t) => t.id) },
-            tenantId: auth.tenantId,
-          },
-        });
-      }
-
-      // 2c. Buat jurnal pembatalan (hanya jika ada BF yang masuk)
+      // 2. Buat jurnal pembatalan (hanya jika ada dana yang sudah masuk)
       let journalRef: string | null = null;
-      if (totalBF > 0) {
+      const totalOut = totalBF + totalRefund;
+
+      if (totalOut > 0) {
         journalRef = `BATAL-${unit.unitCode}-${Date.now().toString().slice(-6)}`;
-        const journalDesc = `Pembatalan pembelian - ${unit.customer!.name} - ${unit.unitCode} - BF hangus`;
+        const journalDesc = `Pembalikan & Pembatalan - ${unit.customer!.name} - ${unit.unitCode}`;
+
+        const journal = await tx.journal.create({
+          data: {
+            tenantId: auth.tenantId,
+            referenceNo: journalRef,
+            description: journalDesc,
+            date: cancelDate,
+          }
+        });
+
+        const journalEntriesData = [];
+
+        // Debit Pendapatan Diterima di Muka (2100) sebesar total dana masuk (BF + DP)
+        journalEntriesData.push({
+          tenantId: auth.tenantId,
+          journalId: journal.id,
+          reference: journalRef,
+          date: cancelDate,
+          description: journalDesc + " (Pembalikannya)",
+          accountId: accPendapatanMuka.id,
+          debit: totalOut,
+          credit: 0,
+          unitId: unitId,
+          projectId: unit.projectId,
+          isAuto: true,
+        });
+
+        // Kredit Pendapatan Lain-lain (4200) sebesar Booking Fee yang hangus
+        if (totalBF > 0) {
+          journalEntriesData.push({
+            tenantId: auth.tenantId,
+            journalId: journal.id,
+            reference: journalRef,
+            date: cancelDate,
+            description: journalDesc + " (BF Hangus)",
+            accountId: accPendapatanLain.id,
+            debit: 0,
+            credit: totalBF,
+            unitId: unitId,
+            projectId: unit.projectId,
+            isAuto: true,
+          });
+        }
+
+        // Kredit Bank (1200) sebesar refund DP/lainnya
+        if (totalRefund > 0) {
+          journalEntriesData.push({
+            tenantId: auth.tenantId,
+            journalId: journal.id,
+            reference: journalRef,
+            date: cancelDate,
+            description: journalDesc + " (Refund DP/Lain)",
+            accountId: accBank.id,
+            debit: 0,
+            credit: totalRefund,
+            unitId: unitId,
+            projectId: unit.projectId,
+            isAuto: true,
+          });
+        }
 
         await tx.journalEntry.createMany({
-          data: [
-            {
-              tenantId: auth.tenantId,
-              reference: journalRef,
-              date: cancelDate,
-              description: journalDesc,
-              accountId: accPendapatanMuka.id,
-              debit: totalBF,
-              credit: 0,
-              unitId: unitId,
-              isAuto: true,
-            },
-            {
-              tenantId: auth.tenantId,
-              reference: journalRef,
-              date: cancelDate,
-              description: journalDesc,
-              accountId: accPendapatanLain.id,
-              debit: 0,
-              credit: totalBF,
-              unitId: unitId,
-              isAuto: true,
-            },
-          ],
+          data: journalEntriesData,
         });
       }
 
@@ -201,7 +235,7 @@ export async function POST(
         },
       });
 
-      return { cancellation, updatedUnit, journalRef, totalBF };
+      return { cancellation, updatedUnit, journalRef, totalBF, totalRefund };
     });
 
     // Revalidate pages
@@ -215,7 +249,7 @@ export async function POST(
       {
         success: true,
         data: result,
-        message: `Pembelian berhasil dibatalkan. Booking Fee Rp ${new Intl.NumberFormat("id-ID").format(result.totalBF)} dicatat sebagai pendapatan lain-lain`,
+        message: `Pembelian berhasil dibatalkan. Booking Fee Rp ${new Intl.NumberFormat("id-ID").format(result.totalBF)} dicatat sebagai pendapatan lain-lain, dan DP/lainnya sebesar Rp ${new Intl.NumberFormat("id-ID").format(result.totalRefund)} direfund ke pembeli.`,
       },
       { status: 200 }
     );

@@ -196,7 +196,6 @@ export async function updateCompanyProfile(_prevState: unknown, formData: FormDa
 
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/profil')
-  revalidatePath('/dashboard/settings')
   revalidatePath('/dashboard/laporan')
   revalidatePath('/dashboard/buku-besar')
   revalidatePath('/dashboard/neraca-saldo')
@@ -901,11 +900,20 @@ async function resolveTransactionRelations(
   if (resolvedUnitId) {
     const unit = await db.unit.findFirst({
       where: { id: resolvedUnitId, tenantId },
-      select: { id: true, projectId: true, customerId: true },
+      select: { id: true, projectId: true, customerId: true, status: true },
     })
 
     if (!unit) {
       throw new Error('Unit tidak ditemukan atau bukan milik tenant ini')
+    }
+
+    // Validasi urutan transaksi
+    if (unit.status === 'TERSEDIA') {
+      if (['DOWN_PAYMENT', 'PELUNASAN_CASH', 'PENCAIRAN_KPR', 'ANGSURAN_KPR'].includes(params.category)) {
+        throw new Error(
+          `Transaksi ${params.category.replace(/_/g, ' ')} tidak diperbolehkan untuk unit yang masih berstatus TERSEDIA. Silakan lakukan pembayaran BOOKING FEE terlebih dahulu.`
+        )
+      }
     }
 
     resolvedProjectId = unit.projectId

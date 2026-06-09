@@ -128,7 +128,7 @@ export default function Sidebar({
         },
         {
           title: "Profil Perusahaan",
-          href: "/dashboard/settings",
+          href: "/dashboard/profil",
           icon: "/domain.svg",
           roles: ["ADMIN"],
         },

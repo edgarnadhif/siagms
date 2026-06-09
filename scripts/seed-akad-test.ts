@@ -73,7 +73,7 @@ async function main() {
       phone: '081234567891',
       email: 'test.cash@email.com',
       address: 'Jl. Test No. 2',
-      paymentMethod: PaymentMethod.CASH_KERAS,
+      paymentMethod: PaymentMethod.CASH,
       tenantId: tenant.id,
     }
   });

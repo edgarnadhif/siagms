@@ -696,7 +696,7 @@ export default function PelangganClient({
 
           {/* Table Container */}
           <div className="bg-white dark:bg-slate-800 border-[0.5px] border-[#E5E7EB] dark:border-slate-700 rounded-2xl shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto min-h-[280px]">
               <table className="w-full border-collapse">
                 <thead
                   className={`bg-slate-50 dark:bg-slate-800/50 sticky top-0 z-10 ${paginatedCustomers.length === 0 ? "hidden" : ""}`}
@@ -840,7 +840,7 @@ export default function PelangganClient({
                             {openActionId === c.id && (
                               <div
                                 className={`absolute right-0 z-50 w-48 rounded-xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-1.5 shadow-xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150 ${
-                                  idx >= paginatedCustomers.length - 2
+                                  idx >= paginatedCustomers.length - 2 && paginatedCustomers.length > 2
                                     ? "bottom-9"
                                     : "top-9"
                                 }`}

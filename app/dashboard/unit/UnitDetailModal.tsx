@@ -604,6 +604,9 @@ export default function UnitDetailModal({
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showAkadModal, setShowAkadModal] = useState(false);
   const router = useRouter();
+  const [showSTConfirmModal, setShowSTConfirmModal] = useState(false);
+  const isSTConfirmedRef = React.useRef(false);
+  const stFormRef = React.useRef<HTMLFormElement>(null);
 
   const [stState, stAction, isStPending] = useActionState(
     serahTerimaUnit,
@@ -676,28 +679,20 @@ export default function UnitDetailModal({
   };
 
   const handleSTSubmitConfirm = (event: React.FormEvent<HTMLFormElement>) => {
-    if (!canProcessST) {
-      event.preventDefault();
+    if (isSTConfirmedRef.current) {
+      isSTConfirmedRef.current = false;
       return;
     }
 
-    const isKPRMethod = unit?.customer?.paymentMethod === "KPR";
-    const confirmationMessage = [
-      `Total pendapatan yang akan diakui: ${formatRupiah(stBreakdown.total)}`,
-      `- Booking Fee    : ${formatRupiah(stBreakdown.bookingFee)}`,
-      `- Down Payment   : ${formatRupiah(stBreakdown.downPayment)}`,
-      isKPRMethod
-        ? `- Pencairan KPR  : ${formatRupiah(stBreakdown.pencairanKpr)}`
-        : `- Pelunasan Cash : ${formatRupiah(stBreakdown.pelunasanCash)}`,
-      "--------------------------------",
-      `Total            : ${formatRupiah(stBreakdown.total)}`,
-      "",
-      "Konfirmasi serah terima?",
-    ].join("\n");
+    event.preventDefault();
+    if (!canProcessST) return;
+    setShowSTConfirmModal(true);
+  };
 
-    if (!window.confirm(confirmationMessage)) {
-      event.preventDefault();
-    }
+  const handleConfirmST = () => {
+    setShowSTConfirmModal(false);
+    isSTConfirmedRef.current = true;
+    stFormRef.current?.requestSubmit();
   };
 
   if (loading) {
@@ -1246,20 +1241,21 @@ export default function UnitDetailModal({
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
                       viewBox="0 0 24 24"
-                      strokeWidth={2.5}
+                      strokeWidth={2}
                       stroke="currentColor"
-                      className="w-6 h-6"
+                      className="w-5 h-5"
                     >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .415.162.798.425 1.081.263.283.65.454 1.075.454s.812-.171 1.075-.454c.263-.283.425-.666.425-1.081 0-.231-.035-.454-.1-.664m-5.801 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.801 0c-.33.153-.635.351-.904.586m6.705 0c.269-.235.574-.433.904-.586m-6.705 0a2.25 2.25 0 011.971-.243M12 21a9 9 0 100-18 9 9 0 000 18z"
+                        d="M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1 1 21.75 8.25Z"
                       />
                     </svg>
                     PROSES SERAH TERIMA
                   </button>
                 ) : (
                   <form
+                    ref={stFormRef}
                     action={stAction}
                     onSubmit={handleSTSubmitConfirm}
                     className="bg-white dark:bg-slate-800 border border-orange-500/20 p-5 rounded-2xl space-y-4 shadow-lg"
@@ -1317,10 +1313,6 @@ export default function UnitDetailModal({
                           {formatRupiah(stBreakdown.total)}
                         </span>
                       </div>
-                      <p className="text-[11px] font-medium text-orange-700/80 dark:text-orange-300/80">
-                        Konfirmasi serah terima akan membuat jurnal Debit 2100
-                        dan Kredit 4100 sebesar total penerimaan unit ini.
-                      </p>
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5 ml-1">
@@ -1463,14 +1455,102 @@ export default function UnitDetailModal({
             )}
           </div>
 
-          {/* Footer */}
-          <div className="p-4 bg-gray-50 dark:bg-slate-900/50 border-t border-gray-100 dark:border-slate-700 text-center shrink-0">
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">
-              {unit.id} • SIAGMS PROPERTY ENGINE v2.0
-            </p>
-          </div>
+
         </div>
       </div>
+
+      {showSTConfirmModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 animate-in zoom-in-95 duration-200 p-6 space-y-6">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-14 h-14 rounded-full bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center text-[#EA6C00] border border-orange-100 dark:border-orange-900/30">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                  className="w-7 h-7"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+                  Konfirmasi Serah Terima
+                </h3>
+                <p className="text-sm text-slate-500">
+                  Berikut rincian pendapatan yang akan diakui dalam sistem akuntansi secara otomatis:
+                </p>
+              </div>
+            </div>
+
+            {/* Financial Details Card */}
+            <div className="bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-700 p-4 space-y-3">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-slate-500">Booking Fee</span>
+                <span className="font-semibold text-slate-800 dark:text-white">
+                  {formatRupiah(stBreakdown.bookingFee)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-slate-500">Down Payment</span>
+                <span className="font-semibold text-slate-800 dark:text-white">
+                  {formatRupiah(stBreakdown.downPayment)}
+                </span>
+              </div>
+              {unit?.customer?.paymentMethod === "KPR" ? (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-500">Pencairan KPR</span>
+                  <span className="font-semibold text-slate-800 dark:text-white">
+                    {formatRupiah(stBreakdown.pencairanKpr)}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-500">Pelunasan Cash</span>
+                  <span className="font-semibold text-slate-800 dark:text-white">
+                    {formatRupiah(stBreakdown.pelunasanCash)}
+                  </span>
+                </div>
+              )}
+              <div className="border-t border-slate-200 dark:border-slate-700 pt-3 flex justify-between items-center">
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                  Total Pendapatan
+                </span>
+                <span className="text-lg font-black text-orange-600">
+                  {formatRupiah(stBreakdown.total)}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-center text-slate-400 dark:text-slate-500 leading-normal">
+              Dengan mengonfirmasi, sistem akan mencatat jurnal akuntansi pengakuan pendapatan (Debit Uang Muka Diterima Dimuka, Kredit Pendapatan Penjualan) secara otomatis.
+            </p>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowSTConfirmModal(false)}
+                className="flex-1 h-12 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-[0.98]"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmST}
+                className="flex-1 h-12 rounded-xl bg-[#EA6C00] hover:bg-[#C25500] text-white font-bold transition-all shadow-lg shadow-orange-500/20 active:scale-[0.98] flex items-center justify-center gap-2"
+              >
+                Ya, Konfirmasi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

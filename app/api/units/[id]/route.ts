@@ -28,6 +28,15 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       return NextResponse.json({ success: false, data: null, message: "Unit tidak ditemukan" }, { status: 404 });
     }
 
+    // Filter transactions to only belong to the current customer
+    if (unit.customerId) {
+      unit.transactions = unit.transactions.filter(
+        (t) => t.customerId === unit.customerId
+      );
+    } else {
+      unit.transactions = [];
+    }
+
     // Fetch cancellations separately — gracefully handles case where table doesn't exist yet
     let cancellations: any[] = [];
     try {
