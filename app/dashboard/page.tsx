@@ -263,15 +263,20 @@ const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
     return d;
   });
 
-  // 3. Breakdown Biaya / Penerimaan from Transactions
+  // 3. Breakdown Biaya / Penerimaan from ALL Transactions (accurate proportion)
+  const expenseAgg = await prisma.transaction.groupBy({
+    by: ['category'],
+    where: {
+      tenantId: auth.tenantId,
+      category: { in: ["BIAYA_KONSTRUKSI", "BIAYA_MARKETING", "BIAYA_GAJI", "BIAYA_OPERASIONAL"] },
+      ...(projectFilter ? { projectId: projectFilter } : {})
+    },
+    _sum: { amount: true }
+  });
+
   const breakdownMap = new Map<string, number>();
-  for (const trx of transactions) {
-    const amount = Number(trx.amount);
-    // Sum for breakdown (expense related categories)
-    if (["BIAYA_KONSTRUKSI", "BIAYA_MARKETING", "BIAYA_OPERASIONAL", "BIAYA_GAJI"].includes(trx.category)) {
-      const current = breakdownMap.get(trx.category) || 0;
-      breakdownMap.set(trx.category, current + amount);
-    }
+  for (const group of expenseAgg) {
+    breakdownMap.set(group.category, Number(group._sum.amount || 0));
   }
 
   // Calculate kas diterina & pendapatan diakui from ALL transactions accurately, not just latest 50
