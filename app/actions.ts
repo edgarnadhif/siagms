@@ -133,9 +133,23 @@ async function syncUnitStatusFromTransactions(db: DbClient, tenantId: string, un
     revenueTransactions.map((item) => item.category),
   )
 
-  // Preserve manually advanced statuses from akad/serah-terima workflow, unless it upgrades to LUNAS.
-  if ((unit.status === 'AKAD' && nextStatus !== 'LUNAS') || unit.status === 'SERAH_TERIMA') {
+  // SERAH_TERIMA is a final state — never auto-downgrade it.
+  if (unit.status === 'SERAH_TERIMA') {
     return
+  }
+
+  // AKAD is manually advanced via akad workflow. Only preserve it if:
+  //  - next status would be LUNAS (upgrade allowed), OR
+  //  - there is still an akad record for this unit (don't downgrade prematurely).
+  if (unit.status === 'AKAD' && nextStatus !== 'LUNAS') {
+    const akadRecord = await db.unitAkad.findFirst({
+      where: { unitId, tenantId },
+      select: { id: true },
+    })
+    if (akadRecord) {
+      return // Preserve AKAD — akad still exists
+    }
+    // No akad record → allow downgrade (akad was never completed or was cleaned up)
   }
 
   if (unit.status !== nextStatus) {
@@ -186,7 +200,7 @@ export async function updateCompanyProfile(_prevState: unknown, formData: FormDa
   revalidatePath('/dashboard/laporan')
   revalidatePath('/dashboard/buku-besar')
   revalidatePath('/dashboard/neraca-saldo')
-  
+
   return { message: 'Profile updated successfully' }
 }
 
@@ -1069,6 +1083,7 @@ export async function createTransaction(prevState: any, formData: FormData) {
   }
 
   try {
+    let journalWarning: string | null = null;
     await prisma.$transaction(async (tx) => {
       const relations = await resolveTransactionRelations(tx, auth.tenantId, {
         category,
@@ -1100,7 +1115,7 @@ export async function createTransaction(prevState: any, formData: FormData) {
         await syncUnitStatusFromTransactions(tx, auth.tenantId, relations.unitId)
       }
 
-      await createAutoJournal(tx, transaction)
+      journalWarning = await createAutoJournal(tx, transaction)
     })
 
     revalidatePath('/dashboard/transaksi')
@@ -1109,7 +1124,7 @@ export async function createTransaction(prevState: any, formData: FormData) {
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/unit')
     revalidatePath('/dashboard/projek')
-    return { success: true }
+    return { success: true, warning: journalWarning ?? undefined }
   } catch (err: any) {
     if (err?.code === 'P2002') {
       return { error: 'Nomor referensi sudah digunakan' }
@@ -1212,33 +1227,37 @@ export async function deleteTransactions(transactionIds: string[]) {
 
 // Legacy fallback template — used only when JournalMapping is not configured yet.
 const ACCOUNTS_TEMPLATE = {
-  bank:             { code: '1200', name: 'Bank',                              type: 'ASET',       normalBalance: 'DEBIT'  },
-  pendapatanMuka:   { code: '2100', name: 'Pendapatan Diterima di Muka',       type: 'KEWAJIBAN',  normalBalance: 'KREDIT' },
-  pendapatan:       { code: '4100', name: 'Pendapatan Penjualan Unit',         type: 'PENDAPATAN', normalBalance: 'KREDIT' },
-  bebanKonstruksi:  { code: '5200', name: 'Beban Konstruksi',                  type: 'BEBAN',      normalBalance: 'DEBIT'  },
-  bebanMarketing:   { code: '5300', name: 'Beban Marketing & Penjualan',       type: 'BEBAN',      normalBalance: 'DEBIT'  },
-  bebanGaji:        { code: '5400', name: 'Beban Gaji & Upah',                 type: 'BEBAN',      normalBalance: 'DEBIT'  },
-  bebanOperasional: { code: '5500', name: 'Beban Operasional Kantor',          type: 'BEBAN',      normalBalance: 'DEBIT'  },
-  bebanLainLain:    { code: '5600', name: 'Beban Lain-lain',                   type: 'BEBAN',      normalBalance: 'DEBIT'  },
+  kas: { code: '1100', name: 'Kas', type: 'ASET', normalBalance: 'DEBIT' },
+  bank: { code: '1200', name: 'Bank', type: 'ASET', normalBalance: 'DEBIT' },
+  persediaanUnit: { code: '1500', name: 'Persediaan Unit Siap Jual', type: 'ASET', normalBalance: 'DEBIT' },
+  bdk: { code: '1600', name: 'Biaya Dalam Pembuatan (BDK)', type: 'ASET', normalBalance: 'DEBIT' },
+  tanah: { code: '1700', name: 'Tanah', type: 'ASET', normalBalance: 'DEBIT' },
+  pendapatanMuka: { code: '2100', name: 'Pendapatan Diterima di Muka', type: 'KEWAJIBAN', normalBalance: 'KREDIT' },
+  pendapatan: { code: '4100', name: 'Pendapatan Penjualan Unit', type: 'PENDAPATAN', normalBalance: 'KREDIT' },
+  pendapatanLainLain: { code: '4200', name: 'Pendapatan Lain-lain', type: 'PENDAPATAN', normalBalance: 'KREDIT' },
+  hpp: { code: '5100', name: 'Harga Pokok Penjualan', type: 'BEBAN', normalBalance: 'DEBIT' },
+  bebanKonstruksi: { code: '5200', name: 'Beban Konstruksi', type: 'BEBAN', normalBalance: 'DEBIT' },
+  bebanMarketing: { code: '5300', name: 'Beban Marketing & Penjualan', type: 'BEBAN', normalBalance: 'DEBIT' },
+  bebanGaji: { code: '5400', name: 'Beban Gaji & Upah', type: 'BEBAN', normalBalance: 'DEBIT' },
+  bebanOperasional: { code: '5500', name: 'Beban Operasional Kantor', type: 'BEBAN', normalBalance: 'DEBIT' },
+  bebanLainLain: { code: '5600', name: 'Beban Lain-lain', type: 'BEBAN', normalBalance: 'DEBIT' },
 };
 
 async function ensureAccount(db: DbClient, tenantId: string, templateKey: keyof typeof ACCOUNTS_TEMPLATE) {
   const tpl = ACCOUNTS_TEMPLATE[templateKey];
+  // Match by code only — avoids accidental matches by partial name.
   let acc = await db.account.findFirst({
-    where: { 
-      tenantId,
-      OR: [{ code: tpl.code }, { name: { contains: tpl.name, mode: 'insensitive' } }] 
-    }
+    where: { tenantId, code: tpl.code }
   });
   if (!acc) {
     acc = await db.account.create({
-      data: { 
+      data: {
         tenantId,
-        code: tpl.code, 
-        name: tpl.name, 
-        type: tpl.type as any, 
-        normalBalance: tpl.normalBalance as any, 
-        isActive: true 
+        code: tpl.code,
+        name: tpl.name,
+        type: tpl.type as any,
+        normalBalance: tpl.normalBalance as any,
+        isActive: true
       }
     });
   }
@@ -1284,7 +1303,7 @@ async function getJournalAccounts(
   return null
 }
 
-async function createAutoJournal(db: DbClient, trans: any) {
+async function createAutoJournal(db: DbClient, trans: any): Promise<string | null> {
   const tenantId = trans.tenantId;
   const entries: { accountId: string; debit: number; credit: number }[] = [];
   const amount = Number(trans.amount);
@@ -1295,7 +1314,8 @@ async function createAutoJournal(db: DbClient, trans: any) {
 
   if (mappedAccounts) {
     if (!mappedAccounts.isActive) {
-      return;
+      // Return warning instead of silently skipping
+      return `Jurnal otomatis untuk kategori "${trans.category}" sedang dinonaktifkan. Tidak ada jurnal yang dibuat untuk transaksi ${trans.reference}.`;
     }
 
     entries.push({ accountId: mappedAccounts.debitAccount.id, debit: amount, credit: 0 });
@@ -1316,8 +1336,8 @@ async function createAutoJournal(db: DbClient, trans: any) {
         break;
       }
       case 'BIAYA_KONSTRUKSI': {
-        const bKons = await ensureAccount(db, tenantId, 'bebanKonstruksi');
-        entries.push({ accountId: bKons.id, debit: amount, credit: 0 });
+        const bdkAcc = await ensureAccount(db, tenantId, 'bdk');
+        entries.push({ accountId: bdkAcc.id, debit: amount, credit: 0 });
         entries.push({ accountId: bank.id, debit: 0, credit: amount });
         break;
       }
@@ -1358,6 +1378,7 @@ async function createAutoJournal(db: DbClient, trans: any) {
         date: trans.date,
         description: defaultDesc,
         transactionId: trans.id,
+        projectId: trans.projectId || null,
         accountId: e.accountId,
         debit: e.debit,
         credit: e.credit,
@@ -1365,6 +1386,8 @@ async function createAutoJournal(db: DbClient, trans: any) {
       }))
     });
   }
+
+  return null; // Success, no warnings
 }
 
 // ─── JOURNAL ENTRY (Jurnal Umum) ────────────────────────────
@@ -1415,9 +1438,9 @@ export async function createJournalEntries(prevState: any, formData: FormData) {
   try {
     const selectedProject = effectiveProjectId
       ? await prisma.project.findFirst({
-          where: { id: effectiveProjectId, tenantId: auth.tenantId },
-          select: { id: true },
-        })
+        where: { id: effectiveProjectId, tenantId: auth.tenantId },
+        select: { id: true },
+      })
       : null
 
     if (effectiveProjectId && !selectedProject) {
@@ -1476,8 +1499,8 @@ export async function markProjectTerjual(projectId: string) {
   }
 
   try {
-    const proj = await prisma.project.findFirst({ 
-      where: { id: projectId, tenantId: auth.tenantId } 
+    const proj = await prisma.project.findFirst({
+      where: { id: projectId, tenantId: auth.tenantId }
     })
     if (!proj) return { error: 'Proyek tidak ditemukan' }
     if (proj.status === 'TERJUAL') return { error: 'Proyek sudah diserahterimakan (TERJUAL)' }
@@ -1507,7 +1530,7 @@ export async function markProjectTerjual(projectId: string) {
     // Update status proyek
     await prisma.project.update({
       where: { id: projectId, tenantId: auth.tenantId },
-      data: { 
+      data: {
         status: 'TERJUAL',
         handoverDate: new Date()
       }
@@ -1517,9 +1540,9 @@ export async function markProjectTerjual(projectId: string) {
       // Create journal entry for revenue recognition
       const pMuka = await ensureAccount(prisma, auth.tenantId, 'pendapatanMuka');
       const pPenjualan = await ensureAccount(prisma, auth.tenantId, 'pendapatan');
-      
+
       const reference = `REV-${proj.code}-${Date.now().toString().slice(-4)}`;
-      
+
       await prisma.journalEntry.createMany({
         data: [
           {
@@ -1577,7 +1600,7 @@ export async function serahTerimaUnit(prevState: any, formData: FormData) {
     const auth = await requireAuth(['ADMIN', 'AKUNTAN']);
 
     // ── Guard: cek apakah unit sudah diserahterimakan ──
-    const unitCheck = await prisma.unit.findFirst({ 
+    const unitCheck = await prisma.unit.findFirst({
       where: { id: unitId, tenantId: auth.tenantId },
       include: { customer: true }
     });
@@ -1597,6 +1620,23 @@ export async function serahTerimaUnit(prevState: any, formData: FormData) {
     // ── Pastikan akun ada sebelum masuk transaction ──
     const pMuka = await ensureAccount(prisma, auth.tenantId, 'pendapatanMuka');
     const pend = await ensureAccount(prisma, auth.tenantId, 'pendapatan');
+    const hppAcc = await ensureAccount(prisma, auth.tenantId, 'hpp');
+    const bdkAcc = await ensureAccount(prisma, auth.tenantId, 'bdk');
+
+    // ── Hitung biaya konstruksi per unit (proportional from project) ──
+    const projectConstructionCost = await prisma.transaction.aggregate({
+      where: {
+        tenantId: auth.tenantId,
+        projectId: unitCheck.projectId,
+        category: 'BIAYA_KONSTRUKSI',
+      },
+      _sum: { amount: true },
+    });
+    const projectUnitCount = await prisma.unit.count({
+      where: { projectId: unitCheck.projectId, tenantId: auth.tenantId },
+    });
+    const totalKonstruksi = Number(projectConstructionCost._sum.amount || 0);
+    const perUnitCost = projectUnitCount > 0 ? totalKonstruksi / projectUnitCount : 0;
 
     const result = await prisma.$transaction(async (tx) => {
       const penerimaan = await getUnitRevenueBreakdown(tx, auth.tenantId, unitId);
@@ -1675,6 +1715,40 @@ export async function serahTerimaUnit(prevState: any, formData: FormData) {
         ]
       });
 
+      // 5. COGS Recognition — transfer proportional BDK cost to HPP
+      if (perUnitCost > 0) {
+        await tx.journalEntry.createMany({
+          data: [
+            {
+              tenantId: auth.tenantId,
+              journalId: journal.id,
+              reference: handoverNo,
+              date,
+              description: `Pengakuan HPP - ST Unit ${unitCheck.unitCode}`,
+              accountId: hppAcc.id,
+              debit: perUnitCost,
+              credit: 0,
+              isAuto: true,
+              unitId: unitId,
+              transactionId: null,
+            },
+            {
+              tenantId: auth.tenantId,
+              journalId: journal.id,
+              reference: handoverNo,
+              date,
+              description: `Pengakuan HPP - ST Unit ${unitCheck.unitCode}`,
+              accountId: bdkAcc.id,
+              debit: 0,
+              credit: perUnitCost,
+              isAuto: true,
+              unitId: unitId,
+              transactionId: null,
+            }
+          ]
+        });
+      }
+
       return {
         st,
         penerimaan
@@ -1687,9 +1761,10 @@ export async function serahTerimaUnit(prevState: any, formData: FormData) {
     revalidatePath('/dashboard/buku-besar');
     revalidatePath('/dashboard/laporan');
     revalidatePath('/dashboard');
+    const cogsMsg = perUnitCost > 0 ? ` HPP diakui sebesar ${formatRupiah(perUnitCost)}.` : '';
     return {
       success: true,
-      message: `Serah terima berhasil diproses. Pendapatan diakui sebesar ${formatRupiah(result.penerimaan.total)}.`,
+      message: `Serah terima berhasil diproses. Pendapatan diakui sebesar ${formatRupiah(result.penerimaan.total)}.${cogsMsg}`,
       data: result.penerimaan
     };
   } catch (err: any) {
@@ -1704,10 +1779,10 @@ export async function serahTerimaUnit(prevState: any, formData: FormData) {
 
 export async function cleanupDuplicateSTJournals() {
   const auth = await requireAuth(['ADMIN']);
-  
+
   try {
     const entries = await prisma.journalEntry.findMany({
-      where: { 
+      where: {
         tenantId: auth.tenantId,
         reference: { startsWith: 'BA-ST/' }
       },
@@ -1723,7 +1798,7 @@ export async function cleanupDuplicateSTJournals() {
 
     let deleteCount = 0;
     let fixedCount = 0;
-    
+
     for (const entryList of groups.values()) {
       const seenAccounts = new Set<string>();
       const toDelete: string[] = [];
@@ -1748,10 +1823,15 @@ export async function cleanupDuplicateSTJournals() {
       where: { tenantId: auth.tenantId },
       include: {
         unit: {
-          select: { unitCode: true }
+          select: { unitCode: true, projectId: true }
         }
       }
     });
+
+    // Ensure HPP and BDK accounts exist for COGS repair
+    const hppAccRepair = await ensureAccount(prisma, auth.tenantId, 'hpp');
+    const bdkAccRepair = await ensureAccount(prisma, auth.tenantId, 'bdk');
+    let cogsRepairCount = 0;
 
     for (const stRecord of stRecords) {
       const penerimaan = await getUnitRevenueBreakdown(prisma, auth.tenantId, stRecord.unitId);
@@ -1773,11 +1853,13 @@ export async function cleanupDuplicateSTJournals() {
           tenantId: auth.tenantId,
           journalId: journal.id
         },
+        include: { account: { select: { code: true } } },
         orderBy: { createdAt: 'asc' }
       });
 
       if (stEntries.length < 2) continue;
 
+      // ── Repair revenue recognition amounts ──
       const debitEntry = stEntries.find((entry) => Number(entry.debit) > 0) ?? stEntries[0];
       const creditEntry = stEntries.find((entry) => entry.id !== debitEntry.id) ?? stEntries[1];
 
@@ -1787,38 +1869,90 @@ export async function cleanupDuplicateSTJournals() {
         Number(creditEntry.debit) !== 0 ||
         Number(creditEntry.credit) !== expectedAmount
 
-      if (!needsRepair) continue;
+      if (needsRepair) {
+        await prisma.$transaction([
+          prisma.journalEntry.update({
+            where: { id: debitEntry.id },
+            data: {
+              debit: expectedAmount,
+              credit: 0,
+              unitId: stRecord.unitId,
+              description: `Pengakuan Pendapatan - ST Unit ${stRecord.unit.unitCode}`
+            }
+          }),
+          prisma.journalEntry.update({
+            where: { id: creditEntry.id },
+            data: {
+              debit: 0,
+              credit: expectedAmount,
+              unitId: stRecord.unitId,
+              description: `Pengakuan Pendapatan - ST Unit ${stRecord.unit.unitCode}`
+            }
+          }),
+          prisma.transaction.updateMany({
+            where: {
+              tenantId: auth.tenantId,
+              unitId: stRecord.unitId,
+              category: { in: [...REVENUE_PROJECT_CATEGORIES] }
+            },
+            data: { status_pengakuan: 'diakui' }
+          })
+        ]);
 
-      await prisma.$transaction([
-        prisma.journalEntry.update({
-          where: { id: debitEntry.id },
-          data: {
-            debit: expectedAmount,
-            credit: 0,
-            unitId: stRecord.unitId,
-            description: `Pengakuan Pendapatan - ST Unit ${stRecord.unit.unitCode}`
-          }
-        }),
-        prisma.journalEntry.update({
-          where: { id: creditEntry.id },
-          data: {
-            debit: 0,
-            credit: expectedAmount,
-            unitId: stRecord.unitId,
-            description: `Pengakuan Pendapatan - ST Unit ${stRecord.unit.unitCode}`
-          }
-        }),
-        prisma.transaction.updateMany({
+        fixedCount += 1;
+      }
+
+      // ── Repair missing COGS (HPP) entries ──
+      const hasHppEntry = stEntries.some((e) => e.account.code === '5100');
+      if (!hasHppEntry && stRecord.unit.projectId) {
+        const projectConstructionCost = await prisma.transaction.aggregate({
           where: {
             tenantId: auth.tenantId,
-            unitId: stRecord.unitId,
-            category: { in: [...REVENUE_PROJECT_CATEGORIES] }
+            projectId: stRecord.unit.projectId,
+            category: 'BIAYA_KONSTRUKSI',
           },
-          data: { status_pengakuan: 'diakui' }
-        })
-      ]);
+          _sum: { amount: true },
+        });
+        const projectUnitCount = await prisma.unit.count({
+          where: { projectId: stRecord.unit.projectId, tenantId: auth.tenantId },
+        });
+        const totalKons = Number(projectConstructionCost._sum.amount || 0);
+        const perUnit = projectUnitCount > 0 ? totalKons / projectUnitCount : 0;
 
-      fixedCount += 1;
+        if (perUnit > 0) {
+          await prisma.journalEntry.createMany({
+            data: [
+              {
+                tenantId: auth.tenantId,
+                journalId: journal.id,
+                reference: stRecord.handoverNo,
+                date: stRecord.date,
+                description: `Pengakuan HPP - ST Unit ${stRecord.unit.unitCode}`,
+                accountId: hppAccRepair.id,
+                debit: perUnit,
+                credit: 0,
+                isAuto: true,
+                unitId: stRecord.unitId,
+                transactionId: null,
+              },
+              {
+                tenantId: auth.tenantId,
+                journalId: journal.id,
+                reference: stRecord.handoverNo,
+                date: stRecord.date,
+                description: `Pengakuan HPP - ST Unit ${stRecord.unit.unitCode}`,
+                accountId: bdkAccRepair.id,
+                debit: 0,
+                credit: perUnit,
+                isAuto: true,
+                unitId: stRecord.unitId,
+                transactionId: null,
+              }
+            ]
+          });
+          cogsRepairCount += 1;
+        }
+      }
     }
 
     revalidatePath('/dashboard/jurnal-umum');
@@ -1827,9 +1961,58 @@ export async function cleanupDuplicateSTJournals() {
     revalidatePath('/dashboard');
     return {
       success: true,
-      message: `Cleanup selesai. ${deleteCount} baris jurnal dobel dihapus dan ${fixedCount} jurnal ST BA-ST diperbarui ke total penerimaan yang benar.`
+      message: `Cleanup selesai. ${deleteCount} baris jurnal dobel dihapus, ${fixedCount} jurnal ST diperbarui, dan ${cogsRepairCount} jurnal HPP ditambahkan.`
     };
   } catch (err: any) {
     return { error: 'Gagal cleanup jurnal ST: ' + err.message };
+  }
+}
+
+// ─── FIX MISSING PROJECT IDS ──────────────────────────────────────
+
+/**
+ * Backfills projectId on journal entries that were auto-created without it.
+ * Copies projectId from the linked transaction.
+ */
+export async function fixJournalProjectIds() {
+  const auth = await requireAuth(['ADMIN']);
+
+  try {
+    // Find journal entries with null projectId but a linked transaction that has a projectId
+    const brokenEntries = await prisma.journalEntry.findMany({
+      where: {
+        tenantId: auth.tenantId,
+        projectId: null,
+        transactionId: { not: null },
+      },
+      include: {
+        transaction: { select: { projectId: true } },
+      },
+    });
+
+    const toFix = brokenEntries.filter(e => e.transaction?.projectId);
+
+    if (toFix.length === 0) {
+      return { success: true, message: 'Tidak ada jurnal yang perlu diperbaiki. Semua sudah memiliki proyek yang benar.' };
+    }
+
+    // Update each entry individually with the correct projectId from its transaction
+    let fixedCount = 0;
+    for (const entry of toFix) {
+      if (entry.transaction?.projectId) {
+        await prisma.journalEntry.update({
+          where: { id: entry.id },
+          data: { projectId: entry.transaction.projectId },
+        });
+        fixedCount++;
+      }
+    }
+
+    revalidatePath('/dashboard/jurnal-umum');
+    revalidatePath('/dashboard/buku-besar');
+    revalidatePath('/dashboard');
+    return { success: true, message: `${fixedCount} entri jurnal berhasil diperbaiki projectId-nya.` };
+  } catch (err: any) {
+    return { error: 'Gagal memperbaiki projectId jurnal: ' + err.message };
   }
 }

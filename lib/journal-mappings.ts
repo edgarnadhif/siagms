@@ -11,9 +11,33 @@ type AccountTemplate = {
 };
 
 export const DEFAULT_JOURNAL_ACCOUNTS: Record<string, AccountTemplate> = {
+  "1100": {
+    code: "1100",
+    name: "Kas",
+    type: "ASET",
+    normalBalance: "DEBIT",
+  },
   "1200": {
     code: "1200",
     name: "Bank",
+    type: "ASET",
+    normalBalance: "DEBIT",
+  },
+  "1500": {
+    code: "1500",
+    name: "Persediaan Unit Siap Jual",
+    type: "ASET",
+    normalBalance: "DEBIT",
+  },
+  "1600": {
+    code: "1600",
+    name: "Biaya Dalam Pembuatan (BDK)",
+    type: "ASET",
+    normalBalance: "DEBIT",
+  },
+  "1700": {
+    code: "1700",
+    name: "Tanah",
     type: "ASET",
     normalBalance: "DEBIT",
   },
@@ -28,6 +52,18 @@ export const DEFAULT_JOURNAL_ACCOUNTS: Record<string, AccountTemplate> = {
     name: "Pendapatan Penjualan Unit",
     type: "PENDAPATAN",
     normalBalance: "KREDIT",
+  },
+  "4200": {
+    code: "4200",
+    name: "Pendapatan Lain-lain",
+    type: "PENDAPATAN",
+    normalBalance: "KREDIT",
+  },
+  "5100": {
+    code: "5100",
+    name: "Harga Pokok Penjualan",
+    type: "BEBAN",
+    normalBalance: "DEBIT",
   },
   "5200": {
     code: "5200",
@@ -94,8 +130,8 @@ export const DEFAULT_JOURNAL_MAPPINGS = [
   },
   {
     category: "BIAYA_KONSTRUKSI",
-    description: "Biaya Konstruksi",
-    debitCode: "5200",
+    description: "Biaya Konstruksi (BDK)",
+    debitCode: "1600",
     creditCode: "1200",
   },
   {

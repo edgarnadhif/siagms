@@ -7,134 +7,129 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const adapter = new PrismaPg(pool)
 const prisma = new PrismaClient({ adapter })
 
-async function main() {
-  console.log('🔧 Seeding journal mappings...')
+// Account templates — mirrors lib/journal-mappings.ts DEFAULT_JOURNAL_ACCOUNTS
+const ACCOUNT_TEMPLATES = [
+  { code: '1100', name: 'Kas', type: 'ASET', normalBalance: 'DEBIT' },
+  { code: '1200', name: 'Bank', type: 'ASET', normalBalance: 'DEBIT' },
+  { code: '1500', name: 'Persediaan Unit Siap Jual', type: 'ASET', normalBalance: 'DEBIT' },
+  { code: '1600', name: 'Biaya Dalam Pembuatan (BDK)', type: 'ASET', normalBalance: 'DEBIT' },
+  { code: '1700', name: 'Tanah', type: 'ASET', normalBalance: 'DEBIT' },
+  { code: '2100', name: 'Pendapatan Diterima di Muka', type: 'KEWAJIBAN', normalBalance: 'KREDIT' },
+  { code: '4100', name: 'Pendapatan Penjualan Unit', type: 'PENDAPATAN', normalBalance: 'KREDIT' },
+  { code: '4200', name: 'Pendapatan Lain-lain', type: 'PENDAPATAN', normalBalance: 'KREDIT' },
+  { code: '5100', name: 'Harga Pokok Penjualan', type: 'BEBAN', normalBalance: 'DEBIT' },
+  { code: '5200', name: 'Beban Konstruksi', type: 'BEBAN', normalBalance: 'DEBIT' },
+  { code: '5300', name: 'Beban Marketing & Penjualan', type: 'BEBAN', normalBalance: 'DEBIT' },
+  { code: '5400', name: 'Beban Gaji & Upah', type: 'BEBAN', normalBalance: 'DEBIT' },
+  { code: '5500', name: 'Beban Operasional Kantor', type: 'BEBAN', normalBalance: 'DEBIT' },
+  { code: '5600', name: 'Beban Lain-lain', type: 'BEBAN', normalBalance: 'DEBIT' },
+] as const;
 
-  // Get all tenants
+// All 10 mapping categories with their default debit/credit account codes
+const MAPPING_DEFS = [
+  { category: 'BOOKING_FEE', description: 'Booking Fee', debitCode: '1200', creditCode: '2100' },
+  { category: 'DOWN_PAYMENT', description: 'Down Payment', debitCode: '1200', creditCode: '2100' },
+  { category: 'ANGSURAN_KPR', description: 'Angsuran KPR', debitCode: '1200', creditCode: '2100' },
+  { category: 'PENCAIRAN_KPR', description: 'Pencairan KPR', debitCode: '1200', creditCode: '2100' },
+  { category: 'PELUNASAN_CASH', description: 'Pelunasan Cash', debitCode: '1200', creditCode: '2100' },
+  { category: 'BIAYA_KONSTRUKSI', description: 'Biaya Konstruksi (BDK)', debitCode: '1600', creditCode: '1200' },
+  { category: 'BIAYA_MARKETING', description: 'Biaya Marketing', debitCode: '5300', creditCode: '1200' },
+  { category: 'BIAYA_GAJI', description: 'Biaya Gaji', debitCode: '5400', creditCode: '1200' },
+  { category: 'BIAYA_OPERASIONAL', description: 'Biaya Operasional', debitCode: '5500', creditCode: '1200' },
+  { category: 'LAIN_LAIN', description: 'Lain-lain', debitCode: '5600', creditCode: '1200' },
+] as const;
+
+async function ensureAccount(tenantId: string, template: typeof ACCOUNT_TEMPLATES[number]) {
+  const existing = await prisma.account.findFirst({
+    where: { tenantId, code: template.code },
+  });
+  if (existing) return existing;
+
+  return prisma.account.create({
+    data: {
+      tenantId,
+      code: template.code,
+      name: template.name,
+      type: template.type as any,
+      normalBalance: template.normalBalance as any,
+      isActive: true,
+      isSystem: true,
+    },
+  });
+}
+
+async function main() {
+  console.log('🔧 Seeding journal mappings...\n')
+
   const tenants = await prisma.tenant.findMany({ select: { id: true, name: true } })
 
+  if (tenants.length === 0) {
+    console.log('⚠️ No tenants found. Run tenant setup first.')
+    return
+  }
+
   for (const tenant of tenants) {
-    console.log(`\n📦 Tenant: ${tenant.name} (${tenant.id})`)
+    console.log(`📦 Tenant: ${tenant.name} (${tenant.id})`)
 
-    // Fetch accounts for this tenant
-    const bank = await prisma.account.findFirst({ where: { tenantId: tenant.id, code: '1200' } })
-    const pdm = await prisma.account.findFirst({ where: { tenantId: tenant.id, code: '2100' } })
-    const penjualan = await prisma.account.findFirst({ where: { tenantId: tenant.id, code: '4100' } })
-    const konstruksi = await prisma.account.findFirst({ where: { tenantId: tenant.id, code: '5200' } })
-    const marketing = await prisma.account.findFirst({ where: { tenantId: tenant.id, code: '5300' } })
-    const gaji = await prisma.account.findFirst({ where: { tenantId: tenant.id, code: '5400' } })
-    const operasional = await prisma.account.findFirst({ where: { tenantId: tenant.id, code: '5500' } })
-    const lainlain = await prisma.account.findFirst({ where: { tenantId: tenant.id, code: '5600' } })
-
-    if (!bank || !pdm) {
-      console.log(`   ⚠️ Skipping tenant ${tenant.name}: akun Bank (1200) atau PDM (2100) tidak ditemukan.`)
-      continue
+    // 1. Ensure all required accounts exist for this tenant
+    const accountMap = new Map<string, string>() // code -> id
+    for (const tpl of ACCOUNT_TEMPLATES) {
+      const acc = await ensureAccount(tenant.id, tpl)
+      accountMap.set(tpl.code, acc.id)
     }
+    console.log(`   ✅ Ensured ${ACCOUNT_TEMPLATES.length} default accounts exist`)
 
-    // For expense categories, use the specific account or fallback to operasional or bank
-    const mappings = [
-      {
-        category: 'BOOKING_FEE',
-        description: 'Booking Fee',
-        debitAccountId: bank.id,
-        creditAccountId: pdm.id,
-      },
-      {
-        category: 'DOWN_PAYMENT',
-        description: 'Down Payment',
-        debitAccountId: bank.id,
-        creditAccountId: pdm.id,
-      },
-      {
-        category: 'ANGSURAN_KPR',
-        description: 'Angsuran KPR',
-        debitAccountId: bank.id,
-        creditAccountId: pdm.id,
-      },
-      {
-        category: 'PENCAIRAN_KPR',
-        description: 'Pencairan KPR',
-        debitAccountId: bank.id,
-        creditAccountId: pdm.id,
-      },
-      {
-        category: 'PELUNASAN_CASH',
-        description: 'Pelunasan Cash',
-        debitAccountId: bank.id,
-        creditAccountId: pdm.id,
-      },
-      ...(konstruksi
-        ? [{
-            category: 'BIAYA_KONSTRUKSI',
-            description: 'Biaya Konstruksi',
-            debitAccountId: konstruksi.id,
-            creditAccountId: bank.id,
-          }]
-        : []),
-      ...(marketing
-        ? [{
-            category: 'BIAYA_MARKETING',
-            description: 'Biaya Marketing',
-            debitAccountId: marketing.id,
-            creditAccountId: bank.id,
-          }]
-        : []),
-      ...(gaji
-        ? [{
-            category: 'BIAYA_GAJI',
-            description: 'Biaya Gaji',
-            debitAccountId: gaji.id,
-            creditAccountId: bank.id,
-          }]
-        : []),
-      ...(operasional
-        ? [{
-            category: 'BIAYA_OPERASIONAL',
-            description: 'Biaya Operasional',
-            debitAccountId: operasional.id,
-            creditAccountId: bank.id,
-          }]
-        : []),
-      ...(lainlain
-        ? [{
-            category: 'LAIN_LAIN',
-            description: 'Lain-lain',
-            debitAccountId: lainlain.id,
-            creditAccountId: bank.id,
-          }]
-        : (operasional
-          ? [{
-              category: 'LAIN_LAIN',
-              description: 'Lain-lain',
-              debitAccountId: operasional.id,
-              creditAccountId: bank.id,
-            }]
-          : [])),
-    ]
+    // 2. Create/update all 10 journal mappings
+    let created = 0
+    let updated = 0
+    for (const def of MAPPING_DEFS) {
+      const debitAccountId = accountMap.get(def.debitCode)
+      const creditAccountId = accountMap.get(def.creditCode)
 
-    for (const mapping of mappings) {
+      if (!debitAccountId || !creditAccountId) {
+        console.log(`   ⚠️ Skipping ${def.category}: missing account (debit=${def.debitCode}, credit=${def.creditCode})`)
+        continue
+      }
+
+      const existing = await prisma.journalMapping.findFirst({
+        where: { tenantId: tenant.id, category: def.category },
+      })
+
       await prisma.journalMapping.upsert({
         where: {
           tenantId_category: {
             tenantId: tenant.id,
-            category: mapping.category,
+            category: def.category,
           },
         },
         update: {
-          description: mapping.description,
-          debitAccountId: mapping.debitAccountId,
-          creditAccountId: mapping.creditAccountId,
+          description: def.description,
+          debitAccountId,
+          creditAccountId,
         },
         create: {
           tenantId: tenant.id,
-          ...mapping,
+          category: def.category,
+          description: def.description,
+          debitAccountId,
+          creditAccountId,
+          isActive: true,
         },
       })
-      console.log(`   ✅ ${mapping.category} → Debit: ${mapping.debitAccountId.slice(0, 8)}... | Credit: ${mapping.creditAccountId.slice(0, 8)}...`)
+
+      if (existing) {
+        updated++
+        console.log(`   🔄 ${def.category} → updated`)
+      } else {
+        created++
+        console.log(`   ✅ ${def.category} → created`)
+      }
     }
+
+    console.log(`   📊 Done: ${created} created, ${updated} updated\n`)
   }
 
-  console.log('\n🎉 Journal mapping berhasil di-seed!')
+  console.log('🎉 Journal mapping berhasil di-seed!')
 }
 
 main()

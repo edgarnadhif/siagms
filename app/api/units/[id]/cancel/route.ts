@@ -16,7 +16,7 @@ async function ensureAccountByCode(
   let acc = await prisma.account.findFirst({
     where: {
       tenantId,
-      OR: [{ code }, { name: { contains: name, mode: "insensitive" } }],
+      code,
     },
   });
   if (!acc) {
@@ -65,7 +65,10 @@ export async function POST(
       include: {
         customer: true,
         transactions: {
-          where: { category: "BOOKING_FEE", tenantId: auth.tenantId },
+          where: {
+            tenantId: auth.tenantId,
+            category: { in: ["BOOKING_FEE", "DOWN_PAYMENT", "PENCAIRAN_KPR", "PELUNASAN_CASH"] },
+          },
         },
       },
     });
@@ -95,7 +98,7 @@ export async function POST(
       );
     }
 
-    // Total Booking Fee yang sudah masuk
+    // Total pendapatan yang sudah masuk (BF + DP) — dicatat sebagai BF hangus
     const totalBF = unit.transactions.reduce(
       (sum, t) => sum + Number(t.amount),
       0
@@ -121,7 +124,27 @@ export async function POST(
         "KREDIT"
       );
 
-      // 2. Buat jurnal pembatalan (hanya jika ada BF yang masuk)
+      // 2a. Delete auto-journal entries linked to BF transactions of this unit
+      await tx.journalEntry.deleteMany({
+        where: {
+          transactionId: {
+            in: unit.transactions.map((t) => t.id),
+          },
+          tenantId: auth.tenantId,
+        },
+      });
+
+      // 2b. Delete the BF transactions themselves (they belong to the cancelled buyer)
+      if (unit.transactions.length > 0) {
+        await tx.transaction.deleteMany({
+          where: {
+            id: { in: unit.transactions.map((t) => t.id) },
+            tenantId: auth.tenantId,
+          },
+        });
+      }
+
+      // 2c. Buat jurnal pembatalan (hanya jika ada BF yang masuk)
       let journalRef: string | null = null;
       if (totalBF > 0) {
         journalRef = `BATAL-${unit.unitCode}-${Date.now().toString().slice(-6)}`;

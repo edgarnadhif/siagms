@@ -11,7 +11,7 @@ import { TransactionCategory } from "@prisma/client";
 import { useSearchParams } from "next/navigation";
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
-type ToastType = "success" | "error";
+type ToastType = "success" | "error" | "warning";
 interface Toast {
   id: number;
   message: string;
@@ -31,7 +31,7 @@ function ToastContainer({
         <div
           key={t.id}
           className={`pointer-events-auto flex items-center gap-3 px-6 py-3.5 rounded-full shadow-2xl text-sm font-semibold text-white min-w-[280px] animate-in slide-in-from-right-5 duration-300 ${
-            t.type === "success" ? "bg-[#00945E]" : "bg-red-600"
+            t.type === "success" ? "bg-[#00945E]" : t.type === "warning" ? "bg-amber-500" : "bg-red-600"
           }`}
         >
           {t.type === "success" ? (
@@ -44,6 +44,19 @@ function ToastContainer({
               <path
                 fillRule="evenodd"
                 d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clipRule="evenodd"
+              />
+            </svg>
+          ) : t.type === "warning" ? (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-5 h-5 shrink-0"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.345 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z"
                 clipRule="evenodd"
               />
             </svg>
@@ -197,6 +210,14 @@ export default function TransaksiClient({
     const toastMsg = searchParams.get("toast");
     if (toastMsg === "add_success") {
       showToast("Transaksi berhasil ditambahkan", "success");
+      // Show journal auto-creation warning if present
+      try {
+        const warning = sessionStorage.getItem('journal_warning');
+        if (warning) {
+          showToast(warning, "warning");
+          sessionStorage.removeItem('journal_warning');
+        }
+      } catch {}
       window.history.replaceState(null, "", "/dashboard/transaksi");
     } else if (toastMsg === "edit_success") {
       showToast("Transaksi berhasil diperbarui", "success");

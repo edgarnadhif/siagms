@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { deleteJournalEntriesByReference } from "@/app/actions";
+import { deleteJournalEntriesByReference, fixJournalProjectIds } from "@/app/actions";
 import AddJurnalModal from "./AddJurnalModal";
 import KonfigurasiJurnalModal from "./KonfigurasiJurnalModal";
 
@@ -90,6 +90,7 @@ export default function JurnalUmumClient({
     reference?: string;
   }>({ show: false, type: "single" });
   const [toasts, setToasts] = useState<{ id: number; message: string; type: "success" | "error" }[]>([]);
+  const [fixingProjects, setFixingProjects] = useState(false);
 
   const removeToast = useCallback((id: number) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -101,6 +102,23 @@ export default function JurnalUmumClient({
     setTimeout(() => removeToast(id), 5000);
   }, [removeToast]);
 
+  const handleFixProjectIds = async () => {
+    setFixingProjects(true);
+    try {
+      const result = await fixJournalProjectIds();
+      if (result?.error) {
+        showToast(result.error, "error");
+      } else if (result?.message) {
+        showToast(result.message, "success");
+      }
+    } catch {
+      showToast("Gagal memperbaiki projectId jurnal", "error");
+    } finally {
+      setFixingProjects(false);
+      router.refresh();
+    }
+  };
+
   const confirmDelete = async () => {
     if (deleteModal.type === "single" && deleteModal.reference) {
       setDeletingRef(deleteModal.reference);
@@ -108,7 +126,7 @@ export default function JurnalUmumClient({
       if (result?.error) {
         showToast(result.error, "error");
       } else {
-        showToast("Jurnal berhasil dihapus", "error");
+        showToast("Jurnal berhasil dihapus", "success");
       }
       setDeletingRef(null);
       setDeleteModal({ show: false, type: "single" });
@@ -121,7 +139,7 @@ export default function JurnalUmumClient({
       if (errors.length > 0) {
         showToast(`${errors.length} jurnal gagal dihapus`, "error");
       } else {
-        showToast(`${selectedRefs.size} jurnal berhasil dihapus`, "error");
+        showToast(`${selectedRefs.size} jurnal berhasil dihapus`, "success");
       }
       setDeletingRef(null);
       setSelectedRefs(new Set());
@@ -305,6 +323,20 @@ export default function JurnalUmumClient({
           </p>
         </div>
         <div className="flex items-center gap-3 ml-auto w-full md:w-auto">
+          <button
+            onClick={handleFixProjectIds}
+            disabled={fixingProjects}
+            className="flex items-center gap-2 px-4 h-10 text-sm font-bold rounded-[10px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:border-amber-500 hover:text-amber-500 transition-all active:scale-95 w-full md:w-auto justify-center disabled:opacity-50"
+          >
+            {fixingProjects ? (
+              <div className="w-4 h-4 border-2 border-gray-300 border-t-amber-500 rounded-full animate-spin" />
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17l-5.66 5.66a8 8 0 1111.31-11.31l-5.65 5.65z" />
+              </svg>
+            )}
+            Fix Proyek Jurnal
+          </button>
           <button
             onClick={() => setShowConfigModal(true)}
             className="flex items-center gap-2 px-4 h-10 text-sm font-bold rounded-[10px] border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:border-[#EA6C00] hover:text-[#EA6C00] transition-all active:scale-95 w-full md:w-auto justify-center"

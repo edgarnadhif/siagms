@@ -15,8 +15,6 @@ type LabaRugiData = {
   pendapatanPenjualan: number;
   pendapatanLainLain: number;
   totalPendapatanLR: number;
-  hppUmum: number;
-  bebanKonstruksi: number;
   hpp: number;
   labaKotor: number;
   bebanMarketing: number;
@@ -344,8 +342,7 @@ export default function LaporanClient({
         true,
       );
       y += 5;
-      writeRow("HPP - Umum", formatRupiah(labaRugiData.hppUmum));
-      writeRow("Biaya Konstruksi", formatRupiah(labaRugiData.bebanKonstruksi));
+      writeRow("Harga Pokok Penjualan", formatRupiah(labaRugiData.hpp));
       y += 1;
       pdf.line(left, y, right, y);
       y += 7;
@@ -743,12 +740,8 @@ export default function LaporanClient({
               HARGA POKOK PENJUALAN
             </div>
             <div className="flex justify-between pl-4 text-slate-700 dark:text-slate-300 pt-2">
-              <span>HPP - Umum</span>
-              <span>{formatRupiah(labaRugiData.hppUmum)}</span>
-            </div>
-            <div className="flex justify-between pl-4 text-slate-700 dark:text-slate-300">
-              <span>Biaya Konstruksi</span>
-              <span>{formatRupiah(labaRugiData.bebanKonstruksi)}</span>
+              <span>Harga Pokok Penjualan (COGS)</span>
+              <span>{formatRupiah(labaRugiData.hpp)}</span>
             </div>
             <div className="flex justify-between font-bold text-slate-900 dark:text-white border-t border-slate-200 pt-2 pb-4 mt-2">
               <span>TOTAL HARGA POKOK PENJUALAN</span>

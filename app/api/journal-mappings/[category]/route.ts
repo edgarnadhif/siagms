@@ -2,7 +2,6 @@ import { prisma } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import {
-  ensureDefaultJournalMappings,
   isJournalMappingCategory,
 } from '@/lib/journal-mappings'
 
@@ -11,7 +10,7 @@ export async function PUT(
   { params }: { params: Promise<{ category: string }> }
 ) {
   try {
-    const auth = await requireAuth(['ADMIN'])
+    const auth = await requireAuth(['ADMIN', 'AKUNTAN'])
     const { category } = await params
     const body = await request.json()
     const { debitAccountId, creditAccountId, isActive } = body
@@ -36,8 +35,6 @@ export async function PUT(
         { status: 400 }
       )
     }
-
-    await ensureDefaultJournalMappings(prisma, auth.tenantId)
 
     // Validate both accounts exist and belong to this tenant
     const [debitAccount, creditAccount] = await Promise.all([

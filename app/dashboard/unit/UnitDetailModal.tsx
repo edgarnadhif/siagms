@@ -681,12 +681,14 @@ export default function UnitDetailModal({
       return;
     }
 
+    const isKPRMethod = unit?.customer?.paymentMethod === "KPR";
     const confirmationMessage = [
       `Total pendapatan yang akan diakui: ${formatRupiah(stBreakdown.total)}`,
       `- Booking Fee    : ${formatRupiah(stBreakdown.bookingFee)}`,
       `- Down Payment   : ${formatRupiah(stBreakdown.downPayment)}`,
-      `- Pencairan KPR  : ${formatRupiah(stBreakdown.pencairanKpr)}`,
-      `- Pelunasan Cash : ${formatRupiah(stBreakdown.pelunasanCash)}`,
+      isKPRMethod
+        ? `- Pencairan KPR  : ${formatRupiah(stBreakdown.pencairanKpr)}`
+        : `- Pelunasan Cash : ${formatRupiah(stBreakdown.pelunasanCash)}`,
       "--------------------------------",
       `Total            : ${formatRupiah(stBreakdown.total)}`,
       "",
@@ -764,34 +766,41 @@ export default function UnitDetailModal({
 
   const CANCELLABLE_STATUSES = ["BOOKING", "INDENT"];
   const canCancel = CANCELLABLE_STATUSES.includes(unit.status);
-  const canProcessAkad = unit.status === "INDENT";
+  const isKPR = unit.customer?.paymentMethod === "KPR";
+  const canProcessAkad = unit.status === "INDENT" && isKPR;
   const sudahCair = unit.transactions.some(
     (t: any) => t.category === "PENCAIRAN_KPR",
   );
-  const canInputPencairan = unit.status === "AKAD" && latestAkad && !sudahCair;
+  const canInputPencairan = unit.status === "AKAD" && isKPR && latestAkad && !sudahCair;
+
+  const timelineSteps = isKPR
+    ? [
+        { id: "BOOKING", label: "Booking", desc: "Unit telah dibooking" },
+        { id: "INDENT", label: "Indent/DP", desc: "Pembayaran DP dimulai" },
+        { id: "AKAD", label: "Akad KPR", desc: "Tanda tangan akad KPR" },
+        {
+          id: "SERAH_TERIMA",
+          label: "Serah Terima",
+          desc: "Unit diserahkan ke pembeli",
+        },
+      ]
+    : [
+        { id: "BOOKING", label: "Booking", desc: "Unit telah dibooking" },
+        { id: "INDENT", label: "Indent/DP", desc: "Pembayaran DP dimulai" },
+        {
+          id: "SERAH_TERIMA",
+          label: "Serah Terima",
+          desc: "Unit diserahkan ke pembeli",
+        },
+      ];
 
   const getStatusStep = (status: string) => {
-    const steps = [
-      "TERSEDIA",
-      "BOOKING",
-      "INDENT",
-      "AKAD",
-      "LUNAS",
-      "SERAH_TERIMA",
-    ];
+    // For cash buyers, skip AKAD and LUNAS in the ordering
+    const steps = isKPR
+      ? ["TERSEDIA", "BOOKING", "INDENT", "AKAD", "LUNAS", "SERAH_TERIMA"]
+      : ["TERSEDIA", "BOOKING", "INDENT", "LUNAS", "SERAH_TERIMA"];
     return steps.indexOf(status);
   };
-
-  const timelineSteps = [
-    { id: "BOOKING", label: "Booking", desc: "Unit telah dibooking" },
-    { id: "INDENT", label: "Indent/DP", desc: "Pembayaran DP dimulai" },
-    { id: "AKAD", label: "Akad", desc: "Tanda tangan akad jual beli" },
-    {
-      id: "SERAH_TERIMA",
-      label: "Serah Terima",
-      desc: "Unit diserahkan ke pembeli",
-    },
-  ];
 
   return (
     <>
@@ -1110,53 +1119,58 @@ export default function UnitDetailModal({
 
               {/* ST / Handover Section */}
               <div className="space-y-4">
-                <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                  Data Akad
-                </h3>
+                {/* Data Akad — only shown for KPR customers */}
+                {isKPR && (
+                  <>
+                    <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                      Data Akad
+                    </h3>
 
-                {latestAkad ? (
-                  <div className="bg-slate-50 dark:bg-slate-900/30 border border-[#E5E7EB] dark:border-slate-700 p-5 rounded-2xl space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-500">Tanggal Akad</span>
-                      <span className="font-bold text-slate-800 dark:text-white">
-                        {new Date(latestAkad.tanggalAkad).toLocaleDateString(
-                          "id-ID",
-                          { day: "numeric", month: "long", year: "numeric" },
+                    {latestAkad ? (
+                      <div className="bg-slate-50 dark:bg-slate-900/30 border border-[#E5E7EB] dark:border-slate-700 p-5 rounded-2xl space-y-3">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-500">Tanggal Akad</span>
+                          <span className="font-bold text-slate-800 dark:text-white">
+                            {new Date(latestAkad.tanggalAkad).toLocaleDateString(
+                              "id-ID",
+                              { day: "numeric", month: "long", year: "numeric" },
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-500">Nomor Akad</span>
+                          <span className="font-bold text-slate-800 dark:text-white">
+                            {latestAkad.nomorAkad}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-500">Bank</span>
+                          <span className="font-bold text-slate-800 dark:text-white">
+                            {latestAkad.namaBank}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-500">Nilai KPR</span>
+                          <span className="font-black text-orange-600">
+                            Rp{" "}
+                            {new Intl.NumberFormat("id-ID").format(
+                              Number(latestAkad.nilaiKPR),
+                            )}
+                          </span>
+                        </div>
+                        {latestAkad.catatan && (
+                          <div className="text-[11px] text-slate-500 bg-white dark:bg-slate-900/50 border border-orange-100 dark:border-orange-900/20 rounded-xl px-3 py-2">
+                            {latestAkad.catatan}
+                          </div>
                         )}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-500">Nomor Akad</span>
-                      <span className="font-bold text-slate-800 dark:text-white">
-                        {latestAkad.nomorAkad}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-500">Bank</span>
-                      <span className="font-bold text-slate-800 dark:text-white">
-                        {latestAkad.namaBank}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-500">Nilai KPR</span>
-                      <span className="font-black text-orange-600">
-                        Rp{" "}
-                        {new Intl.NumberFormat("id-ID").format(
-                          Number(latestAkad.nilaiKPR),
-                        )}
-                      </span>
-                    </div>
-                    {latestAkad.catatan && (
-                      <div className="text-[11px] text-slate-500 bg-white dark:bg-slate-900/50 border border-orange-100 dark:border-orange-900/20 rounded-xl px-3 py-2">
-                        {latestAkad.catatan}
+                      </div>
+                    ) : (
+                      <div className="bg-slate-50 dark:bg-slate-900/30 border border-dashed border-slate-300 dark:border-slate-700 p-5 rounded-2xl text-sm text-slate-400">
+                        Data akad belum dicatat untuk unit ini.
                       </div>
                     )}
-                  </div>
-                ) : (
-                  <div className="bg-slate-50 dark:bg-slate-900/30 border border-dashed border-slate-300 dark:border-slate-700 p-5 rounded-2xl text-sm text-slate-400">
-                    Data akad belum dicatat untuk unit ini.
-                  </div>
+                  </>
                 )}
 
                 <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
@@ -1190,7 +1204,7 @@ export default function UnitDetailModal({
                       otomatis.
                     </p>
                   </div>
-                ) : !latestAkad && unit.customer?.paymentMethod === "KPR" ? (
+                ) : !latestAkad && isKPR ? (
                   <div className="bg-slate-50 dark:bg-slate-900/30 border border-dashed border-slate-300 dark:border-slate-700 p-8 rounded-2xl flex flex-col items-center text-center">
                     <p className="text-slate-400 text-sm font-medium">
                       Catat data akad KPR terlebih dahulu sebelum proses
@@ -1279,18 +1293,21 @@ export default function UnitDetailModal({
                             {formatRupiah(stBreakdown.downPayment)}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between gap-4">
-                          <span className="text-slate-500">Pencairan KPR</span>
-                          <span className="font-bold text-slate-800 dark:text-white">
-                            {formatRupiah(stBreakdown.pencairanKpr)}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between gap-4">
-                          <span className="text-slate-500">Pelunasan Cash</span>
-                          <span className="font-bold text-slate-800 dark:text-white">
-                            {formatRupiah(stBreakdown.pelunasanCash)}
-                          </span>
-                        </div>
+                        {isKPR ? (
+                          <div className="flex items-center justify-between gap-4">
+                            <span className="text-slate-500">Pencairan KPR</span>
+                            <span className="font-bold text-slate-800 dark:text-white">
+                              {formatRupiah(stBreakdown.pencairanKpr)}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between gap-4">
+                            <span className="text-slate-500">Pelunasan Cash</span>
+                            <span className="font-bold text-slate-800 dark:text-white">
+                              {formatRupiah(stBreakdown.pelunasanCash)}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       <div className="border-t border-orange-200 dark:border-orange-900/30 pt-3 flex items-center justify-between gap-4">
                         <span className="text-sm font-black text-slate-700 dark:text-slate-200">
@@ -1377,8 +1394,7 @@ export default function UnitDetailModal({
                       <p className="text-[11px] text-blue-600/80 leading-relaxed mt-1 font-medium italic">
                         Sistem akan otomatis melakukan pengakuan pendapatan
                         berdasarkan total penerimaan unit yang sudah masuk:
-                        Booking Fee, Down Payment, Pencairan KPR, dan Pelunasan
-                        Cash.
+                        Booking Fee, Down Payment, {isKPR ? "dan Pencairan KPR" : "dan Pelunasan Cash"}.
                       </p>
                     </div>
                   </div>

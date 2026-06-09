@@ -130,6 +130,10 @@ export default function AddTransaksiModal({
 
   useEffect(() => {
     if (state?.success) {
+      // Store warning (if any) so the TransaksiClient page can display it
+      if (state?.warning) {
+        try { sessionStorage.setItem('journal_warning', state.warning); } catch {}
+      }
       router.push("/dashboard/transaksi?toast=add_success");
       router.refresh();
     }

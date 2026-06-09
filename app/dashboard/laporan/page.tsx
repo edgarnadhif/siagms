@@ -308,9 +308,7 @@ export default async function LaporanKeuanganPage(props: {
     0,
   );
 
-  const hppUmum = expenseBalances.get("5100") || 0;
-  const bebanKonstruksi = expenseBalances.get("5200") || 0;
-  const hpp = hppUmum + bebanKonstruksi;
+  const hpp = expenseBalances.get("5100") || 0;
   const labaKotor = totalPendapatanLR - hpp;
 
   const expenseBreakdown = {
@@ -329,7 +327,8 @@ export default async function LaporanKeuanganPage(props: {
       continue;
     }
 
-    if (account.code !== "5100" && account.code !== "5200") {
+    if (account.code !== "5100") {
+      // 5200 Beban Konstruksi (legacy) and other unclassified expenses → bebanLainLain
       expenseBreakdown.bebanLainLain += amount;
     }
   }
@@ -344,8 +343,6 @@ export default async function LaporanKeuanganPage(props: {
     pendapatanPenjualan,
     pendapatanLainLain,
     totalPendapatanLR,
-    hppUmum,
-    bebanKonstruksi,
     hpp,
     labaKotor,
     ...expenseBreakdown,

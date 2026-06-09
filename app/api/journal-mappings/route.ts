@@ -10,7 +10,13 @@ export async function GET() {
   try {
     const auth = await requireAuth(['ADMIN', 'AKUNTAN'])
 
-    await ensureDefaultJournalMappings(prisma, auth.tenantId)
+    // Only auto-seed mappings if none exist yet for this tenant (first-visit init).
+    const existingCount = await prisma.journalMapping.count({
+      where: { tenantId: auth.tenantId },
+    })
+    if (existingCount === 0) {
+      await ensureDefaultJournalMappings(prisma, auth.tenantId)
+    }
 
     const mappings = await prisma.journalMapping.findMany({
       where: { tenantId: auth.tenantId },
