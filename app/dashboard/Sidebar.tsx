@@ -155,7 +155,7 @@ export default function Sidebar({
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-transparent">
               <Image
-                src="/logo.png"
+                src="/logo.svg"
                 alt="Logo"
                 width={32}
                 height={32}
