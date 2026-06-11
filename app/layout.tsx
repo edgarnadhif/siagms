@@ -3,7 +3,7 @@ import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SIAGMS",
+  title: "SIAMGS",
   description: "Sistem Informasi Manajemen Proyek",
 };
 

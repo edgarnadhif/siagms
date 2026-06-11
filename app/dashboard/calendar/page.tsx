@@ -2,7 +2,7 @@ import React from "react";
 import CalendarView from "@/components/calendar/CalendarView";
 
 export const metadata = {
-  title: "Kalender Aktivitas - SIAGMS",
+  title: "Kalender Aktivitas - SIAMGS",
 };
 
 export default function CalendarPage({

@@ -32,10 +32,6 @@
   ],
   "exclude": [
     "node_modules",
-    "scripts",
-    "fix-unit-status.ts",
-    "seed-company-settings.ts",
-    "test-connection.ts",
-    "proxy.ts"
+    "scripts"
   ]
 }

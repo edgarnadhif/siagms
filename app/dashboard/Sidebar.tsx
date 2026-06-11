@@ -23,13 +23,13 @@ export default function Sidebar({
   const [companyProfile, setCompanyProfile] = useState<{
     name: string;
     logoUrl: string | null;
-  }>({ name: "SIAGMS", logoUrl: null });
+  }>({ name: "SIAMGS", logoUrl: null });
 
   useEffect(() => {
     getCompanyProfile().then((profile) => {
       if (profile) {
         setCompanyProfile({
-          name: profile.name || "SIAGMS",
+          name: profile.name || "SIAMGS",
           logoUrl: profile.logoUrl,
         });
       }
@@ -155,7 +155,7 @@ export default function Sidebar({
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-transparent">
               <Image
-                src="/logo.svg"
+                src="/logo.png"
                 alt="Logo"
                 width={32}
                 height={32}
