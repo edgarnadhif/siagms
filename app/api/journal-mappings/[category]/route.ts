@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db'
-import { requireAuth } from '@/lib/auth'
+import { getErrorStatus, requireAuth } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import {
   isJournalMappingCategory,
@@ -99,6 +99,6 @@ export async function PUT(
     })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Gagal memperbarui journal mapping'
-    return NextResponse.json({ success: false, message }, { status: 500 })
+    return NextResponse.json({ success: false, message }, { status: getErrorStatus(error) })
   }
 }

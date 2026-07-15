@@ -16,6 +16,7 @@ export default function Sidebar({
   user?: { email: string; role: string; fullName?: string | null } | null;
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
@@ -36,8 +37,30 @@ export default function Sidebar({
     });
   }, []);
 
+  useEffect(() => {
+    if (!isMobileOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsMobileOpen(false);
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [isMobileOpen]);
+
   const toggleSidebar = () => {
     setIsExpanded(!isExpanded);
+  };
+
+  const openMobileSidebar = () => {
+    setIsExpanded(true);
+    setIsMobileOpen(true);
   };
 
   const menuGroups = [
@@ -142,14 +165,61 @@ export default function Sidebar({
     .filter((group) => group.items.length > 0);
 
   return (
-    <div
-      suppressHydrationWarning
-      className={`relative z-50 bg-white dark:bg-[#0f172a] text-gray-600 dark:text-gray-300 h-[calc(100vh-24px)] transition-all duration-300 flex flex-col shadow-xl border-gray-200 dark:border-gray-800 p-3 pt-5 border-2 m-3 rounded-2xl ${
-        isExpanded ? "w-64" : "w-20"
-      }`}
-    >
+    <>
+      <header className="fixed inset-x-0 top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 px-4 shadow-sm backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/95 md:hidden">
+        <button
+          type="button"
+          onClick={openMobileSidebar}
+          aria-label="Buka menu navigasi"
+          aria-controls="dashboard-sidebar"
+          aria-expanded={isMobileOpen}
+          className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#EA6C00]/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+            className="h-6 w-6"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M4 12h16M4 17h16" />
+          </svg>
+        </button>
+
+        <div className="flex min-w-0 items-center gap-2 px-3">
+          <Image src="/logo.svg" alt="" width={30} height={30} className="h-7 w-7 object-contain" />
+          <span className="max-w-[45vw] truncate text-sm font-bold text-slate-900 dark:text-white">
+            {companyProfile.name}
+          </span>
+        </div>
+
+        <div
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#FFF0E6] text-xs font-bold uppercase text-[#EA6C00] dark:bg-[#431407] dark:text-[#F97316]"
+          aria-label={user?.fullName || user?.email || "User"}
+        >
+          {user?.fullName ? user.fullName.substring(0, 2) : (user?.email ? user.email.substring(0, 2) : "US")}
+        </div>
+      </header>
+
+      {isMobileOpen && (
+        <button
+          type="button"
+          aria-label="Tutup menu navigasi"
+          className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-[2px] md:hidden"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      <aside
+        id="dashboard-sidebar"
+        suppressHydrationWarning
+        className={`fixed inset-y-0 left-0 z-50 flex h-dvh w-[min(86vw,20rem)] flex-col rounded-r-2xl border-2 border-gray-200 bg-white p-3 pt-5 text-gray-600 shadow-2xl transition-transform duration-300 ease-out dark:border-gray-800 dark:bg-[#0f172a] dark:text-gray-300 md:relative md:inset-auto md:z-50 md:m-3 md:h-[calc(100vh-24px)] md:translate-x-0 md:rounded-2xl md:shadow-xl md:transition-all ${
+          isMobileOpen ? "translate-x-0" : "-translate-x-full"
+        } ${isExpanded ? "md:w-64" : "md:w-20"}`}
+      >
       <div
-        className={`flex items-center ${isExpanded ? "justify-between" : "justify-center"} px-4 pb-4 dark:bg-[#0f172a]`}
+        className={`flex items-center justify-between px-4 pb-4 dark:bg-[#0f172a] ${isExpanded ? "md:justify-between" : "md:justify-center"}`}
       >
         {isExpanded && (
           <div className="flex items-center gap-2">
@@ -171,8 +241,21 @@ export default function Sidebar({
         )}
 
         <button
+          type="button"
+          onClick={() => setIsMobileOpen(false)}
+          aria-label="Tutup menu navigasi"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#EA6C00]/40 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white md:hidden"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-5 w-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <button
+          type="button"
           onClick={toggleSidebar}
-          className=" p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white focus:outline-none transition-colors"
+          aria-label={isExpanded ? "Ciutkan sidebar" : "Perluas sidebar"}
+          className="hidden p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white focus:outline-none transition-colors md:block"
         >
           {isExpanded ? (
             <svg
@@ -226,7 +309,8 @@ export default function Sidebar({
                   <li key={item.title}>
                     <Link
                       href={item.href}
-                      className={`flex items-center px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+                      onClick={() => setIsMobileOpen(false)}
+                      className={`flex min-h-11 items-center px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                         isActive
                           ? "bg-slate-100 dark:bg-slate-800 shadow-sm sidebar-menu-active"
                           : "sidebar-menu hover:bg-white/50 dark:hover:bg-slate-800/50"
@@ -467,6 +551,7 @@ export default function Sidebar({
           </div>
         )}
       </div>
-    </div>
+      </aside>
+    </>
   );
 }

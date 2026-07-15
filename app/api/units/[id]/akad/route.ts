@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getTenantWhere, requireAuth } from "@/lib/auth";
+import { getErrorStatus, getTenantWhere, requireAuth } from "@/lib/auth";
 
 export async function POST(
   request: Request,
@@ -96,7 +96,7 @@ export async function POST(
 
     return NextResponse.json(
       { success: false, data: null, message: error instanceof Error ? error.message : "Terjadi kesalahan sistem" },
-      { status: 500 }
+      { status: getErrorStatus(error) }
     );
   }
 }

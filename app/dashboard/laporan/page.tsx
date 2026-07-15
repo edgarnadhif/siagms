@@ -201,6 +201,7 @@ export default async function LaporanKeuanganPage(props: {
   const cashFlowData = {
     bookingFee: 0,
     downPayment: 0,
+    angsuranKPR: 0,
     pencairanKPR: 0,
     pelunasanCash: 0,
     penerimaanLainnya: 0,
@@ -243,6 +244,9 @@ export default async function LaporanKeuanganPage(props: {
             break;
           case "DOWN_PAYMENT":
             cashFlowData.downPayment += cashMutation;
+            break;
+          case "ANGSURAN_KPR":
+            cashFlowData.angsuranKPR += cashMutation;
             break;
           case "PENCAIRAN_KPR":
             cashFlowData.pencairanKPR += cashMutation;
@@ -386,6 +390,7 @@ export default async function LaporanKeuanganPage(props: {
     operasiMasuk: {
       bookingFee: cashFlowData.bookingFee,
       downPayment: cashFlowData.downPayment,
+      angsuranKPR: cashFlowData.angsuranKPR,
       pencairanKPR: cashFlowData.pencairanKPR,
       pelunasanCash: cashFlowData.pelunasanCash,
       penerimaanLainnya: cashFlowData.penerimaanLainnya,

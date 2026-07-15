@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { requireAuth } from "@/lib/auth";
+import { getErrorStatus, requireAuth } from "@/lib/auth";
 import {
   getCompanySettingsByTenantId,
   upsertCompanySettingsByTenantId,
@@ -19,7 +19,7 @@ export async function GET() {
   } catch (error: unknown) {
     return NextResponse.json(
       { message: getErrorMessage(error) },
-      { status: 500 },
+      { status: getErrorStatus(error) },
     );
   }
 }
@@ -54,7 +54,7 @@ export async function PUT(request: Request) {
   } catch (error: unknown) {
     return NextResponse.json(
       { message: getErrorMessage(error) },
-      { status: 500 },
+      { status: getErrorStatus(error) },
     );
   }
 }

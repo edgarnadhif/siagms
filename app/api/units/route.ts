@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getTenantWhere, requireAuth } from "@/lib/auth";
+import { getErrorStatus, getTenantWhere, requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 export async function GET(request: Request) {
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ success: true, data: units, message: "Berhasil mengambil data unit" });
   } catch (error: any) {
-    return NextResponse.json({ success: false, data: null, message: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, data: null, message: error.message }, { status: getErrorStatus(error) });
   }
 }
 
@@ -32,8 +32,37 @@ export async function POST(request: Request) {
   try {
     const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
     const body = await request.json();
+    const { blockName, unitNumber, type, landArea, buildingArea, price, projectId } = body;
 
-    let newCode = `UNIT-${body.blockName}${body.unitNumber}`;
+    if (!blockName?.trim() || !unitNumber?.trim() || !type?.trim() || !projectId) {
+      return NextResponse.json(
+        { success: false, data: null, message: "Data unit dan proyek wajib diisi" },
+        { status: 400 },
+      );
+    }
+
+    const numericLandArea = Number(landArea);
+    const numericBuildingArea = Number(buildingArea);
+    const numericPrice = Number(price);
+    if (numericLandArea <= 0 || numericBuildingArea <= 0 || numericPrice <= 0) {
+      return NextResponse.json(
+        { success: false, data: null, message: "Luas dan harga harus bernilai positif" },
+        { status: 400 },
+      );
+    }
+
+    const project = await prisma.project.findFirst({
+      where: { id: projectId, tenantId: auth.tenantId },
+      select: { id: true },
+    });
+    if (!project) {
+      return NextResponse.json(
+        { success: false, data: null, message: "Proyek tidak ditemukan atau bukan milik tenant ini" },
+        { status: 404 },
+      );
+    }
+
+    let newCode = `UNIT-${blockName.trim()}${unitNumber.trim()}`;
 
     const exists = await prisma.unit.findFirst({
       where: getTenantWhere(auth.tenantId, { unitCode: newCode }),
@@ -48,9 +77,15 @@ export async function POST(request: Request) {
 
     const unit = await prisma.unit.create({
       data: {
-        ...body,
         tenantId: auth.tenantId,
         unitCode: newCode,
+        blockName: blockName.trim(),
+        unitNumber: unitNumber.trim(),
+        type: type.trim(),
+        landArea: numericLandArea,
+        buildingArea: numericBuildingArea,
+        price: numericPrice,
+        projectId: project.id,
       },
     });
 
@@ -59,7 +94,7 @@ export async function POST(request: Request) {
     if (error.code === 'P2002') {
       return NextResponse.json({ success: false, data: null, message: "Kode unit sudah terdaftar" }, { status: 400 });
     }
-    return NextResponse.json({ success: false, data: null, message: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, data: null, message: error.message }, { status: getErrorStatus(error) });
   }
 }
 
@@ -120,6 +155,6 @@ export async function DELETE(request: Request) {
       message: `${result.count} unit berhasil dihapus secara permanen`,
     });
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message }, { status: getErrorStatus(error) });
   }
 }

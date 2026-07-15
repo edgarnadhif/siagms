@@ -13,6 +13,10 @@ export class AuthorizationError extends Error {
   }
 }
 
+export function getErrorStatus(error: unknown, fallback = 500) {
+  return error instanceof AuthorizationError ? error.status : fallback;
+}
+
 export async function requireAuth(allowedRoles?: AppRole[]) {
   const session = await verifySession();
 
@@ -25,6 +29,7 @@ export async function requireAuth(allowedRoles?: AppRole[]) {
       id: session.userId,
       tenantId: session.tenantId,
       isActive: true,
+      tenant: { isActive: true },
     },
     select: {
       id: true,

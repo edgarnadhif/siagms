@@ -3,8 +3,26 @@ import "server-only";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
-const secretKey = process.env.SESSION_SECRET;
-const encodedKey = new TextEncoder().encode(secretKey || "default_secret_key");
+const globalForSession = globalThis as typeof globalThis & {
+  developmentSessionSecret?: Uint8Array;
+};
+
+function getEncodedKey() {
+  const secretKey = process.env.SESSION_SECRET;
+
+  if (secretKey) {
+    return new TextEncoder().encode(secretKey);
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SESSION_SECRET wajib dikonfigurasi di environment production");
+  }
+
+  globalForSession.developmentSessionSecret ??= crypto.getRandomValues(
+    new Uint8Array(32),
+  );
+  return globalForSession.developmentSessionSecret;
+}
 
 export type AppRole = "ADMIN" | "AKUNTAN";
 
@@ -29,7 +47,7 @@ export async function createSession(
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(expiresAt)
-    .sign(encodedKey);
+    .sign(getEncodedKey());
 
   const cookieStore = await cookies();
   cookieStore.set("session", session, {
@@ -50,7 +68,7 @@ export async function verifySession(): Promise<SessionPayload | null> {
   }
 
   try {
-    const { payload } = await jwtVerify(session, encodedKey, {
+    const { payload } = await jwtVerify(session, getEncodedKey(), {
       algorithms: ["HS256"],
     });
 

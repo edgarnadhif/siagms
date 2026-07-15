@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { requireAuth } from "@/lib/auth";
+import { getErrorStatus, requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 export async function PUT(
@@ -58,7 +58,7 @@ export async function PUT(
   } catch (error: any) {
     return NextResponse.json(
       { success: false, data: null, message: error.message },
-      { status: 500 }
+      { status: getErrorStatus(error) }
     );
   }
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getTenantWhere, requireAuth } from "@/lib/auth";
+import { getErrorStatus, getTenantWhere, requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -19,7 +19,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
     return NextResponse.json({ success: true, data: customer, message: "Berhasil mengambil data pelanggan" });
   } catch (error: any) {
-    return NextResponse.json({ success: false, data: null, message: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, data: null, message: error.message }, { status: getErrorStatus(error) });
   }
 }
 
@@ -93,7 +93,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
       }
       return NextResponse.json({ success: false, data: null, message: "Terjadi duplikasi data unik (Kode/NIK)" }, { status: 400 });
     }
-    return NextResponse.json({ success: false, data: null, message: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, data: null, message: error.message }, { status: getErrorStatus(error) });
   }
 }
 
@@ -140,7 +140,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         : "Pelanggan berhasil dinonaktifkan",
     });
   } catch (error: any) {
-    return NextResponse.json({ success: false, data: null, message: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, data: null, message: error.message }, { status: getErrorStatus(error) });
   }
 }
 
@@ -188,6 +188,6 @@ export async function DELETE(_request: Request, context: { params: Promise<{ id:
 
     return NextResponse.json({ success: true, data: customer, message: "Pelanggan berhasil dihapus" });
   } catch (error: any) {
-    return NextResponse.json({ success: false, data: null, message: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, data: null, message: error.message }, { status: getErrorStatus(error) });
   }
 }

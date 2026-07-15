@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db'
-import { requireAuth } from '@/lib/auth'
+import { getErrorStatus, requireAuth } from '@/lib/auth'
 import { NextResponse } from 'next/server'
 import {
   ensureDefaultJournalMappings,
@@ -41,7 +41,7 @@ export async function GET() {
     return NextResponse.json({ success: true, data: serialized })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Gagal mengambil data journal mapping'
-    return NextResponse.json({ success: false, message }, { status: 500 })
+    return NextResponse.json({ success: false, message }, { status: getErrorStatus(error) })
   }
 }
 
@@ -57,6 +57,6 @@ export async function POST() {
     })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Gagal mereset journal mapping'
-    return NextResponse.json({ success: false, message }, { status: 500 })
+    return NextResponse.json({ success: false, message }, { status: getErrorStatus(error) })
   }
 }

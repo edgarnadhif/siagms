@@ -1,5 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
+import {
+  getErrorStatus as getAuthErrorStatus,
+  requireAuth,
+} from "@/lib/auth";
 
 type FinancialData = {
   projectName?: string;
@@ -112,6 +116,7 @@ async function generateContentWithFallback(genAI: GoogleGenerativeAI, prompt: st
 
 export async function POST(req: Request) {
   try {
+    await requireAuth(["ADMIN", "AKUNTAN"]);
     const { financialData } = (await req.json()) as {
       financialData?: FinancialData;
     };
@@ -208,7 +213,7 @@ tanpa teks tambahan, tanpa markdown, tanpa backtick:
         success: false,
         message: "Gagal mendapatkan analisis AI",
       },
-      { status: 500 },
+      { status: getAuthErrorStatus(error) },
     );
   }
 }

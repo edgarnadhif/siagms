@@ -32,7 +32,7 @@ model Tenant {
 
 model User {
   id             Int             @id @default(autoincrement())
-  email          String
+  email          String          @unique
   password       String
   createdAt      DateTime        @default(now())
   role           Role            @default(AKUNTAN)
@@ -43,7 +43,6 @@ model User {
   calendarEvents CalendarEvent[]
   tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  @@unique([tenantId, email])
   @@index([tenantId, role])
 }
 
@@ -393,6 +392,7 @@ enum SumberPembayaran {
 enum StatusPengakuan {
   diterima
   diakui
+  dibatalkan
 }
 
 enum PaymentMethod {

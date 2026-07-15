@@ -10,6 +10,7 @@ import ProjectToaster from "./ProjectToaster";
 const REVENUE_CATEGORIES = [
   "BOOKING_FEE",
   "DOWN_PAYMENT",
+  "ANGSURAN_KPR",
   "PENCAIRAN_KPR",
   "PELUNASAN_CASH",
 ] as const;
@@ -60,6 +61,7 @@ const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
               tenantId: auth.tenantId,
               unit: { projectId: project.id },
               category: { in: [...REVENUE_CATEGORIES] },
+              status_pengakuan: { not: "dibatalkan" },
             },
             _sum: { amount: true },
           }),
@@ -69,6 +71,7 @@ const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
               projectId: project.id,
               unitId: null,
               category: { in: [...REVENUE_CATEGORIES] },
+              status_pengakuan: { not: "dibatalkan" },
             },
             _sum: { amount: true },
           }),

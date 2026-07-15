@@ -66,6 +66,7 @@ export default async function TransaksiPage(props: {
     description: t.description,
     note: t.note,
     category: t.category,
+    statusPengakuan: t.status_pengakuan,
     amount: Number(t.amount),
     projectCode: t.project?.code || "-",
     projectName: t.project?.name || null,

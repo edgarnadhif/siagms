@@ -14,11 +14,25 @@ function toWhatsAppNumber(rawPhone: string | null | undefined) {
   return digitsOnly;
 }
 
-export default async function ForgotPasswordPage() {
-  const profile = await prisma.companyProfile.findFirst({
-    select: { phone: true },
-    orderBy: { updatedAt: "desc" },
-  });
+export default async function ForgotPasswordPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ email?: string }>;
+}) {
+  const { email = "" } = await searchParams;
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = normalizedEmail
+    ? await prisma.user.findUnique({
+        where: { email: normalizedEmail },
+        select: { tenantId: true },
+      })
+    : null;
+  const profile = user
+    ? await prisma.companyProfile.findUnique({
+        where: { tenantId: user.tenantId },
+        select: { phone: true },
+      })
+    : null;
 
   const whatsappNumber = toWhatsAppNumber(profile?.phone);
   const hasWhatsappNumber = Boolean(whatsappNumber);
@@ -40,6 +54,27 @@ export default async function ForgotPasswordPage() {
           </p>
         </div>
 
+        <form method="GET" className="space-y-3 text-left">
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            Email akun
+          </label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            defaultValue={normalizedEmail}
+            placeholder="nama@perusahaan.com"
+            className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-blue-500"
+          />
+          <button
+            type="submit"
+            className="w-full rounded-xl bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700"
+          >
+            Cari administrator
+          </button>
+        </form>
+
         {/* Action Button */}
         <div>
           <a
@@ -55,9 +90,9 @@ export default async function ForgotPasswordPage() {
           >
             Hubungi admin
           </a>
-          {!hasWhatsappNumber && (
+          {normalizedEmail && !hasWhatsappNumber && (
             <p className="mt-2 text-xs text-gray-400">
-              Nomor WhatsApp admin belum diatur di Profil Perusahaan.
+              Akun tidak ditemukan atau nomor WhatsApp admin tenant belum diatur.
             </p>
           )}
         </div>

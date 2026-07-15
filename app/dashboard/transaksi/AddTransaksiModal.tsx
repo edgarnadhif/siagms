@@ -124,6 +124,7 @@ export default function AddTransaksiModal({
   const isIncomeCategory = [
     "BOOKING_FEE",
     "DOWN_PAYMENT",
+    "ANGSURAN_KPR",
     "PENCAIRAN_KPR",
     "PELUNASAN_CASH",
   ].includes(selectedCat);

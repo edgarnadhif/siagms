@@ -105,6 +105,7 @@ interface Transaction {
   description: string;
   note: string | null;
   category: string;
+  statusPengakuan: "diterima" | "diakui" | "dibatalkan";
   amount: number;
   projectCode: string;
   projectName: string | null;
@@ -246,11 +247,15 @@ export default function TransaksiClient({
   );
 
 
+  const selectableTransactions = transactions.filter(
+    (transaction) => transaction.statusPengakuan !== "dibatalkan",
+  );
+
   const toggleSelectAll = () => {
-    if (selectedIds.length === transactions.length && transactions.length > 0) {
+    if (selectedIds.length === selectableTransactions.length && selectableTransactions.length > 0) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(transactions.map((t) => t.id));
+      setSelectedIds(selectableTransactions.map((t) => t.id));
     }
   };
 
@@ -723,8 +728,8 @@ export default function TransaksiClient({
                       <input
                         type="checkbox"
                         checked={
-                          selectedIds.length === transactions.length &&
-                          transactions.length > 0
+                          selectedIds.length === selectableTransactions.length &&
+                          selectableTransactions.length > 0
                         }
                         onChange={toggleSelectAll}
                         className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-100 dark:border-slate-600 dark:bg-slate-700 cursor-pointer"
@@ -760,23 +765,29 @@ export default function TransaksiClient({
                   {paginatedTransactions.map((trx, idx) => (
                     <tr
                       key={trx.id}
-                      className={`hover:bg-slate-50/60 dark:hover:bg-slate-700/30 transition-colors ${selectedIds.includes(trx.id) ? "bg-slate-50/60 dark:bg-slate-700/30" : ""} ${idx === paginatedTransactions.length - 1 ? "border-b-0" : "border-b border-slate-100 dark:border-slate-700/50"}`}
+                      className={`hover:bg-slate-50/60 dark:hover:bg-slate-700/30 transition-colors ${trx.statusPengakuan === "dibatalkan" ? "opacity-60" : ""} ${selectedIds.includes(trx.id) ? "bg-slate-50/60 dark:bg-slate-700/30" : ""} ${idx === paginatedTransactions.length - 1 ? "border-b-0" : "border-b border-slate-100 dark:border-slate-700/50"}`}
                     >
                       <td className="px-5 py-3.5 whitespace-nowrap text-center">
                         <input
                           type="checkbox"
                           checked={selectedIds.includes(trx.id)}
                           onChange={() => toggleSelect(trx.id)}
-                          className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-100 dark:border-slate-600 dark:bg-slate-700 cursor-pointer"
+                          disabled={trx.statusPengakuan === "dibatalkan"}
+                          className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-100 dark:border-slate-600 dark:bg-slate-700 cursor-pointer disabled:cursor-not-allowed"
                         />
                       </td>
                       <td className="px-5 py-3.5 whitespace-nowrap text-sm font-medium text-slate-500 dark:text-slate-400">
                         {formatDate(trx.date)}
                       </td>
                       <td className="px-5 py-3.5 whitespace-nowrap">
-                        <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                          {trx.reference}
-                        </span>
+                          <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                            {trx.reference}
+                          </span>
+                          {trx.statusPengakuan === "dibatalkan" && (
+                            <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase text-red-600">
+                              Dibatalkan
+                            </span>
+                          )}
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex flex-col">
@@ -817,6 +828,7 @@ export default function TransaksiClient({
                         )}
                       </td>
                       <td className="px-5 py-3.5 whitespace-nowrap text-center">
+                        {trx.statusPengakuan !== "dibatalkan" && (
                         <div className="flex items-center justify-center gap-1">
                           <button
                             onClick={() => setEditId(trx.id)}
@@ -866,6 +878,7 @@ export default function TransaksiClient({
                             </svg>
                           </button>
                         </div>
+                        )}
                       </td>
                     </tr>
                   ))}

@@ -1,72 +1,31 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { useState, useEffect } from "react";
+import { requireAuth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 
-export default function TestDbPage() {
-  const [status, setStatus] = useState<"loading" | "success" | "error">(
-    "loading",
-  );
-  const [message, setMessage] = useState("");
-  const [details, setDetails] = useState("");
+export const dynamic = "force-dynamic";
 
-  useEffect(() => {
-    async function checkConnection() {
-      try {
-        const response = await fetch("/api/test-db");
+export default async function TestDbPage() {
+  let auth;
 
-        // Handle non-JSON responses (e.g., HTML error pages)
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          const text = await response.text();
-          throw new Error(
-            `Expected JSON but got ${contentType}. Response body preview: ${text.substring(0, 200)}...`,
-          );
-        }
+  try {
+    auth = await requireAuth(["ADMIN"]);
+  } catch {
+    redirect("/login");
+  }
 
-        const data = await response.json();
-
-        if (response.ok) {
-          setStatus("success");
-          setMessage(data.message);
-          setDetails(`User count: ${data.userCount}`);
-        } else {
-          setStatus("error");
-          setMessage(data.message || "Failed to connect");
-          setDetails(data.error || "Unknown error");
-        }
-      } catch (error) {
-        setStatus("error");
-        setMessage("Network error");
-        setDetails(error instanceof Error ? error.message : String(error));
-      }
-    }
-
-    checkConnection();
-  }, []);
+  const userCount = await prisma.user.count({
+    where: { tenantId: auth.tenantId },
+  });
 
   return (
     <div className="p-8 font-sans">
-      <h1 className="text-2xl font-bold mb-4">Database Connection Test</h1>
-
-      {status === "loading" && (
-        <div className="text-gray-600">Testing connection...</div>
-      )}
-
-      {status === "success" && (
-        <div className="p-4 bg-green-100 border border-green-400 text-green-700 rounded">
-          <h2 className="font-bold">Success!</h2>
-          <p>{message}</p>
-          <pre className="mt-2 text-sm">{details}</pre>
-        </div>
-      )}
-
-      {status === "error" && (
-        <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-          <h2 className="font-bold">Error</h2>
-          <p>{message}</p>
-          <pre className="mt-2 text-sm overflow-auto">{details}</pre>
-        </div>
-      )}
+      <h1 className="mb-4 text-2xl font-bold">Database Connection Test</h1>
+      <div className="rounded border border-green-400 bg-green-100 p-4 text-green-700">
+        <h2 className="font-bold">Success!</h2>
+        <p>Connected to PostgreSQL database successfully</p>
+        <p className="mt-2 text-sm">User tenant ini: {userCount}</p>
+      </div>
     </div>
   );
 }

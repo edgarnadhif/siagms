@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { verifySession } from "@/lib/session";
+import { getErrorStatus, requireAuth } from "@/lib/auth";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await verifySession();
-    if (!session || !session.userId) {
-      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
-    }
-    const userId = session.userId;
-    const tenantId = session.tenantId;
+    const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
+    const userId = auth.id;
+    const tenantId = auth.tenantId;
     const { id } = await params;
 
     const event = await prisma.calendarEvent.findFirst({
@@ -41,18 +38,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ success: true, data: updatedEvent, message: "Event updated" });
   } catch (error: any) {
     console.error("PATCH /api/calendar/[id] error:", error);
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message }, { status: getErrorStatus(error) });
   }
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await verifySession();
-    if (!session || !session.userId) {
-      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
-    }
-    const userId = session.userId;
-    const tenantId = session.tenantId;
+    const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
+    const userId = auth.id;
+    const tenantId = auth.tenantId;
     const { id } = await params;
 
     const event = await prisma.calendarEvent.findFirst({
@@ -74,6 +68,6 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     return NextResponse.json({ success: true, message: "Event deleted", data: { id } });
   } catch (error: any) {
     console.error("DELETE /api/calendar/[id] error:", error);
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message }, { status: getErrorStatus(error) });
   }
 }

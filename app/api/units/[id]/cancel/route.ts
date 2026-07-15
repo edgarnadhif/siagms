@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth";
+import { getErrorStatus, requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
@@ -68,6 +68,7 @@ export async function POST(
           where: {
             tenantId: auth.tenantId,
             category: { in: ["BOOKING_FEE", "DOWN_PAYMENT", "PENCAIRAN_KPR", "PELUNASAN_CASH", "ANGSURAN_KPR"] },
+            status_pengakuan: { not: "dibatalkan" },
           },
         },
       },
@@ -102,7 +103,11 @@ export async function POST(
     let bookingFeeAmount = 0;
     let refundAmount = 0;
 
-    unit.transactions.forEach((t) => {
+    const activeCustomerTransactions = unit.transactions.filter(
+      (transaction) => transaction.customerId === unit.customerId,
+    );
+
+    activeCustomerTransactions.forEach((t) => {
       const amt = Number(t.amount);
       if (t.category === "BOOKING_FEE") {
         bookingFeeAmount += amt;
@@ -227,6 +232,17 @@ export async function POST(
       });
 
       // 4. Update unit: status → TERSEDIA, customerId → null
+      await tx.transaction.updateMany({
+        where: {
+          id: { in: activeCustomerTransactions.map((transaction) => transaction.id) },
+          tenantId: auth.tenantId,
+        },
+        data: {
+          status_pengakuan: "dibatalkan",
+          unitId: null,
+        },
+      });
+
       const updatedUnit = await tx.unit.update({
         where: { id: unitId },
         data: {
@@ -256,7 +272,7 @@ export async function POST(
   } catch (error: any) {
     return NextResponse.json(
       { success: false, data: null, message: "Terjadi kesalahan: " + error.message },
-      { status: 500 }
+      { status: getErrorStatus(error) }
     );
   }
 }

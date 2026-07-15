@@ -23,8 +23,8 @@ function slugifyTenantName(value: string) {
 type TransactionClient = Parameters<Parameters<PrismaClient['$transaction']>[0]>[0]
 type DbClient = TransactionClient | typeof prisma
 
-const REVENUE_PROJECT_CATEGORIES = ['BOOKING_FEE', 'DOWN_PAYMENT', 'PENCAIRAN_KPR', 'PELUNASAN_CASH'] as const
-const UNIT_REQUIRED_CATEGORIES = ['BOOKING_FEE', 'DOWN_PAYMENT', 'PENCAIRAN_KPR', 'PELUNASAN_CASH'] as const
+const REVENUE_PROJECT_CATEGORIES = ['BOOKING_FEE', 'DOWN_PAYMENT', 'ANGSURAN_KPR', 'PENCAIRAN_KPR', 'PELUNASAN_CASH'] as const
+const UNIT_REQUIRED_CATEGORIES = ['BOOKING_FEE', 'DOWN_PAYMENT', 'ANGSURAN_KPR', 'PENCAIRAN_KPR', 'PELUNASAN_CASH'] as const
 const EXPENSE_PROJECT_CATEGORIES = ['BIAYA_KONSTRUKSI', 'BIAYA_MARKETING', 'BIAYA_OPERASIONAL', 'BIAYA_GAJI', 'LAIN_LAIN'] as const
 
 type UnitRevenueBreakdown = {
@@ -44,7 +44,8 @@ async function getUnitRevenueBreakdown(db: DbClient, tenantId: string, unitId: s
     where: {
       tenantId,
       unitId,
-      category: { in: [...REVENUE_PROJECT_CATEGORIES] }
+      category: { in: [...REVENUE_PROJECT_CATEGORIES] },
+      status_pengakuan: { not: 'dibatalkan' },
     },
     _sum: { amount: true }
   })
@@ -54,7 +55,8 @@ async function getUnitRevenueBreakdown(db: DbClient, tenantId: string, unitId: s
     where: {
       tenantId,
       unitId,
-      category: { in: [...REVENUE_PROJECT_CATEGORIES] }
+      category: { in: [...REVENUE_PROJECT_CATEGORIES] },
+      status_pengakuan: { not: 'dibatalkan' },
     },
     _sum: { amount: true }
   })
@@ -101,7 +103,7 @@ function deriveUnitStatusFromRevenueCategories(categories: string[]) {
     return 'LUNAS'
   }
 
-  if (categories.includes('DOWN_PAYMENT')) {
+  if (categories.includes('DOWN_PAYMENT') || categories.includes('ANGSURAN_KPR')) {
     return 'INDENT'
   }
 
@@ -125,6 +127,7 @@ async function syncUnitStatusFromTransactions(db: DbClient, tenantId: string, un
       tenantId,
       unitId,
       category: { in: [...REVENUE_PROJECT_CATEGORIES] },
+      status_pengakuan: { not: 'dibatalkan' },
     },
     select: { category: true },
   })
@@ -208,13 +211,14 @@ export async function register(prevState: any, formData: FormData) {
   const fullName = formData.get('fullName') as string
   const email = formData.get('email') as string
   const password = formData.get('password') as string
+  const normalizedEmail = email?.trim().toLowerCase()
 
-  if (!companyName || !fullName || !email || !password) {
+  if (!companyName || !fullName || !normalizedEmail || !password) {
     return { error: 'Nama perusahaan, nama owner, email, dan password wajib diisi' }
   }
 
-  const existingUser = await prisma.user.findFirst({
-    where: { email },
+  const existingUser = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
   })
 
   if (existingUser) {
@@ -239,7 +243,7 @@ export async function register(prevState: any, formData: FormData) {
     await tx.user.create({
       data: {
         tenantId: tenant.id,
-        email: email.trim().toLowerCase(),
+        email: normalizedEmail,
         password: hashedPassword,
         fullName: fullName.trim(),
         role: 'ADMIN',
@@ -250,7 +254,7 @@ export async function register(prevState: any, formData: FormData) {
       data: {
         tenantId: tenant.id,
         name: companyName.trim(),
-        email: email.trim().toLowerCase(),
+        email: normalizedEmail,
       },
     })
 
@@ -282,7 +286,7 @@ export async function login(prevState: any, formData: FormData) {
     return { error: 'Email and password are required' }
   }
 
-  const user = await prisma.user.findFirst({
+  const user = await prisma.user.findUnique({
     where: {
       email: email.trim().toLowerCase(),
       isActive: true,
@@ -353,28 +357,34 @@ export async function createTenantUser(prevState: any, formData: FormData) {
 
   const existingUser = await prisma.user.findFirst({
     where: {
-      tenantId: auth.tenantId,
       email,
     },
     select: { id: true },
   })
 
   if (existingUser) {
-    return { error: 'Email sudah digunakan pada tenant ini' }
+    return { error: 'Email sudah digunakan oleh user lain' }
   }
 
   const hashedPassword = await bcrypt.hash(password, 10)
 
-  await prisma.user.create({
-    data: {
-      tenantId: auth.tenantId,
-      fullName: fullName || null,
-      email,
-      password: hashedPassword,
-      role,
-      isActive: true,
-    },
-  })
+  try {
+    await prisma.user.create({
+      data: {
+        tenantId: auth.tenantId,
+        fullName: fullName || null,
+        email,
+        password: hashedPassword,
+        role,
+        isActive: true,
+      },
+    })
+  } catch (error: any) {
+    if (error?.code === 'P2002') {
+      return { error: 'Email sudah digunakan oleh user lain' }
+    }
+    throw error
+  }
 
   revalidatePath('/dashboard/users')
   return { success: true }
@@ -427,7 +437,6 @@ export async function updateTenantUser(prevState: any, formData: FormData) {
 
   const emailOwner = await prisma.user.findFirst({
     where: {
-      tenantId: auth.tenantId,
       email,
       NOT: { id: userId },
     },
@@ -435,7 +444,7 @@ export async function updateTenantUser(prevState: any, formData: FormData) {
   })
 
   if (emailOwner) {
-    return { error: 'Email sudah digunakan user lain di tenant ini' }
+    return { error: 'Email sudah digunakan user lain' }
   }
 
   const data: {
@@ -917,7 +926,10 @@ async function resolveTransactionRelations(
     }
 
     resolvedProjectId = unit.projectId
-    resolvedCustomerId = resolvedCustomerId || unit.customerId
+    if (resolvedCustomerId && resolvedCustomerId !== unit.customerId) {
+      throw new Error('Pelanggan transaksi tidak sesuai dengan pemilik unit')
+    }
+    resolvedCustomerId = unit.customerId
   }
 
   if (resolvedProjectId) {
@@ -991,15 +1003,23 @@ export async function updateTransaction(prevState: any, formData: FormData) {
     return { error: 'Jumlah harus berupa angka positif' }
   }
 
+  if (!['diterima', 'diakui'].includes(status_pengakuan)) {
+    return { error: 'Status pengakuan transaksi tidak valid' }
+  }
+
   try {
     await prisma.$transaction(async (tx) => {
       const existingTransaction = await tx.transaction.findFirst({
         where: { id, tenantId: auth.tenantId },
-        select: { id: true, unitId: true, customerId: true, projectId: true },
+        select: { id: true, unitId: true, customerId: true, projectId: true, status_pengakuan: true },
       })
 
       if (!existingTransaction) {
         throw new Error('Transaksi tidak ditemukan atau bukan milik tenant ini')
+      }
+
+      if (existingTransaction.status_pengakuan === 'dibatalkan') {
+        throw new Error('Transaksi yang sudah dibatalkan tidak dapat diedit')
       }
 
       const relations = await resolveTransactionRelations(tx, auth.tenantId, {
@@ -1090,6 +1110,10 @@ export async function createTransaction(prevState: any, formData: FormData) {
     return { error: 'Jumlah harus berupa angka positif' }
   }
 
+  if (!['diterima', 'diakui'].includes(status_pengakuan)) {
+    return { error: 'Status pengakuan transaksi tidak valid' }
+  }
+
   try {
     let journalWarning: string | null = null;
     await prisma.$transaction(async (tx) => {
@@ -1151,11 +1175,15 @@ export async function deleteTransaction(transactionId: string) {
     await prisma.$transaction(async (tx) => {
       const existingTransaction = await tx.transaction.findFirst({
         where: { id: transactionId, tenantId: auth.tenantId },
-        select: { id: true, unitId: true },
+        select: { id: true, unitId: true, status_pengakuan: true },
       })
 
       if (!existingTransaction) {
         throw new Error('Transaksi tidak ditemukan atau bukan milik tenant ini')
+      }
+
+      if (existingTransaction.status_pengakuan === 'dibatalkan') {
+        throw new Error('Transaksi yang sudah dibatalkan tidak dapat dihapus')
       }
 
       // Delete related journal entries first
@@ -1193,8 +1221,12 @@ export async function deleteTransactions(transactionIds: string[]) {
   try {
     await prisma.$transaction(async (tx) => {
       const affectedTransactions = await tx.transaction.findMany({
-        where: { id: { in: transactionIds }, tenantId: auth.tenantId },
-        select: { unitId: true },
+        where: {
+          id: { in: transactionIds },
+          tenantId: auth.tenantId,
+          status_pengakuan: { not: 'dibatalkan' },
+        },
+        select: { id: true, unitId: true },
       })
 
       const affectedUnitIds = Array.from(
@@ -1207,11 +1239,17 @@ export async function deleteTransactions(transactionIds: string[]) {
 
       // Delete related journal entries first
       await tx.journalEntry.deleteMany({
-        where: { transactionId: { in: transactionIds }, tenantId: auth.tenantId },
+        where: {
+          transactionId: { in: affectedTransactions.map((transaction) => transaction.id) },
+          tenantId: auth.tenantId,
+        },
       })
 
       await tx.transaction.deleteMany({
-        where: { id: { in: transactionIds }, tenantId: auth.tenantId },
+        where: {
+          id: { in: affectedTransactions.map((transaction) => transaction.id) },
+          tenantId: auth.tenantId,
+        },
       })
 
       for (const affectedUnitId of affectedUnitIds) {
@@ -1430,6 +1468,10 @@ export async function createJournalEntries(prevState: any, formData: FormData) {
     return { error: 'Format baris jurnal tidak valid' }
   }
 
+  if (!Array.isArray(entries)) {
+    return { error: 'Format baris jurnal tidak valid' }
+  }
+
   if (entries.length < 2) {
     return { error: 'Minimal 2 baris jurnal diperlukan' }
   }
@@ -1453,6 +1495,32 @@ export async function createJournalEntries(prevState: any, formData: FormData) {
 
     if (effectiveProjectId && !selectedProject) {
       return { error: 'Proyek tidak ditemukan' }
+    }
+
+    const accountIds = Array.from(new Set(entries.map((entry) => entry.accountId)))
+    if (accountIds.some((accountId) => typeof accountId !== 'string' || !accountId)) {
+      return { error: 'Akun jurnal tidak valid' }
+    }
+
+    const tenantAccountCount = await prisma.account.count({
+      where: {
+        id: { in: accountIds },
+        tenantId: auth.tenantId,
+        isActive: true,
+      },
+    })
+    if (tenantAccountCount !== accountIds.length) {
+      return { error: 'Salah satu akun tidak ditemukan, nonaktif, atau bukan milik tenant ini' }
+    }
+
+    if (transactionId) {
+      const linkedTransaction = await prisma.transaction.findFirst({
+        where: { id: transactionId, tenantId: auth.tenantId },
+        select: { id: true },
+      })
+      if (!linkedTransaction) {
+        return { error: 'Transaksi jurnal tidak ditemukan atau bukan milik tenant ini' }
+      }
     }
 
     await prisma.journalEntry.createMany({
@@ -1518,7 +1586,8 @@ export async function markProjectTerjual(projectId: string) {
       where: {
         tenantId: auth.tenantId,
         projectId,
-        category: { in: ['BOOKING_FEE', 'DOWN_PAYMENT', 'PENCAIRAN_KPR', 'PELUNASAN_CASH'] }
+        category: { in: [...REVENUE_PROJECT_CATEGORIES] },
+        status_pengakuan: { not: 'dibatalkan' },
       },
       _sum: { amount: true }
     });
@@ -1530,7 +1599,8 @@ export async function markProjectTerjual(projectId: string) {
       where: {
         tenantId: auth.tenantId,
         projectId,
-        category: { in: ['BOOKING_FEE', 'DOWN_PAYMENT', 'PENCAIRAN_KPR', 'PELUNASAN_CASH'] }
+        category: { in: [...REVENUE_PROJECT_CATEGORIES] },
+        status_pengakuan: { not: 'dibatalkan' },
       },
       data: { status_pengakuan: 'diakui' }
     });
@@ -1616,6 +1686,9 @@ export async function serahTerimaUnit(prevState: any, formData: FormData) {
     if (unitCheck.status === 'SERAH_TERIMA') {
       return { error: 'Unit ini sudah dalam status Serah Terima.' };
     }
+    if (!unitCheck.customerId || unitCheck.customerId !== customerId) {
+      return { error: 'Pelanggan serah terima tidak sesuai dengan pemilik unit.' };
+    }
 
     // ── Guard: cek apakah journal ST dengan handoverNo ini sudah ada ──
     const existingJournal = await prisma.journal.findFirst({
@@ -1637,6 +1710,7 @@ export async function serahTerimaUnit(prevState: any, formData: FormData) {
         tenantId: auth.tenantId,
         projectId: unitCheck.projectId,
         category: 'BIAYA_KONSTRUKSI',
+        status_pengakuan: { not: 'dibatalkan' },
       },
       _sum: { amount: true },
     });
@@ -1684,7 +1758,8 @@ export async function serahTerimaUnit(prevState: any, formData: FormData) {
         where: {
           tenantId: auth.tenantId,
           unitId,
-          category: { in: [...REVENUE_PROJECT_CATEGORIES] }
+          category: { in: [...REVENUE_PROJECT_CATEGORIES] },
+          status_pengakuan: { not: 'dibatalkan' },
         },
         data: { status_pengakuan: 'diakui' }
       });
@@ -1901,7 +1976,8 @@ export async function cleanupDuplicateSTJournals() {
             where: {
               tenantId: auth.tenantId,
               unitId: stRecord.unitId,
-              category: { in: [...REVENUE_PROJECT_CATEGORIES] }
+              category: { in: [...REVENUE_PROJECT_CATEGORIES] },
+              status_pengakuan: { not: 'dibatalkan' },
             },
             data: { status_pengakuan: 'diakui' }
           })
@@ -1918,6 +1994,7 @@ export async function cleanupDuplicateSTJournals() {
             tenantId: auth.tenantId,
             projectId: stRecord.unit.projectId,
             category: 'BIAYA_KONSTRUKSI',
+            status_pengakuan: { not: 'dibatalkan' },
           },
           _sum: { amount: true },
         });

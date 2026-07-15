@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getTenantWhere, requireAuth } from "@/lib/auth";
+import { getErrorStatus, getTenantWhere, requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 const EDITABLE_STATUSES = ["TERSEDIA", "BOOKING"];
@@ -19,6 +19,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
           take: 1,
         },
         transactions: {
+          where: { status_pengakuan: { not: "dibatalkan" } },
           orderBy: { date: "desc" },
         },
       },
@@ -57,7 +58,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       message: "Berhasil mengambil data unit" 
     });
   } catch (error: any) {
-    return NextResponse.json({ success: false, data: null, message: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, data: null, message: error.message }, { status: getErrorStatus(error) });
   }
 }
 
@@ -80,10 +81,38 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
     }
 
     const { blockName, unitNumber, type, landArea, buildingArea, price, projectId } = body;
-    const unitCode = `${blockName}/${unitNumber}`;
+    if (!blockName?.trim() || !unitNumber?.trim() || !type?.trim() || !projectId) {
+      return NextResponse.json(
+        { success: false, data: null, message: "Data unit dan proyek wajib diisi" },
+        { status: 400 },
+      );
+    }
+
+    const numericLandArea = Number(landArea);
+    const numericBuildingArea = Number(buildingArea);
+    const numericPrice = Number(price);
+    if (numericLandArea <= 0 || numericBuildingArea <= 0 || numericPrice <= 0) {
+      return NextResponse.json(
+        { success: false, data: null, message: "Luas dan harga harus bernilai positif" },
+        { status: 400 },
+      );
+    }
+
+    const project = await prisma.project.findFirst({
+      where: { id: projectId, tenantId: auth.tenantId },
+      select: { id: true },
+    });
+    if (!project) {
+      return NextResponse.json(
+        { success: false, data: null, message: "Proyek tidak ditemukan atau bukan milik tenant ini" },
+        { status: 404 },
+      );
+    }
+
+    const unitCode = `UNIT-${blockName.trim()}${unitNumber.trim()}`;
 
     const existing = await prisma.unit.findFirst({
-      where: getTenantWhere(auth.tenantId, { unitCode, projectId, NOT: { id } }),
+      where: getTenantWhere(auth.tenantId, { unitCode, NOT: { id } }),
     });
     if (existing) {
       return NextResponse.json({ success: false, data: null, message: "Nomor unit sudah terpakai di proyek ini" }, { status: 400 });
@@ -92,14 +121,14 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
     const updated = await prisma.unit.update({
       where: { id },
       data: {
-        blockName,
-        unitNumber,
+        blockName: blockName.trim(),
+        unitNumber: unitNumber.trim(),
         unitCode,
-        type,
-        landArea: landArea ? parseFloat(landArea) : undefined,
-        buildingArea: buildingArea ? parseFloat(buildingArea) : undefined,
-        price: price ? parseFloat(price) : undefined,
-        projectId,
+        type: type.trim(),
+        landArea: numericLandArea,
+        buildingArea: numericBuildingArea,
+        price: numericPrice,
+        projectId: project.id,
       },
       include: {
         project: { select: { id: true, name: true, code: true } },
@@ -109,7 +138,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
 
     return NextResponse.json({ success: true, data: updated, message: "Data unit diperbarui" });
   } catch (error: any) {
-    return NextResponse.json({ success: false, data: null, message: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, data: null, message: error.message }, { status: getErrorStatus(error) });
   }
 }
 
@@ -141,6 +170,6 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
 
     return NextResponse.json({ success: true, data: null, message: "Unit berhasil dihapus permanen" });
   } catch (error: any) {
-    return NextResponse.json({ success: false, data: null, message: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, data: null, message: error.message }, { status: getErrorStatus(error) });
   }
 }

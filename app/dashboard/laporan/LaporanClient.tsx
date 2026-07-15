@@ -49,6 +49,7 @@ type ArusKasData = {
   operasiMasuk: {
     bookingFee: number;
     downPayment: number;
+    angsuranKPR: number;
     pencairanKPR: number;
     pelunasanCash: number;
     penerimaanLainnya: number;
@@ -438,6 +439,10 @@ export default function LaporanClient({
       writeRow(
         "Down Payment",
         formatRupiah(arusKasData.operasiMasuk.downPayment),
+      );
+      writeRow(
+        "Angsuran KPR",
+        formatRupiah(arusKasData.operasiMasuk.angsuranKPR),
       );
       writeRow(
         "Pencairan KPR",
@@ -909,6 +914,10 @@ export default function LaporanClient({
             <div className="flex justify-between pl-6 text-slate-700 dark:text-slate-300">
               <span>Down Payment</span>
               <span>{formatRupiah(arusKasData.operasiMasuk.downPayment)}</span>
+            </div>
+            <div className="flex justify-between pl-6 text-slate-700 dark:text-slate-300">
+              <span>Angsuran KPR</span>
+              <span>{formatRupiah(arusKasData.operasiMasuk.angsuranKPR)}</span>
             </div>
             <div className="flex justify-between pl-6 text-slate-700 dark:text-slate-300">
               <span>Pencairan KPR</span>

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth";
+import { getErrorStatus, requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -48,6 +48,9 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
     return NextResponse.json({ success: true, data: result, message: "Berhasil assign pelanggan ke unit" });
   } catch (error: any) {
-    return NextResponse.json({ success: false, data: null, message: error.message }, { status: 400 });
+    return NextResponse.json(
+      { success: false, data: null, message: error.message },
+      { status: getErrorStatus(error, 400) },
+    );
   }
 }

@@ -5,6 +5,7 @@ import DashboardClient from "./DashboardClient";
 const PENDAPATAN_DIAKUI_CATEGORIES = [
   "BOOKING_FEE",
   "DOWN_PAYMENT",
+  "ANGSURAN_KPR",
   "PENCAIRAN_KPR",
   "PELUNASAN_CASH",
 ] as const;
@@ -108,6 +109,7 @@ const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
       category: {
         in: [...PENDAPATAN_DIAKUI_CATEGORIES],
       },
+      status_pengakuan: { not: "dibatalkan" },
       ...(projectFilter ? { projectId: projectFilter } : {}),
       unit: {
         is: {
@@ -228,7 +230,8 @@ const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
     where: {
       tenantId: auth.tenantId,
       ...(projectFilter ? { projectId: projectFilter } : {}),
-      date: { gte: sixMonthsAgo }
+      date: { gte: sixMonthsAgo },
+      status_pengakuan: { not: "dibatalkan" },
     },
     orderBy: { date: 'asc' }
   });
@@ -285,6 +288,7 @@ const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
     where: {
       tenantId: auth.tenantId,
       category: { in: ["BOOKING_FEE", "DOWN_PAYMENT", "ANGSURAN_KPR", "PELUNASAN_CASH", "PENCAIRAN_KPR"] },
+      status_pengakuan: { not: "dibatalkan" },
       ...(projectFilter ? { projectId: projectFilter } : {})
     },
     _sum: { amount: true }

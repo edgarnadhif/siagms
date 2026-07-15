@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getTenantWhere, requireAuth } from "@/lib/auth";
+import { getErrorStatus, getTenantWhere, requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 export async function GET(request: Request) {
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ success: true, data: customers, message: "Berhasil mengambil data pelanggan" });
   } catch (error: any) {
-    return NextResponse.json({ success: false, data: null, message: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, data: null, message: error.message }, { status: getErrorStatus(error) });
   }
 }
 
@@ -29,6 +29,33 @@ export async function POST(request: Request) {
   try {
     const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
     const body = await request.json();
+    const {
+      name,
+      phone,
+      email,
+      address,
+      bankName,
+      kprAccountNo,
+      kprAkadDate,
+      kprAmount,
+      kprTenor,
+      nik,
+      paymentMethod,
+    } = body;
+
+    if (!name?.trim() || !phone?.trim() || !address?.trim() || !nik?.trim()) {
+      return NextResponse.json(
+        { success: false, data: null, message: "Data wajib pelanggan belum lengkap" },
+        { status: 400 },
+      );
+    }
+
+    if (!['KPR', 'CASH'].includes(paymentMethod)) {
+      return NextResponse.json(
+        { success: false, data: null, message: "Metode pembayaran tidak valid" },
+        { status: 400 },
+      );
+    }
 
     // Auto-generate customerCode
     const existingCustomers = await prisma.customer.findMany({
@@ -49,9 +76,19 @@ export async function POST(request: Request) {
 
     const customer = await prisma.customer.create({
       data: {
-        ...body,
         tenantId: auth.tenantId,
         customerCode: newCode,
+        name: name.trim(),
+        phone: phone.trim(),
+        email: email?.trim() || null,
+        address: address.trim(),
+        nik: nik.trim(),
+        paymentMethod,
+        bankName: bankName?.trim() || null,
+        kprAccountNo: kprAccountNo?.trim() || null,
+        kprAkadDate: kprAkadDate ? new Date(kprAkadDate) : null,
+        kprAmount: kprAmount ? Number(kprAmount) : null,
+        kprTenor: kprTenor ? Number(kprTenor) : null,
       },
     });
 
@@ -66,7 +103,7 @@ export async function POST(request: Request) {
       }
       return NextResponse.json({ success: false, data: null, message: "Terjadi duplikasi kode pelanggan, silakan coba lagi" }, { status: 400 });
     }
-    return NextResponse.json({ success: false, data: null, message: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, data: null, message: error.message }, { status: getErrorStatus(error) });
   }
 }
 
@@ -115,6 +152,6 @@ export async function DELETE(request: Request) {
       message: `${result.count} pelanggan berhasil dihapus`,
     });
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message }, { status: getErrorStatus(error) });
   }
 }

@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { verifySession } from "@/lib/session";
+import { getErrorStatus, requireAuth } from "@/lib/auth";
 
 export async function GET(req: Request) {
   try {
-    const session = await verifySession();
-    if (!session || !session.userId) {
-      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
-    }
-    const userId = session.userId;
-    const tenantId = session.tenantId;
+    const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
+    const userId = auth.id;
+    const tenantId = auth.tenantId;
 
     const { searchParams } = new URL(req.url);
     const monthStr = searchParams.get("month"); // 1-12
@@ -68,18 +65,15 @@ export async function GET(req: Request) {
     return NextResponse.json({ success: true, data: userEvents, message: "Events fetched successfully" });
   } catch (error: any) {
     console.error("GET /api/calendar error:", error);
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message }, { status: getErrorStatus(error) });
   }
 }
 
 export async function POST(req: Request) {
   try {
-    const session = await verifySession();
-    if (!session || !session.userId) {
-      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
-    }
-    const userId = session.userId;
-    const tenantId = session.tenantId;
+    const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
+    const userId = auth.id;
+    const tenantId = auth.tenantId;
 
     const body = await req.json();
     const { title, description, date, endDate, type } = body;
@@ -109,6 +103,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, data: newEvent, message: "Event created" }, { status: 201 });
   } catch (error: any) {
     console.error("POST /api/calendar error:", error);
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message }, { status: getErrorStatus(error) });
   }
 }
