@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requirePageAuth } from "@/lib/page-auth";
 import Link from "next/link";
 import { ProjectStatus } from "@prisma/client";
 import AddProjectModal from "./AddProjectModal";
@@ -27,7 +27,7 @@ export default async function ProjectPage({
 }: {
   searchParams: Promise<{ search?: string; status?: string; add?: string }>;
 }) {
-const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
+const auth = await requirePageAuth(["ADMIN", "AKUNTAN"]);
   const { search = "", status = "", add } = await searchParams;
   const showAddModal = add === "true";
 

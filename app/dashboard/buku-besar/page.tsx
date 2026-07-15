@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requirePageAuth } from "@/lib/page-auth";
 import { getCompanySettingsByTenantId } from "@/lib/company-settings";
 import BukuBesarClient from "./BukuBesarClient";
 
@@ -40,7 +40,7 @@ function getProjectInfo(entry: {
 export default async function BukuBesarPage(props: {
   searchParams?: Promise<SearchParams>;
 }) {
-  const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
+  const auth = await requirePageAuth(["ADMIN", "AKUNTAN"]);
   const searchParams = await props.searchParams;
   const accountFilter = searchParams?.account || "";
   const projectFilter = searchParams?.project || "";

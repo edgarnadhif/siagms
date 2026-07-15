@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requirePageAuth } from "@/lib/page-auth";
 import UnitClient from "./UnitClient";
 
 export default async function UnitPage() {
-  const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
+  const auth = await requirePageAuth(["ADMIN", "AKUNTAN"]);
   // Fetch all units (active & inactive) so client-side toggle works without refetch
   const units = await prisma.unit.findMany({
     where: { tenantId: auth.tenantId },

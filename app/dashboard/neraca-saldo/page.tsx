@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 
-import { requireAuth } from "@/lib/auth";
+import { requirePageAuth } from "@/lib/page-auth";
 import { getCompanySettingsByTenantId } from "@/lib/company-settings";
 import { prisma } from "@/lib/db";
 
@@ -30,7 +30,7 @@ function buildProjectEntryWhere(projectId: string): Prisma.JournalEntryWhereInpu
 export default async function NeracaSaldoPage(props: {
   searchParams?: Promise<SearchParams>;
 }) {
-  const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
+  const auth = await requirePageAuth(["ADMIN", "AKUNTAN"]);
   const searchParams = await props.searchParams;
   const fromDate = searchParams?.from || "";
   const toDate = searchParams?.to || "";

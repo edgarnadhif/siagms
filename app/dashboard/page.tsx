@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requirePageAuth } from "@/lib/page-auth";
 import DashboardClient from "./DashboardClient";
 
 const PENDAPATAN_DIAKUI_CATEGORIES = [
@@ -29,7 +29,7 @@ function formatDateOnly(date: Date) {
 export default async function DashboardPage(props: {
   searchParams?: Promise<{ project?: string }>;
 }) {
-const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
+const auth = await requirePageAuth(["ADMIN", "AKUNTAN"]);
   const searchParams = await props.searchParams;
   const projectFilter = searchParams?.project && searchParams?.project !== "all" ? searchParams.project : null;
 

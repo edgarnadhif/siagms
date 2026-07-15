@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requirePageAuth } from "@/lib/page-auth";
 import TransaksiClient from "./TransaksiClient";
 
 export default async function TransaksiPage(props: {
   searchParams?: Promise<{ search?: string; category?: string; project?: string; add?: string }>;
 }) {
-  const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
+  const auth = await requirePageAuth(["ADMIN", "AKUNTAN"]);
   const searchParams = await props.searchParams;
   const search = searchParams?.search || "";
   const category = searchParams?.category || "";

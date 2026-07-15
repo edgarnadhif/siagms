@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requirePageAuth } from "@/lib/page-auth";
 import JurnalUmumClient from "./JurnalUmumClient";
 
 export default async function JurnalUmumPage(props: {
   searchParams?: Promise<{ search?: string; add?: string }>;
 }) {
-  const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
+  const auth = await requirePageAuth(["ADMIN", "AKUNTAN"]);
   const searchParams = await props.searchParams;
   const search = searchParams?.search || "";
   const showAddModal = searchParams?.add === "true";

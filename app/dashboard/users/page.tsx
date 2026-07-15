@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requirePageAuth } from "@/lib/page-auth";
 import UsersClient from "./UsersClient";
 
 export default async function UsersPage(props: {
   searchParams?: Promise<{ search?: string; role?: string; add?: string }>;
 }) {
-  const auth = await requireAuth(["ADMIN"]);
+  const auth = await requirePageAuth(["ADMIN"]);
   const searchParams = await props.searchParams;
   const search = searchParams?.search || "";
   const roleFilter = searchParams?.role || "";

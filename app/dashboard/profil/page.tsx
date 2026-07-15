@@ -1,10 +1,10 @@
-import { requireAuth } from "@/lib/auth";
+import { requirePageAuth } from "@/lib/page-auth";
 import { getCompanySettingsByTenantId } from "@/lib/company-settings";
 import CompanySettingsForm from "./CompanySettingsForm";
 import SettingsClient from "./SettingsClient";
 
 export default async function SettingsPage() {
-  const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
+  const auth = await requirePageAuth(["ADMIN", "AKUNTAN"]);
   const companySettings = await getCompanySettingsByTenantId(auth.tenantId);
 
   return (

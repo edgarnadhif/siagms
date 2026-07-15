@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requirePageAuth } from "@/lib/page-auth";
 import PelangganClient from "./PelangganClient";
 
 export default async function PelangganPage() {
-  const auth = await requireAuth(["ADMIN", "AKUNTAN"]);
+  const auth = await requirePageAuth(["ADMIN", "AKUNTAN"]);
   // Fetch all customers so the client can update the list immediately after delete.
   const customers = await prisma.customer.findMany({
     where: { tenantId: auth.tenantId },
