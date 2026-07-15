@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface InsightData {
   ringkasan: string;
@@ -25,6 +25,17 @@ interface FinancialData {
   piutangKPR: number;
   totalAset: number;
   neracaStatus: string;
+}
+
+type CachedInsight = {
+  insight: InsightData;
+  analyzedAt: string;
+};
+
+const insightCache = new Map<string, CachedInsight>();
+
+function buildInsightCacheKey(financialData: FinancialData) {
+  return JSON.stringify(financialData);
 }
 
 function SectionIcon({ type }: { type: "summary" | "warning" | "good" | "idea" }) {
@@ -110,11 +121,28 @@ export default function AIInsightCard({
 }: {
   financialData: FinancialData;
 }) {
-  const [insight, setInsight] = useState<InsightData | null>(null);
+  const cacheKey = useMemo(
+    () => buildInsightCacheKey(financialData),
+    [financialData],
+  );
+  const cachedInsight = insightCache.get(cacheKey);
+  const [insight, setInsight] = useState<InsightData | null>(
+    cachedInsight?.insight ?? null,
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasLoaded, setHasLoaded] = useState(false);
-  const [analyzedAt, setAnalyzedAt] = useState<string | null>(null);
+  const [hasLoaded, setHasLoaded] = useState(Boolean(cachedInsight));
+  const [analyzedAt, setAnalyzedAt] = useState<string | null>(
+    cachedInsight?.analyzedAt ?? null,
+  );
+
+  useEffect(() => {
+    const nextCachedInsight = insightCache.get(cacheKey);
+    setInsight(nextCachedInsight?.insight ?? null);
+    setHasLoaded(Boolean(nextCachedInsight));
+    setAnalyzedAt(nextCachedInsight?.analyzedAt ?? null);
+    setError(null);
+  }, [cacheKey]);
 
   const fetchInsight = async () => {
     setLoading(true);
@@ -130,9 +158,14 @@ export default function AIInsightCard({
       const data = await res.json();
 
       if (data.success) {
+        const nextAnalyzedAt = new Date().toLocaleString("id-ID");
         setInsight(data.data);
         setHasLoaded(true);
-        setAnalyzedAt(new Date().toLocaleString("id-ID"));
+        setAnalyzedAt(nextAnalyzedAt);
+        insightCache.set(cacheKey, {
+          insight: data.data,
+          analyzedAt: nextAnalyzedAt,
+        });
       } else {
         setError(data.message || "Gagal mendapatkan analisis AI");
       }

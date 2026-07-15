@@ -28,6 +28,11 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import CategoryBadge from "@/components/ui/CategoryBadge";
 import AIInsightCard from "@/components/AIInsightCard";
 import { TransactionCategory } from "@prisma/client";
+import {
+  applyProjectFilterToParams,
+  getStoredProjectFilter,
+  storeProjectFilter,
+} from "@/lib/project-filter";
 
 const rbcLocalizer = dateFnsLocalizer({
   format,
@@ -765,6 +770,21 @@ export default function DashboardClient({
 
   const chartsMounted = useClientMounted();
 
+  useEffect(() => {
+    const currentProject = searchParams.get("project");
+    if (currentProject) {
+      storeProjectFilter(currentProject);
+      return;
+    }
+
+    const storedProject = getStoredProjectFilter();
+    if (!storedProject) return;
+
+    const params = new URLSearchParams(searchParams.toString());
+    applyProjectFilterToParams(params, storedProject);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [pathname, router, searchParams]);
+
   const totalPages = Math.ceil(recentTransactions.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedTransactions = recentTransactions.slice(
@@ -874,9 +894,10 @@ export default function DashboardClient({
           selectedProject={projectFilter}
           onSelect={(val) => {
             const params = new URLSearchParams(searchParams.toString());
-            if (val === "all") params.delete("project");
-            else params.set("project", val);
-            router.replace(`${pathname}?${params.toString()}`);
+            applyProjectFilterToParams(params, val);
+            storeProjectFilter(val);
+            const query = params.toString();
+            router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
           }}
         />
       </div>

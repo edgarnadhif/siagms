@@ -25,16 +25,17 @@ const EXPENSE_CATEGORIES = [
 export default async function ProjectPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string; status?: string; add?: string }>;
+  searchParams: Promise<{ search?: string; status?: string; add?: string; project?: string }>;
 }) {
 const auth = await requirePageAuth(["ADMIN", "AKUNTAN"]);
-  const { search = "", status = "", add } = await searchParams;
+  const { search = "", status = "", add, project = "" } = await searchParams;
   const showAddModal = add === "true";
 
   const rawProjects = await prisma.project.findMany({
     where: {
       AND: [
         { tenantId: auth.tenantId },
+        project ? { id: project } : {},
         search
           ? {
               OR: [

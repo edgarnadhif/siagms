@@ -2,10 +2,16 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { deleteJournalEntriesByReference, fixJournalProjectIds } from "@/app/actions";
 import AddJurnalModal from "./AddJurnalModal";
 import KonfigurasiJurnalModal from "./KonfigurasiJurnalModal";
+import {
+  applyProjectFilterToParams,
+  getProjectFilterFromSearchParams,
+  getStoredProjectFilter,
+  storeProjectFilter,
+} from "@/lib/project-filter";
 
 interface JournalGroup {
   reference: string;
@@ -77,6 +83,8 @@ export default function JurnalUmumClient({
   showAddModal: boolean;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [deletingRef, setDeletingRef] = useState<string | null>(null);
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [expandedRefs, setExpandedRefs] = useState<Set<string>>(new Set());
@@ -201,6 +209,27 @@ export default function JurnalUmumClient({
       }
     `}</style>
   );
+
+  const updateProjectFilter = useCallback((value: string) => {
+    setProjectFilter(value);
+    storeProjectFilter(value);
+    const params = new URLSearchParams(searchParams.toString());
+    applyProjectFilterToParams(params, value);
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }, [pathname, router, searchParams]);
+
+  useEffect(() => {
+    const urlProject = getProjectFilterFromSearchParams(searchParams);
+    if (urlProject) {
+      setProjectFilter(urlProject);
+      storeProjectFilter(urlProject);
+      return;
+    }
+
+    const storedProject = getStoredProjectFilter();
+    if (storedProject) updateProjectFilter(storedProject);
+  }, [searchParams, updateProjectFilter]);
 
   const filteredJournals = journals.filter((j) => {
     const matchesSearch =
@@ -426,7 +455,7 @@ export default function JurnalUmumClient({
                 <button
                   type="button"
                   onClick={() => {
-                    setProjectFilter("");
+                    updateProjectFilter("");
                     setCurrentPage(1);
                     setProjectMenuOpen(false);
                   }}
@@ -439,7 +468,7 @@ export default function JurnalUmumClient({
                     key={p.id}
                     type="button"
                     onClick={() => {
-                      setProjectFilter(p.id);
+                      updateProjectFilter(p.id);
                       setCurrentPage(1);
                       setProjectMenuOpen(false);
                     }}

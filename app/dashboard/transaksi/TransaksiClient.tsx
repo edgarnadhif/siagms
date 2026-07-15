@@ -1,14 +1,19 @@
 "use client";
 
-import React, { useState, useTransition, useEffect, useRef } from "react";
+import React, { useState, useTransition, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { deleteTransaction, deleteTransactions } from "@/app/actions";
 import AddTransaksiModal from "./AddTransaksiModal";
 import EditTransaksiModal from "./EditTransaksiModal";
 import CategoryBadge from "@/components/ui/CategoryBadge";
 import { TransactionCategory } from "@prisma/client";
-import { useSearchParams } from "next/navigation";
+import {
+  applyProjectFilterToParams,
+  getProjectFilterFromSearchParams,
+  getStoredProjectFilter,
+  storeProjectFilter,
+} from "@/lib/project-filter";
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 type ToastType = "success" | "error" | "warning";
@@ -181,6 +186,7 @@ export default function TransaksiClient({
   showAddModal: boolean;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -250,6 +256,27 @@ export default function TransaksiClient({
   const selectableTransactions = transactions.filter(
     (transaction) => transaction.statusPengakuan !== "dibatalkan",
   );
+
+  const updateProjectFilter = useCallback((value: string) => {
+    setProjectFilter(value);
+    storeProjectFilter(value);
+    const params = new URLSearchParams(searchParams.toString());
+    applyProjectFilterToParams(params, value);
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }, [pathname, router, searchParams]);
+
+  useEffect(() => {
+    const urlProject = getProjectFilterFromSearchParams(searchParams);
+    if (urlProject) {
+      setProjectFilter(urlProject);
+      storeProjectFilter(urlProject);
+      return;
+    }
+
+    const storedProject = getStoredProjectFilter();
+    if (storedProject) updateProjectFilter(storedProject);
+  }, [searchParams, updateProjectFilter]);
 
   const toggleSelectAll = () => {
     if (selectedIds.length === selectableTransactions.length && selectableTransactions.length > 0) {
@@ -645,7 +672,7 @@ export default function TransaksiClient({
                   <button
                     type="button"
                     onClick={() => {
-                      setProjectFilter("");
+                      updateProjectFilter("");
                       setCurrentPage(1);
                       setProjDropdownOpen(false);
                     }}
@@ -658,7 +685,7 @@ export default function TransaksiClient({
                       type="button"
                       key={p.id}
                       onClick={() => {
-                        setProjectFilter(p.id);
+                        updateProjectFilter(p.id);
                         setCurrentPage(1);
                         setProjDropdownOpen(false);
                       }}

@@ -1,9 +1,15 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import UnitDetailModal from "./UnitDetailModal";
 import StatusBadge from "@/components/ui/StatusBadge";
+import {
+  applyProjectFilterToParams,
+  getProjectFilterFromSearchParams,
+  getStoredProjectFilter,
+  storeProjectFilter,
+} from "@/lib/project-filter";
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 type ToastType = "success" | "error";
@@ -112,6 +118,9 @@ export default function UnitClient({
   customers: any[];
   currentRole: "ADMIN" | "AKUNTAN";
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [units, setUnits] = useState(initialData);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("SEMUA");
@@ -133,6 +142,28 @@ export default function UnitClient({
   const [editModalProjectOpen, setEditModalProjectOpen] = useState(false);
   const [assignCustomerOpen, setAssignCustomerOpen] = useState(false);
   const [searchModalProject, setSearchModalProject] = useState("");
+
+  const updateProjectFilter = useCallback((value: string) => {
+    const nextValue = value || "SEMUA";
+    setProjectFilter(nextValue);
+    storeProjectFilter(nextValue);
+    const params = new URLSearchParams(searchParams.toString());
+    applyProjectFilterToParams(params, nextValue);
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }, [pathname, router, searchParams]);
+
+  useEffect(() => {
+    const urlProject = getProjectFilterFromSearchParams(searchParams);
+    if (urlProject) {
+      setProjectFilter(urlProject);
+      storeProjectFilter(urlProject);
+      return;
+    }
+
+    const storedProject = getStoredProjectFilter();
+    if (storedProject) updateProjectFilter(storedProject);
+  }, [searchParams, updateProjectFilter]);
   const [searchEditModalProject, setSearchEditModalProject] = useState("");
   const [searchAssignCustomer, setSearchAssignCustomer] = useState("");
   const statusRef = useRef<HTMLDivElement>(null);
@@ -169,7 +200,6 @@ export default function UnitClient({
 
   const [assignData, setAssignData] = useState({ customerId: "" });
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   // Toast
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -600,7 +630,7 @@ export default function UnitClient({
                     <div className="absolute z-50 right-0 mt-2 w-64 max-h-60 overflow-y-auto bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-lg flex flex-col p-1 animate-in fade-in zoom-in-95 duration-200">
                       <button
                         onClick={() => {
-                          setProjectFilter("SEMUA");
+                          updateProjectFilter("SEMUA");
                           setProjectDropdownOpen(false);
                         }}
                         className={`text-left px-3 py-2 text-sm rounded-md transition-colors ${projectFilter === "SEMUA" ? "bg-slate-50 text-slate-900 font-medium dark:bg-slate-700 dark:text-white" : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50"}`}
@@ -611,7 +641,7 @@ export default function UnitClient({
                         <button
                           key={p.id}
                           onClick={() => {
-                            setProjectFilter(p.id);
+                            updateProjectFilter(p.id);
                             setProjectDropdownOpen(false);
                           }}
                           className={`text-left px-3 py-2 text-sm rounded-md transition-colors ${projectFilter === p.id ? "bg-slate-50 text-slate-900 font-medium dark:bg-slate-700 dark:text-white" : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50"}`}

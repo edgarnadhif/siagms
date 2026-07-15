@@ -2,6 +2,11 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  applyProjectFilterToParams,
+  getStoredProjectFilter,
+  storeProjectFilter,
+} from "@/lib/project-filter";
 
 interface AccountOption {
   id: string;
@@ -159,8 +164,8 @@ export default function BukuBesarClient({
     ) {
       if (selectedAccount) params.set("account", selectedAccount);
       else params.delete("account");
-      if (selectedProject) params.set("project", selectedProject);
-      else params.delete("project");
+      applyProjectFilterToParams(params, selectedProject);
+      storeProjectFilter(selectedProject);
       if (selectedFromDate) params.set("from", selectedFromDate);
       else params.delete("from");
       if (selectedToDate) params.set("to", selectedToDate);
@@ -176,6 +181,16 @@ export default function BukuBesarClient({
     router,
     searchParams,
   ]);
+
+  useEffect(() => {
+    if (projectFilter) {
+      storeProjectFilter(projectFilter);
+      return;
+    }
+
+    const storedProject = getStoredProjectFilter();
+    if (storedProject) setSelectedProject(storedProject);
+  }, [projectFilter]);
 
   const hideNativeDateIcon = (
     <style>{`

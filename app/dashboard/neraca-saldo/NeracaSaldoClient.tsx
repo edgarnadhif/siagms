@@ -2,6 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  applyProjectFilterToParams,
+  getStoredProjectFilter,
+  storeProjectFilter,
+} from "@/lib/project-filter";
 
 type NeracaSaldoItem = {
   code: string;
@@ -69,14 +74,31 @@ export default function NeracaSaldoClient({
 
   const handleFilterChange = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (value) params.set(key, value);
+    if (key === "project") {
+      applyProjectFilterToParams(params, value);
+      storeProjectFilter(value);
+    } else if (value) params.set(key, value);
     else params.delete(key);
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
   const resetFilters = () => {
+    storeProjectFilter("");
     router.replace(pathname, { scroll: false });
   };
+
+  useEffect(() => {
+    if (projectFilter) {
+      storeProjectFilter(projectFilter);
+      return;
+    }
+
+    const storedProject = getStoredProjectFilter();
+    if (!storedProject) return;
+    const params = new URLSearchParams(searchParams.toString());
+    applyProjectFilterToParams(params, storedProject);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [pathname, projectFilter, router, searchParams]);
 
   const hideNativeDateIcon = (
     <style>{`

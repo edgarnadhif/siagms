@@ -3,10 +3,16 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import { logout, getCompanyProfile } from "@/app/actions";
 import type { AppRole } from "@/lib/session";
+import {
+  getProjectFilterFromSearchParams,
+  getStoredProjectFilter,
+  hrefWithProjectFilter,
+  storeProjectFilter,
+} from "@/lib/project-filter";
 
 export default function Sidebar({
   role,
@@ -18,6 +24,10 @@ export default function Sidebar({
   const [isExpanded, setIsExpanded] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const projectFilterFromUrl = getProjectFilterFromSearchParams(searchParams);
+  const [storedProjectFilter, setStoredProjectFilter] = useState("");
+  const activeProjectFilter = projectFilterFromUrl || storedProjectFilter;
   const { theme, setTheme } = useTheme();
   const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -36,6 +46,16 @@ export default function Sidebar({
       }
     });
   }, []);
+
+  useEffect(() => {
+    if (projectFilterFromUrl) {
+      storeProjectFilter(projectFilterFromUrl);
+      setStoredProjectFilter(projectFilterFromUrl);
+      return;
+    }
+
+    setStoredProjectFilter(getStoredProjectFilter());
+  }, [projectFilterFromUrl]);
 
   useEffect(() => {
     if (!isMobileOpen) return;
@@ -303,12 +323,13 @@ export default function Sidebar({
             <ul className="">
               {group.items.map((item) => {
                 const isActive = pathname === item.href;
+                const href = hrefWithProjectFilter(item.href, activeProjectFilter);
                 const isStringIcon =
                   typeof item.icon === "string" && item.icon.startsWith("/");
                 return (
                   <li key={item.title}>
                     <Link
-                      href={item.href}
+                      href={href}
                       onClick={() => setIsMobileOpen(false)}
                       className={`flex min-h-11 items-center px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                         isActive

@@ -3,6 +3,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import {
+  applyProjectFilterToParams,
+  getStoredProjectFilter,
+  storeProjectFilter,
+} from "@/lib/project-filter";
 import jsPDF from "jspdf";
 
 type ProjectOption = {
@@ -154,8 +159,8 @@ export default function LaporanClient({
       changed = true;
     }
     if (selectedProject !== (projectFilter || "")) {
-      if (selectedProject) params.set("project", selectedProject);
-      else params.delete("project");
+      applyProjectFilterToParams(params, selectedProject);
+      storeProjectFilter(selectedProject);
       changed = true;
     }
 
@@ -163,6 +168,16 @@ export default function LaporanClient({
       router.replace(`${pathname}?${params.toString()}`);
     }
   }, [selectedFromDate, selectedToDate, selectedProject, fromDate, toDate, projectFilter, pathname, router, searchParams]);
+
+  useEffect(() => {
+    if (projectFilter) {
+      storeProjectFilter(projectFilter);
+      return;
+    }
+
+    const storedProject = getStoredProjectFilter();
+    if (storedProject) setSelectedProject(storedProject);
+  }, [projectFilter]);
 
   const hideNativeDateIcon = `
     <style>
